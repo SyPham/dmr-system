@@ -1,0 +1,26 @@
+<div class="modal-header">
+  <h4 class="modal-title">Print {{data?.glueName}}</h4>
+  <button type="button" class="close" aria-label="Close" (click)="activeModal.dismiss('Cross click')">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+<div class="modal-body p-0">
+  <div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4 text-left">
+      <div class='center '>
+        <ejs-qrcodegenerator #barcode style="display: block;" id='qrcode' #barcode width="177px" height="177px"
+          [displayText]='displayTextMethod' mode="SVG" [value]="data?.code"></ejs-qrcodegenerator>
+      </div>
+      <div><label>Name:</label> {{data?.glueName}}</div>
+      <div><label>QrCode:</label> {{data?.code}}</div>
+      <div><label>MFG:</label> {{data?.createdTime | date: 'yyyyMMdd HH:mm'}}</div>
+      <div><label>EXP:</label> {{data?.expiredTime | date: 'yyyyMMdd HH:mm'}}</div>
+    </div>
+    <div class="col-md-4"></div>
+  </div>
+</div>
+<div class="modal-footer justify-content-between">
+  <button type="button" class="btn btn-outline-dark" (click)="activeModal.close('Close click')">Close</button>
+  <button type="button" (click)='printData()' class="btn btn-outline-dark"> <i class="fa fa-print"></i> Print</button>
+</div>

@@ -1,0 +1,268 @@
+<ngx-spinner [fullScreen]="false" type="square-jelly-box" size="medium">
+  <p class="loading">Loading data...</p>
+</ngx-spinner>
+
+<div class="card" *ngIf="existGlue" #fullScreen style="overflow: auto;">
+  <div class="card-header d-flex p-1" *ngIf="existGlue">
+    <h4>{{ 'TODOLIST' | translate }}</h4>
+    <div class="d-inline-flex ml-auto">
+      <ejs-dropdownlist #modelNameDropdownlist *ngIf="IsAdmin"
+        [dataSource]='buildings' 
+        [fields]='fieldsBuildings' 
+        [allowFiltering]='true' 
+        [(ngModel)]="buildingID"
+        (filtering)='onFilteringBuilding($event)' 
+        (change)='onChangeBuilding($event)' placeholder="Select a building">
+      </ejs-dropdownlist>
+      <button class="btn btn-xs p-2 mx-1 my-bg-warning">{{ 'DELIVERED_TOTAL_COUNT_LABEL' | translate }}</button>
+      <button class="btn btn-xs p-2 mr-1 my-bg-primary">{{ 'ACTUAL_NOTE_LABEL' | translate }}</button>
+      <button (click)="openFullscreen()" class="btn btn-xs p-2 mr-1 bg-secondary" *ngIf="!hasFullScreen"><i
+          class="fa fa-expand-arrows-alt"></i> Fullscreen</button>
+      <button (click)='closeFullscreen()' class="btn btn-xs p-2 mr-1 bg-info" *ngIf="hasFullScreen"><i
+          class="fa fa-times"></i> Close Fullscreen</button>
+    </div>
+  </div>
+  <div class="row" *ngIf="existGlue">
+    <div class="col-md-12">
+      <div class="card-body" style="padding: 0;">
+        <div class="alert alert-danger alert-dismissible" *ngIf="hasWarning">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+          <h5><i class="icon fas fa-ban"></i> Cảnh báo! - Warning!</h5>
+          Dữ liệu kế hoạch làm việc chưa được sắp xếp cho ngày hôm nay! <br>
+          The work plan is empty!
+        </div>
+        <div>
+          <table [attr.height]='screenHeight' class="table table-bordered table-responsive" id='todolist'>
+            <thead class="thead-dark">
+              <tr>
+                <ng-container *ngFor="let item of lineColumns; let i = index">
+                  <th scope="col" *ngIf="item.hasRowspan" [attr.rowspan]="item.rowspanValue"
+                    [attr.colspan]="item.colspanValue" class="my-align my-sticky text-center">
+                    {{ labelLang(item.field) | translate }}</th>
+                  <th scope="col" *ngIf="!item.hasRowspan" [attr.colspan]="item.colspanValue"
+                    class="my-align my-sticky text-center">
+                    {{ labelLang(item.field) | translate }}</th>
+                </ng-container>
+              </tr>
+              <tr>
+                <ng-container *ngFor="let item of modelNameList; let i = index">
+                  <th scope="col" class="text-center my-sticky-top">
+                    {{ item.field}}</th>
+                </ng-container>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let values of rowParents; let j = index">
+                <!-- row1 -->
+                <tr>
+                  <!-- Cell Left -->
+                  <td class="text-center" style="vertical-align: middle;" rowspan='2'>{{values.row1.supplier.supplier}}
+                  </td>
+                  <td class="text-center" style="vertical-align: middle;" rowspan='2'>
+                    <ejs-tooltip #tooltip class="fix-css" position='RightCenter'
+                      (beforeRender)="onBeforeRender($event, values.row1, j)" content="loading...">
+                      {{values.row1.glueName.glueName}}
+                    </ejs-tooltip>
+                  </td>
+                  <!-- End Cell Left -->
+
+                  <!-- Cell Center -->
+                  <td class="table-primary my-align" (click)='editDomain(value)'
+                    *ngFor="let value of values.row1.cellsCenter; let i = index">
+                    <input type="text" *ngIf="!value.editable"
+                      [value]="value.value == 0 || value.value === '0kg' ? 0 : value.value + 'kg'"
+                      class="form-control my-align summaryhide real">
+                    <input type="text" (blur)='blurTd(value)' *ngIf="value.editable" autofocustext
+                      (keypress)='dispatchGlue($event, value)' [(ngModel)]="value.value" style="pointer-events: initial"
+                      [value]="value.value" class="form-control my-align summary real">
+                  </td>
+                  <!-- End Cell Center -->
+
+                  <!-- Cell Right -->
+                  <td rowspan='2' class="text-center" style="vertical-align: middle; width: 150px;">
+                    {{values.row1.actual.real}}</td>
+                  <td rowspan='2' class="text-center" style="vertical-align: middle;">{{values.row1.count.count}}</td>
+                  <!-- End Cell Right -->
+                  <td rowspan=2 class="my-align">
+                    <button type="button" style="width: 90px;" (click)="mixingSection(values.row1)"
+                      class="btn btn-success btn-sm">
+                      <i class="fa fa-glass"></i>
+                      {{ 'MIXING' | translate }}
+                    </button>
+                    <button (click)="stirGlue(values.row1)" style="width: 90px;" type="button"
+                      class="btn btn-warning btn-sm my-2">
+                      <i class="fa fa-fan"></i>
+                      {{ 'STIR' | translate }}</button>
+                    <button type="button" style="width: 90px;" (click)="pushHistory(values.row1)"
+                      class="btn btn-sm btn-info">
+                      {{ 'HISTORY' | translate }}</button>
+                  </td>
+                </tr>
+                <!-- End Row1 -->
+
+                <!-- Row2 -->
+                <tr class="table-warning">
+                  <td class="my-align" (dblclick)='showModal(deliveredModal, value)'
+                    *ngFor="let value of values.row2.cellsCenter">
+                    <ejs-tooltip #tooltipRow2 class="fix-css" position="RightCenter"
+                      [content]="onBeforeRenderRow2(value)">
+                      <span *ngIf='value.count > 0'>
+                        {{value.delivered}}kg({{value.count}})
+                      </span>
+                      <span *ngIf='value.count === 0'>
+                        0
+                      </span>
+                    </ejs-tooltip>
+                  </td>
+                </tr>
+                <!-- End Row2 -->
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div *ngIf="show" class="card my-height">
+  <div class="card-body my-vertical">
+    <div class="row">
+      <div class="col-md-12">
+        <h2 class="text-center text-danger"> {{ 'GLUE_NAME' | translate }}: {{makeGlue.name}} </h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="row">
+
+          <div class="col-md-4 col-xl-4 text-center">
+            <div class="row">
+              <div class="col-md-2">
+                <label class="font-weight-bold" for="">{{ 'STEP' | translate }}</label>
+              </div>
+              <div class="col-md-10">
+                <label class="font-weight-bold" for="">{{ 'SCAN_QRCODE' | translate }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-2 col-xl-2 text-center">
+            <label class="font-weight-bold" for="">{{ 'INGREDIENT_NAME' | translate}}</label>
+          </div>
+          <div class="col-md-6">
+            <div class="row">
+              <div class="col-md-8 text-center">
+                <label class="font-weight-bold" for="">{{ 'EXPECTED' | translate }} ({{unit}}) </label>
+              </div>
+              <div class="col-md-4 text-center">
+                <label class="font-weight-bold" for="">{{ 'ACTUAL' | translate }} ({{unit}})</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-container *ngFor="let item of ingredients ;let i=index">
+          <div class="row mb-1">
+            <div class="col-md-4 col-xl-4">
+              <div class="row">
+                <div class="col-xl-2">
+                  <div class="align-middle">
+                    <img *ngIf="showArrow(item)" src="../../../../assets/img/gif/arrow.gif" alt="">
+                  </div>
+                </div>
+                <div class="col-xl-10">
+                  <input *ngIf="item.scanStatus; else scanBlock" class="form-control form-control-lg rounded-pill"
+                    [autofocus]='item.scanStatus' autoselect [name]="item.code" [(ngModel)]="item.scanCode"
+                    [class]="item.info" [ngClass]="lockClass(item)"
+                    (ngModelChange)='onNgModelChangeScanQRCode($event, item)' type="text">
+                  <ng-template #scanBlock>
+                    <input class="form-control form-control-lg rounded-pill" [(ngModel)]="item.scanCode"
+                      [name]="item.code" [class]="item.info" [ngClass]="lockClass(item)"
+                      (ngModelChange)='onNgModelChangeScanQRCode($event, item)' type="text">
+                  </ng-template>
+                </div>
+              </div>
+
+            </div>
+            <div class="form-group col-md-2 col-xl-2">
+              <input [class]="item.info" [class.lock]="true" class="form-control form-control-lg rounded-pill lock"
+                [value]="item.name + ' ( ' + item.percentage + '% )'" type="text">
+            </div>
+            <div class="col-md-6">
+              <div class="row">
+                <div class="col-md-8">
+                  <input *ngIf="item.focusExpected; else expectedBlock" [class.lock]="item.position !== 'A'"
+                    class="form-control form-control-lg rounded-pill" [value]='item.expected'
+                    [autofocus]='item.focusExpected' [class]="item.info" (keyup)='onKeyupExpected(item, $event)'
+                    type="text">
+                  <ng-template #expectedBlock>
+                    <input class="form-control form-control-lg rounded-pill lock" [value]='item.expected'
+                      [class]="item.info" (keyup)='onKeyupExpected(item, $event)' type="text">
+                  </ng-template>
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control form-control-lg rounded-pill mixing" [class.lock]="item.position === 'A'" data-toggle="tooltip"
+                    title="tooltip on second input!" *ngIf="item.focusReal; else realElse" [value]='item.real'
+                    [id]='item.position' [class]="realClass(item)" [autofocus]='item.focusReal' (click)='onDblClicked(item, $event)'
+                    (keyup)='onKeyupReal(item, $event)' type="text">
+                  <ng-template #realElse>
+                    <input class="form-control form-control-lg rounded-pill mixing" [class.lock]="item.position === 'A'" data-toggle="tooltip"
+                      title="tooltip on second input!" [value]='item.real' [id]='item.position'  (click)='onDblClicked(item, $event)'
+                      [class]="realClass(item)" (keyup)='onKeyupReal(item, $event)' type="text">
+                  </ng-template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="text-center mb-1">
+
+          <button type="button" (click)="back()" class="btn btn-primary rounded-pill"><i
+              class="fa fa-arrow-circle-left"></i>
+            {{ 'BACK' | translate }}</button>
+          <button type="button" [disabled]="disabled" (click)="Finish()" class="btn btn-success rounded-pill ml-2"><i
+              class="fas fa-save"></i>
+            {{ 'FINISHED' | translate }}</button>
+          <!-- <button type="button" (click)="gotoStir()" [disabled]="!showQRCode"
+            class="btn btn-warning rounded-pill ml-2"><i class="fa fa-arrow-circle-right"></i>
+            {{ 'STIR' | translate }}</button> -->
+
+        </div>
+        <p class="text-center my-2 text-danger" *ngIf="!disabled">{{ 'NOTE' | translate }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+<ng-template #deliveredModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      <i class="fas fa-plus"></i> Delivered Detail
+    </h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-md-12">
+        <ejs-grid [dataSource]='deliveredData' #deliveredGrid rowHeight='38' height='300' allowFiltering='true'
+          [allowSorting]='true' [filterSettings]='filterSettings' [editSettings]='editSettings'
+          [toolbar]='toolbarOptions' (toolbarClick)='toolbarClick($event)' (actionBegin)="actionBegin($event)"
+          showColumnMenu='true' [toolbar]='toolbarOptions'>
+          <e-columns>
+            <e-column field='glueName' isPrimaryKey='true' textAlign='Center' headerText='Glue' width='100'></e-column>
+            <e-column field='qty' textAlign='Center' headerText='Qty' width='80'></e-column>
+            <e-column field='createdDate' isPrimaryKey='true' textAlign='Center' type='dateTime'
+              format='d MMM, yyyy hh:mm:ss a' headerText='Delivered Date' width='150'></e-column>
+          </e-columns>
+        </ejs-grid>
+      </div>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="modal.close('Close click')">Close</button>
+  </div>
+
+</ng-template>

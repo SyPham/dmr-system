@@ -1,0 +1,174 @@
+<div class="card">
+  <div class="card-header"></div>
+  <div class="card-body">
+     <div class="row mb-3" *ngIf="IsAdmin">
+       <div class="col-md-4"></div>
+       <div class="col-md-4">
+        <ejs-dropdownlist  [dataSource]='buildings' [fields]='fieldsBuildings'
+          [allowFiltering]='true' [(ngModel)]="buildingID" (filtering)='onFilteringBuilding($event)'
+          (change)='onChangeBuilding($event)' (select)='onSelectBuilding($event)' placeholder="Select a building">
+        </ejs-dropdownlist>
+       </div>
+       <div class="col-md-4"></div>
+     </div>
+    <ejs-grid #gridUndone *ngIf="isShowTodolistDone == false" [dataSource]='data' [searchSettings]="searchSettings" showColumnMenu='true'
+      [allowExcelExport]='true' allowPaging='true' allowSorting='true' allowResizing='true' gridLines='Both'
+      (actionBegin)="actionBegin($event)" (actionComplete)="actionComplete($event)"
+      (toolbarClick)='toolbarClick($event)' (dataBound)='dataBound()' [toolbar]='toolbarOptions'
+      [sortSettings]="sortSettings" [pageSettings]='pageSettings' (recordDoubleClick)='onDoubleClick($event)'>
+      <e-columns>
+        <e-column field='supplier' headerText='Supplier' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Supplier' | translate }}
+          </ng-template>
+        </e-column>
+        <e-column field='glue' headerText='Glue' width='170' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Glue' | translate }}
+          </ng-template>
+          <ng-template #template let-data>
+            <ejs-tooltip #tooltip class="fix-css" position='RightCenter' (beforeRender)="onBeforeRender($event, data, data.index)"
+              content="loading...">
+              {{data.glue}}
+            </ejs-tooltip>
+          </ng-template>
+        </e-column>
+        <e-column field='lines' headerText='Line' width='170' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Line' | translate }}
+          </ng-template>
+          <ng-template #template let-data>
+            {{data.lines.join(', ')}}
+          </ng-template>
+        </e-column>
+        <e-column field='deliveredActual' headerText='Delivered/Actual' width='170' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Delivered/Actual' | translate }}
+          </ng-template>
+        </e-column>
+        <e-column field='standardConsumption' headerText='Std. Con.' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Std. Con.' | translate }}
+          </ng-template>
+          <ng-template #template let-data>
+            {{data.standardConsumption}}kg
+          </ng-template>
+        </e-column>
+        <e-column field='status' headerText='Status' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Status' | translate }}
+          </ng-template>
+          <ng-template #template let-data>
+            {{data.status + '' | translate }}
+          </ng-template>
+        </e-column>
+        <e-column field='estimatedTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Time' width='160'
+          textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Estimated Time' | translate }}
+          </ng-template>
+        </e-column>
+        <e-column field='option' headerText='Option' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Option' | translate }}
+          </ng-template>
+          <ng-template #template let-data>
+            <div class="btn-group-vertical">
+              <button type="button"
+                [routerLink]="['/ec/execution/todolist-2/mixing/' + data.glueID + '/' + data.estimatedTime]"
+                class="btn btn-sm btn-success my-2">
+                <i class="fa fa-glass"></i>
+                {{ 'MIXING' | translate }}
+              </button>
+              <button type="button" [routerLink]="['/ec/execution/todolist-2/stir/' + data.glue ]"
+                class="btn btn-sm btn-warning mb-2">
+                <i class="fa fa-fan"></i>
+                {{ 'STIR' | translate }}
+              </button>
+              <button type="button" (click)='openDispatchModal(data)' class="btn btn-sm btn-info mb-2">
+              <i class="fas fa-balance-scale"></i>
+                {{ 'Dispatch' | translate }}
+              </button>
+              <button type="button" (click)='openPrintModal(data)' class="btn btn-sm btn-secondary mb-2">
+                <i class="fa fa-print"></i>
+                {{ 'Print' | translate }}
+              </button>
+            </div>
+          </ng-template>
+        </e-column>
+      </e-columns>
+    </ejs-grid>
+
+    <ejs-grid #gridDone *ngIf="isShowTodolistDone" [dataSource]='doneData' [searchSettings]="searchSettings" showColumnMenu='true'
+      [allowExcelExport]='true' allowPaging='true' allowSorting='true' allowResizing='true' gridLines='Both'
+      (actionBegin)="actionBegin($event)" (actionComplete)="actionComplete($event)"
+      (toolbarClick)='toolbarClick($event)' (dataBound)='dataBound()' [toolbar]='toolbarOptions'
+      [sortSettings]="sortSettings" [pageSettings]='pageSettings' (recordDoubleClick)='onDoubleClick($event)'>
+      <e-columns>
+        <e-column field='supplier' headerText='Supplier' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Supplier' | translate }}
+          </ng-template>
+        </e-column>
+        <e-column field='glue' headerText='Glue' width='170' textAlign='Center'>
+              <ng-template #headerTemplate>
+                {{ 'Glue' | translate }}
+              </ng-template>
+              <ng-template #template let-data>
+                <ejs-tooltip #tooltip class="fix-css" position='RightCenter' (beforeRender)="onBeforeRender($event, data, data.index)"
+                  content="loading...">
+                  {{data.glue}}
+                </ejs-tooltip>
+              </ng-template>
+        </e-column>
+        <e-column field='lines' headerText='Line' width='170' textAlign='Center'>
+              <ng-template #headerTemplate>
+                {{ 'Line' | translate }}
+              </ng-template>
+          <ng-template #template let-data>
+            {{data.lines.join(', ')}}
+          </ng-template>
+        </e-column>
+        <e-column field='deliveredActual' headerText='Delivered/Actual' width='170' textAlign='Center'>
+              <ng-template #headerTemplate>
+                {{ 'Delivered/Actual' | translate }}
+              </ng-template>
+        </e-column>
+        <e-column field='standardConsumption' headerText='Std. Con.' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Std. Con.' | translate }}
+          </ng-template>
+          <ng-template #template let-data>
+            {{data.standardConsumption}}kg
+          </ng-template>
+        </e-column>
+        <e-column field='status' headerText='Status' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Status' | translate }}
+          </ng-template>
+          <ng-template #template let-data>
+            {{data.status + '' | translate }}
+          </ng-template>
+        </e-column>
+        <e-column field='estimatedTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Time' width='160'
+          textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Estimated Time' | translate }}
+          </ng-template>
+        </e-column>
+        <e-column field='estimatedStartTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Start Time'
+          width='160' textAlign='Center'>
+            <ng-template #headerTemplate>
+              {{ 'Estimated Start Time' | translate }}
+            </ng-template>
+        </e-column>
+        <e-column field='estimatedFinishTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Finish Time'
+          width='160' textAlign='Center'>
+          <ng-template #headerTemplate>
+            {{ 'Estimated Finish Time' | translate }}
+          </ng-template>
+        </e-column>
+      </e-columns>
+    </ejs-grid>
+  </div>
+</div>
