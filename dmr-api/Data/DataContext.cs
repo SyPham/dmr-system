@@ -10,6 +10,7 @@ namespace DMR_API.Data
         public DbSet<User> Users { get; set; }
         public DbSet<GlueIngredient> GlueIngredient { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<GlueType> GlueTypes { get; set; }
 
         public DbSet<Glue> Glues { get; set; }
         public DbSet<Supplier> Supplier { get; set; }
@@ -37,6 +38,7 @@ namespace DMR_API.Data
         public DbSet<Part> Parts { get; set; }
         public DbSet<Material> Materials { get; set; }
         public DbSet<MixingInfo> MixingInfos { get; set; }
+        public DbSet<MixingInfoDetail> MixingInfoDetails { get; set; }
         public DbSet<BuildingGlue> BuildingGlues { get; set; }
         public DbSet<IngredientInfo> IngredientsInfos { get; set; }
         public DbSet<IngredientInfoReport> IngredientInfoReports { get; set; }
@@ -47,6 +49,9 @@ namespace DMR_API.Data
         public DbSet<ScaleMachine> ScaleMachines { get; set; }
         public DbSet<LunchTime> LunchTime { get; set; }
         public DbSet<Dispatch> Dispatches { get; set; }
+        public DbSet<ToDoList> ToDoList { get; set; }
+        public DbSet<GlueName> GlueName { get; set; }
+        public DbSet<Station> Stations { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<BPFCEstablish>().HasKey(x => x.ID);

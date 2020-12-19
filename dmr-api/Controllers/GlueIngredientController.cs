@@ -91,6 +91,19 @@ namespace DMR_API.Controllers
             }
             //throw new Exception("Creating the brand failed on save");
         }
+        [HttpPost("MapGlueIngredientByGlueID")]
+        public IActionResult MapGlueIngredientWithGlueID(GlueIngredientParams glueIngredients)
+        {
+            if ( _glueIngredientService.MapGlueIngredientByGlueID(glueIngredients))
+            {
+                return NoContent();
+            }
+            else
+            {
+                return NoContent();
+            }
+            //throw new Exception("Creating the brand failed on save");
+        }
         [HttpPost("MapGlueIngredients")]
         public async Task<IActionResult> MapGlueIngredients(List<GlueIngredient> glueIngredients)
         {

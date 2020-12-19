@@ -3,8 +3,7 @@
     <div class="col-md-12 ">
         <div class="card">
            <div class="card-body table-responsive p-0">
-                <div class="row my-3" *ngIf="!hasWorker">
-                    <div class="col-md-12">
+                <div class="row my-3">
                         <div class="col-md-8">
                             <div class="row">
                                 <div class="col-md-1">
@@ -23,8 +22,6 @@
                                 </div>
                             </div>
                         </div>
-
-                    </div>
                 </div>
             <ejs-grid #grid
                     [dataSource]='data'
@@ -38,14 +35,17 @@
                     (actionBegin)="actionBegin($event)"
                     (actionComplete)="actionComplete($event)"
                     (rowSelected)="rowSelected($event)"
+                    (rowDataBound)="rowDataBound($event)"
+                    (queryCellInfo)='tooltip($event)'
                     [toolbar]='toolbarOptions'
+                    [selectionSettings]="selectOptions"
                     [sortSettings]="sortSettings"
                      (toolbarClick)='toolbarClick($event)'
                     [pageSettings]='pageSettings'
                     (recordDoubleClick)='onDoubleClick($event)'
                     [editSettings]='editSettings'>
                     <e-columns>
-                        <e-column type='checkbox' width='40'></e-column>
+                        <e-column type='checkbox' width='50'></e-column>
                         <e-column field='buildingName' headerText='Line' width='100' textAlign='Center' >
                             <ng-template #headerTemplate let-data>
                                 {{'LINE_LABEL' | translate}}
@@ -81,22 +81,47 @@
                               </ejs-dropdownlist>
                             </ng-template>
                             <ng-template let-data #template>
-                              <ejs-tooltip [content]="tooltip(data.glues)">
                                 {{data.bpfcName || '#N/A'}}
-                              </ejs-tooltip>
+                              <!-- <ejs-tooltip [content]="tooltip(data.glues)">
+                                {{data.bpfcName || '#N/A'}}
+                              </ejs-tooltip> -->
                             </ng-template>
                         </e-column>
-                        <e-column field='workingHour' headerText='Working Hours' width='150' textAlign='Center' >
+                        <!-- <e-column field='workingHour' headerText='Working Hours' width='150' textAlign='Center' >
                         <ng-template #headerTemplate let-data>
                             {{'WORKING_HOUR_LABEL' | translate}}
                         </ng-template>
+                        </e-column> -->
+                        <e-column field='startTime' type='date' headerText='Start Working Time' width='150' textAlign='Center'>
+                            <ng-template #headerTemplate let-data>
+                                {{'Start Time' | translate}}
+                            </ng-template>
+                            <ng-template #template let-data>
+                                {{data.startWorkingTime | date: 'HH:mm'}}
+                            </ng-template>
+                            <ng-template #editTemplate let-data>
+                                <kendo-timepicker style="width: 120px;" (valueChange)="onChangeStartTime($event)" [(ngModel)]="modalPlan.startWorkingTime" [format]="'HH:mm'"></kendo-timepicker>
+                            </ng-template>
                         </e-column>
-                        <e-column field='hourlyOutput' headerText='Hourly Output' width='170' textAlign='Center' >
+                        
+                        <e-column field='endTime' type='date' headerText='Finish Working Time' width='150' textAlign='Center'>
+                            <ng-template #headerTemplate let-data>
+                                {{'End Time' | translate}}
+                            </ng-template>
+                            <ng-template #template let-data>
+                                {{data.finishWorkingTime | date: 'HH:mm'}}
+                            </ng-template>
+                            <ng-template #editTemplate let-data>
+                                <kendo-timepicker style="width: 120px;" (valueChange)="onChangeEndTime($event)" [(ngModel)]="modalPlan.finishWorkingTime" [format]="'HH:mm'"></kendo-timepicker>
+                            </ng-template>
+                        </e-column>
+
+                        <e-column field='hourlyOutput' headerText='Hourly Output' width='150' textAlign='Center' >
                         <ng-template #headerTemplate let-data>
                             {{'HOURLY_OUTPUT_LABEL' | translate}}
                         </ng-template>
                         </e-column>
-                        <e-column field='dueDate' type='date' format='dd MMM, yyyy' headerText='Due Date' width='160' textAlign='Center' >
+                        <e-column field='dueDate' type='date' format='MM-dd-yyyy' headerText='Due Date' width='160' textAlign='Center' >
                             <ng-template #headerTemplate let-data>
                                 {{'DUE_DATE_LABEL' | translate}}
                             </ng-template>
@@ -104,19 +129,52 @@
                                 <ejs-datepicker
                                 [value]='data.dueDate'
                                 (change)='onChangeDueDateEdit($event)'
-                                format='dd MMM, yyyy'></ejs-datepicker>
+                                format='MM-dd-yyyy'></ejs-datepicker>
                             </ng-template>
                         </e-column>
-                        <e-column field='createdDate' type='date' format='dd MMM, yyyy HH:mm' headerText='Created Date' width='200' textAlign='Center'>
+                           <e-column field='isGenerate' headerText='Status' width='110' textAlign='Center' >
+                            <ng-template #headerTemplate let-data>
+                                {{'Status' | translate}}
+                            </ng-template>
+                            <ng-template #editTemplate let-data>
+                                N/A
+                            </ng-template>
+                            <ng-template #template let-data>
+                                <span *ngIf="data.isGenerate">
+                                    <i class="fa fa-check" style="color: green"></i>
+                                </span>
+                                <span *ngIf="!data.isGenerate">
+                                    <i class="fa fa-times" style="color: red"></i>
+                                </span>
+                            </ng-template>
+                        </e-column>
+                        <e-column field='createdDate' type='date' format='MM-dd-yyyy HH:mm' headerText='Created Date' width='180' textAlign='Center'>
                         <ng-template #headerTemplate let-data>
                             {{'CREATED_DATE_LABEL' | translate}}
                         </ng-template>
                         <ng-template #editTemplate let-data>
-                            {{ data.createdDate | date: 'dd MMM, yyyy HH:mm'}}
+                            {{ data.createdDate | date: 'MM-dd-yyyy HH:mm'}}
                         </ng-template>
                         <ng-template #template let-data>
-                            {{data.createdDate | date: 'dd MMM, yyyy HH:mm'}}
+                            {{data.createdDate | date: 'MM-dd-yyyy HH:mm'}}
                         </ng-template>
+                        </e-column>
+                        <e-column field='option' textAlign='Center' headerText='Option' width='120'>
+                            <ng-template #headerTemplate>
+                                {{ 'OPTION' | translate }}
+                            </ng-template>
+                            <ng-template #template let-data>
+                                <div class="btn-group">
+                                    <button type="button" (click)="openStationComponent(data)"
+                                    class="btn btn-xs btn-primary"> <i class="fa fa-charging-station"></i> </button>
+                                </div>
+                                <div class="btn-group ml-1" *ngIf="data.isGenerate == false">
+                                    <button type="button" (click)="delete(data.id)" class="btn btn-xs btn-danger"><i class="fa fa-trash"></i> </button>
+                                </div>
+                            </ng-template>
+                            <ng-template #editTemplate let-data>
+                               Option
+                            </ng-template>
                         </e-column>
                     </e-columns>
             </ejs-grid>
@@ -141,7 +199,7 @@
                 <div class="form-group">
                     <label for="Name">DueDate</label>
                     <span style="color:red">(*)</span>
-                    <ejs-datepicker [value]='date' (change)='onChangeDueDateClone($event)' format='dd MMM, yyyy'></ejs-datepicker>
+                    <ejs-datepicker [value]='date' (change)='onChangeDueDateClone($event)' format='MM-dd-yyyy'></ejs-datepicker>
                 </div>
             </div>
 

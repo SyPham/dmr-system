@@ -10,6 +10,7 @@ using DMR_API._Services.Interface;
 using DMR_API.DTO;
 using DMR_API.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Transactions;
 
 namespace DMR_API._Services.Services
 {
@@ -19,13 +20,15 @@ namespace DMR_API._Services.Services
         private readonly ISupplierRepository _repoSup;
         private readonly IIngredientRepository _repoIngredient;
         private readonly IGlueIngredientRepository _repoGlueIngredient;
+        private readonly IGlueNameRepository _repoGlueName;
         private readonly IMapper _mapper;
         private readonly MapperConfiguration _configMapper;
-        public GlueIngredientService(IIngredientRepository repoIngredient, 
-            ISupplierRepository repoSup, 
-            IGlueIngredientRepository repoGlueIngredient, 
-            IGlueRepository repoGlue, 
-            IMapper mapper, 
+        public GlueIngredientService(IIngredientRepository repoIngredient,
+            ISupplierRepository repoSup,
+            IGlueIngredientRepository repoGlueIngredient,
+            IGlueNameRepository repoGlueName,
+            IGlueRepository repoGlue,
+            IMapper mapper,
             MapperConfiguration configMapper)
         {
             _configMapper = configMapper;
@@ -34,7 +37,7 @@ namespace DMR_API._Services.Services
             _repoGlue = repoGlue;
             _repoSup = repoSup;
             _repoGlueIngredient = repoGlueIngredient;
-
+            _repoGlueName = repoGlueName;
         }
 
         public async Task<bool> Delete(int glueid, int ingredientid)
@@ -226,7 +229,7 @@ namespace DMR_API._Services.Services
         public async Task<bool> MapGlueIngredient(List<GlueIngredient> glueIngredients)
         {
             bool flag = false;
-            if (glueIngredients.Any(x=> x.Position.IsNullOrEmpty()))
+            if (glueIngredients.Any(x => x.Position.IsNullOrEmpty()))
             {
                 return false;
             }
@@ -238,10 +241,10 @@ namespace DMR_API._Services.Services
                     _repoGlueIngredient.Add(glueIngredient);
                     try
                     {
-                     await _repoGlueIngredient.SaveAll();
+                        await _repoGlueIngredient.SaveAll();
                         flag = true;
                     }
-                    catch 
+                    catch
                     {
                         flag = false;
                     }
@@ -263,6 +266,78 @@ namespace DMR_API._Services.Services
                 }
             }
             return flag;
+        }
+
+        public bool MapGlueIngredientByGlueID(GlueIngredientParams model)
+        {
+            var glueID = model.GlueID;
+            var glueName = model.GlueName;
+            var glueIngredients = _mapper.Map<List<GlueIngredientForMapDto>, List<GlueIngredient>>(model.GlueIngredientForMapDto);
+
+            using (TransactionScope scope = new TransactionScope())
+            {
+                try
+                {
+                    var glue = _repoGlue.FindAll(x => x.ID == glueID).FirstOrDefault();
+
+                    if (glue is null) return false;
+                    // neu glueName co trong bang glueName roi thi update ID vao bang Glues
+                    var glueNameModal = _repoGlueName.FindAll(x => x.Name == glueName).FirstOrDefault();
+                    if (glueNameModal is null)
+                    {
+                        var glueNameItem = new GlueName { Name = glueName };
+                        // Them Moi glue
+                        _repoGlueName.Add(glueNameItem);
+                        _repoGlueName.Save();
+
+                        glue.ExpiredTime = model.GlueIngredientForMapDto.FirstOrDefault(x => x.Position == "A").ExpiredTime;
+                        glue.GlueNameID = glueNameItem.ID;
+                        glue.Name = glueName;
+                        _repoGlue.Save();
+
+                    }
+                    else
+                    {
+                        // update glueID vao bang Glues
+                        glue.ExpiredTime = model.GlueIngredientForMapDto.FirstOrDefault(x => x.Position == "A").ExpiredTime;
+                        glue.Name = glueName;
+                        glue.GlueNameID = glueNameModal.ID;
+                        _repoGlue.Save();
+                    }
+                    foreach (var glueIngredient in glueIngredients)
+                    {
+                        if (glueIngredient.Position.IsNullOrEmpty())
+                        {
+                            scope.Dispose();
+                            return false;
+                        }
+                        var item = _repoGlueIngredient.FindAll().FirstOrDefault(x => x.GlueID == glueIngredient.GlueID && x.IngredientID == glueIngredient.IngredientID);
+                        if (item == null)
+                        {
+                            glueIngredient.CreatedDate = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss tt");
+                            _repoGlueIngredient.Add(glueIngredient);
+                            _repoGlueIngredient.Save();
+                        }
+                        else
+                        {
+                            item.CreatedDate = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss tt");
+                            item.Percentage = glueIngredient.Percentage;
+                            item.Allow = glueIngredient.Allow;
+                            item.Position = glueIngredient.Position;
+                            _repoGlueIngredient.Save();
+                        }
+
+                    }
+                    scope.Complete();
+                    return true;
+                }
+                catch
+                {
+                    scope.Dispose();
+                    return false;
+                }
+            }
+            throw new NotImplementedException();
         }
     }
 }

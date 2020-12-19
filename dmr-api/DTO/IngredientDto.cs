@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using dmr_api.Models;
 using DMR_API.Helpers;
 
 namespace DMR_API.DTO
@@ -30,6 +31,8 @@ namespace DMR_API.DTO
         public double Real { get; set; }
         public double CBD { get; set; }
         public int DaysToExpiration { get; set; }
+        public int GlueTypeID { get; set; }
+        public GlueType GlueType { get; set; }
 
         public int ExpiredTime { get; set; }
         public int CreateBy { get; set; }

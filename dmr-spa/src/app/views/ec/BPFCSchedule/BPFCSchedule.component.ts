@@ -25,7 +25,6 @@ export class BPFCScheduleComponent implements OnInit {
   editSettings: object;
   toolbar: object;
   file: any;
-
   @ViewChild('grid')
   public gridObj: GridComponent;
   modalReference: NgbModalRef;

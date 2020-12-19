@@ -29,6 +29,9 @@ namespace DMR_API.DTO
         public DateTime EndTime { get; set; }
         public DateTime ExpiredTime { get; set; }
         public DateTime CreatedTime { get; set; }
+
+        public DateTime EstimatedStartTime { get; set; }
+        public DateTime EstimatedFinishTime { get; set; }
     }
  
 }

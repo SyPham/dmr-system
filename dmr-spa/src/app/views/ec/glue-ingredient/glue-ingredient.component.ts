@@ -85,6 +85,7 @@ export class GlueIngredientComponent implements OnInit, AfterViewInit {
     consumption: '',
     expiredTime: 0,
     createdBy: 0,
+    glueNameID: 0,
   };
   ingredient: IIngredient = {
     id: 0,
@@ -102,6 +103,7 @@ export class GlueIngredientComponent implements OnInit, AfterViewInit {
     unit: 0,
     real: 0,
     cbd: 0,
+    glueTypeID: 0,
     replacementFrequency: 0,
     prepareTime: 0
   };
@@ -522,17 +524,17 @@ export class GlueIngredientComponent implements OnInit, AfterViewInit {
     selectedrecords.materialID = selectedrecords.materialID === 0 ? null : selectedrecords.materialID;
     this.selectedRow = this.gridglue.getSelectedRowIndexes();
 
-    this.glueService.update(selectedrecords).subscribe(res => {
-      this.alertify.success('Updated successed!');
-      this.getAllGluesByBPFCID(this.BPFCID);
-      this.getAllBPFC();
-      this.detailGlue = true;
-      this.modified = true;
-    });
+    // this.glueService.update(selectedrecords).subscribe(res => {
+    //   this.alertify.success('Updated successed!');
+    //   this.getAllGluesByBPFCID(this.BPFCID);
+    //   this.getAllBPFC();
+    //   this.detailGlue = true;
+    //   this.modified = true;
+    // });
     if (details.length > 0) {
-      for (const item of details) {
-        this.mapGlueIngredient(item);
-      }
+      // for (const item of details) {
+      //   this.mapGlueIngredient(item);
+      // }
       this.alertify.success('Successfully!');
       this.modified = true;
     }
@@ -664,6 +666,7 @@ export class GlueIngredientComponent implements OnInit, AfterViewInit {
             unit: 0,
             real: 0,
             cbd: 0,
+            glueTypeID: 0,
             replacementFrequency: 0,
             prepareTime: 0
           };
@@ -1131,6 +1134,26 @@ export class GlueIngredientComponent implements OnInit, AfterViewInit {
       }
     });
   }
+  mapGlueIngredientByGlueID(glueIngredient) {
+    this.glueIngredientService.mapGlueIngredientByGlueID(glueIngredient).subscribe(res => {
+      this.alertify.success('Updated successed!');
+      this.getAllGluesByBPFCID(this.BPFCID);
+      this.getAllBPFC();
+      this.detailGlue = true;
+      this.modified = true;
+      if (this.subID === undefined) {
+        this.ingredientID = undefined;
+        this.getAllGluesByBPFCID(this.BPFCID);
+        this.sortBySup(0);
+        this.getDetail(this.glueid);
+      } else {
+        this.sortBySup(this.subID);
+        this.getDetail(this.glueid);
+        this.ingredientID = undefined;
+        this.getAllGluesByBPFCID(this.BPFCID);
+      }
+    });
+  }
 
   delete(glueid, ingredient) {
     this.glueIngredientService.delete(glueid, ingredient).subscribe(res => {
@@ -1231,6 +1254,7 @@ export class GlueIngredientComponent implements OnInit, AfterViewInit {
               materialID: null,
               consumption: '',
               expiredTime: 0,
+              glueNameID: 0,
               createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
             };
             this.glue = glue;
@@ -1253,6 +1277,7 @@ export class GlueIngredientComponent implements OnInit, AfterViewInit {
             materialID: null,
             consumption: '',
             expiredTime: 0,
+            glueNameID: 0,
             createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
           };
           this.glue = glue;

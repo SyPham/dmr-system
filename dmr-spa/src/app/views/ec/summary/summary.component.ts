@@ -389,15 +389,22 @@ export class SummaryComponent implements OnInit, AfterViewInit {
       this.buildings = buildingData.filter(item => item.level === BUILDING_LEVEL);
     });
   }
+  checkUnit(item: IIngredient) {
+
+  }
   // make glue
   findIngredientRealByPosition(position) {
     let real = 0;
     for (const item of this.ingredients) {
       if (item.position === position) {
-        if (item.unit === UNIT_BIG_MACHINE) {
+        if (item.unit === UNIT_BIG_MACHINE && item.position === 'A') {
           real = item.real;
         } else {
-          real = (item.real) / 1000;
+          if (item.unit === UNIT_BIG_MACHINE && item.expected.includes(UNIT_BIG_MACHINE)) {
+            real = item.real;
+          } else if (item.expected.includes(UNIT_SMALL_MACHINE)) {
+            real = (item.real) / 1000;
+          }
         }
         break;
       }

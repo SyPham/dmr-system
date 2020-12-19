@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-namespace EC_API.Data
+namespace DMR_API.Data
 {
     public interface IMongoRepository<TDocument> where TDocument : IDocument
     {

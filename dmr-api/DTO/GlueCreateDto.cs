@@ -22,6 +22,7 @@ namespace DMR_API.DTO
         public int? MaterialID { get; set; }
         public int ExpiredTime { get; set; }
         public int? KindID { get; set; }
+        public int? GlueNameID { get; set; }
         public int? PartID { get; set; }
         public int CreatedBy { get; set; }
         public int IngredientID { get; set; }

@@ -1,0 +1,25 @@
+<div class="modal-header">
+    <h4 class="modal-title">Station</h4>
+    <button type="button" class="close" aria-label="Close" (click)="activeModal.dismiss('Cross click')">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="modal-body p-0">
+    <ejs-grid #grid [dataSource]='data' [allowSelection]='true' [allowSorting]='true' [allowSorting]='true'
+        [toolbar]='toolbarOptions' allowResizing='true' gridLines='Both' [editSettings]='editSettings'
+        (actionBegin)="actionBegin($event)" (actionComplete)="actionComplete($event)"
+        (toolbarClick)='toolbarClick($event)'>
+        <e-columns>
+            <e-column field='glueName' [allowEditing]='false' headerText='Glue' textAlign='Center' width='120'>
+            </e-column>
+            <e-column field='amount' headerText='Station' textAlign='Center' width='100'>
+            </e-column>
+        </e-columns>
+    </ejs-grid>
+    
+</div>
+<div class="modal-footer justify-content-center d-flex">
+    <button type="button" class="btn btn-warning" (click)="activeModal.close('Close click')"><i
+            class="fa fa-remove"></i> Close</button>
+    <button type="button" class="btn btn-success" (click)="confirm()" ><i class="fa fa-check"></i> Confirm</button>
+</div>

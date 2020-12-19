@@ -2,19 +2,16 @@ using DMR_API.DTO;
 using DMR_API.Models;
 using AutoMapper;
 using System;
+using System.Linq;
 
 namespace DMR_API.Helpers.AutoMapper
 {
     public class DtoToEfMappingProfile : Profile
     {
-        private string TotalReal(MixingInfo real)
-        {
-            double realTotal = 0;
-            realTotal = real.ChemicalA.ToDouble() + real.ChemicalB.ToDouble() + real.ChemicalC.ToDouble() + real.ChemicalD.ToDouble() + real.ChemicalE.ToDouble();
-            return realTotal.ToString();
-        }
         public DtoToEfMappingProfile()
         {
+            var ct = DateTime.Now;
+
             CreateMap<UserForDetailDto, User>();
             CreateMap<GlueDto, Glue>();
             CreateMap<GlueCreateDto, Glue>();
@@ -22,15 +19,22 @@ namespace DMR_API.Helpers.AutoMapper
             CreateMap<IngredientDto, Ingredient>()
             .ForMember(d => d.VOC, o => o.MapFrom(x => x.VOC.ToDouble().ToSafetyString()))
             .ForMember(d => d.Unit, o => o.MapFrom(x => x.Unit.ToDouble().ToSafetyString()))
-            .ForMember(d => d.Supplier, o => o.Ignore());
+            .ForMember(d => d.Supplier, o => o.Ignore())
+            .ForMember(d => d.GlueType, o => o.Ignore());
             CreateMap<IngredientForImportExcelDto, Ingredient>();
             CreateMap<IngredientDto1, Ingredient>()
             .ForMember(d => d.VOC, o => o.MapFrom(x => x.VOC.ToDouble().ToSafetyString()))
+            .ForMember(d => d.GlueType, o => o.Ignore())
+            .ForMember(d => d.Supplier, o => o.Ignore())
             .ForMember(d => d.Unit, o => o.MapFrom(x => x.Unit.ToDouble().ToSafetyString()));
 
             CreateMap<LineDto, Line>();
+            CreateMap<GlueIngredientForMapDto, GlueIngredient>();
             CreateMap<ModelNameDto, ModelName>();
-            CreateMap<PlanDto, Plan>();
+            CreateMap<PlanDto, Plan>()
+            .ForMember(d => d.StartWorkingTime, o => o.MapFrom(x => new DateTime(ct.Year, ct.Month, ct.Day, x.StartTime.Hour, x.StartTime.Minute, 0)))
+            .ForMember(d => d.FinishWorkingTime, o => o.MapFrom(x => new DateTime(ct.Year, ct.Month, ct.Day, x.EndTime.Hour, x.EndTime.Minute, 0)));
+            CreateMap<StationDto, Station>();
 
             CreateMap<MapModelDto, MapModel>();
             CreateMap<ModelNoDto, ModelNo>();
@@ -50,15 +54,18 @@ namespace DMR_API.Helpers.AutoMapper
             CreateMap<PartDto, Part>();
             CreateMap<RoleDto, Role>();
             CreateMap<MaterialDto, Material>();
+            CreateMap<ToDoListDto, ToDoList>();
             CreateMap<MixingInfoDto, MixingInfo>();
             CreateMap<MixingInfo, MixingInfoForCreateDto>();
             CreateMap<BuildingGlue, BuildingGlueForCreateDto>().ForMember(d => d.Qty, o => o.MapFrom(a => a.Qty.ToDouble().ToSafetyString()));
             CreateMap<IngredientInfo, IngredientInfoDto>();
             CreateMap<IngredientInfoReport, IngredientInfoReportDto>();
-            CreateMap<Setting, SettingDTO>();
-            CreateMap<Stir, StirDTO>();
+            CreateMap<SettingDTO, Setting>();
+            CreateMap<MixingInfoDetail, MixingInfoDetailForAddDto>();
+            CreateMap<StirDTO, Stir>();
             CreateMap<Plan, PlanForCloneDto>();
             CreateMap<ScaleMachine, ScaleMachineDto>();
+
             //CreateMap<AuditTypeDto, MES_Audit_Type_M>();
         }
     }

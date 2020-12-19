@@ -6,6 +6,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { IIngredient } from '../_model/Ingredient';
 import { PaginatedResult } from '../_model/pagination';
+import { IGlueType } from '../_model/glue-type';
 const httpOptions = {
   headers: new HttpHeaders({
     'Content-Type': 'application/json',
@@ -68,6 +69,9 @@ export class IngredientService {
   }
   getAllIngredient() {
     return this.http.get<IIngredient[]>(this.baseUrl + 'ingredient/GetAll', {});
+  }
+  getAllGlueType() {
+    return this.http.get<IGlueType[]>(this.baseUrl + 'ingredient/GetAllGlueType', {});
   }
   getByID(Id) {
     return this.http.get<IIngredient>(this.baseUrl + 'ingredient/GetbyID/' + Id, {});

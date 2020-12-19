@@ -1,6 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { IIngredient } from 'src/app/_core/_model/Ingredient';
+import { IGlueType } from 'src/app/_core/_model/glue-type';
+import {  IIngredient } from 'src/app/_core/_model/Ingredient';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { IngredientService } from 'src/app/_core/_service/ingredient.service';
 
@@ -10,6 +11,7 @@ import { IngredientService } from 'src/app/_core/_service/ingredient.service';
   styleUrls: ['./ingredient-modal.component.scss']
 })
 export class IngredientModalComponent implements OnInit {
+  fields: object = { text: 'title', value: 'id' };
   @Input() title: '';
   @Input() ingredient: IIngredient = {
     id: 0,
@@ -27,6 +29,7 @@ export class IngredientModalComponent implements OnInit {
     unit: 0,
     real: 0,
     cbd: 0,
+    glueTypeID: 0,
     replacementFrequency: 0,
     prepareTime: 0
   };
@@ -34,6 +37,8 @@ export class IngredientModalComponent implements OnInit {
   public fieldsGlue: object = { text: 'name', value: 'id' };
   public textGlue = 'Select Supplier name';
   showBarCode: boolean;
+  glueTypeData: IGlueType[];
+  glueTypeID: number;
   constructor(
     public activeModal: NgbActiveModal,
     private alertify: AlertifyService,
@@ -47,9 +52,20 @@ export class IngredientModalComponent implements OnInit {
     } else {
       this.showBarCode = true;
     }
+    this.getAllGlueType();
     this.getSupllier();
   }
+  getAllGlueType() {
+    this.ingredientService.getAllGlueType().subscribe(res => {
+      this.glueTypeData = res.filter(item => item.level === 2);
+    });
+  }
+  onSelectGlueType(args: any): void {
+    this.ingredient.glueTypeID = +args.itemData.id;
+  }
   create() {
+    // tslint:disable-next-line:no-string-literal
+    delete this.ingredient['glueType'];
     this.ingredientService.create(this.ingredient).subscribe( () => {
       this.alertify.success('Created successed!');
       this.activeModal.dismiss();
@@ -62,6 +78,8 @@ export class IngredientModalComponent implements OnInit {
   }
 
   update() {
+    // tslint:disable-next-line:no-string-literal
+    delete this.ingredient['glueType'];
     this.ingredientService.update(this.ingredient).subscribe( res => {
       this.alertify.success('Updated successed!');
       this.activeModal.dismiss();
@@ -72,7 +90,9 @@ export class IngredientModalComponent implements OnInit {
   onChangeSup(args) {
     this.ingredient.supplierID = args.value;
   }
-
+  onChangeGlueType(args) {
+    this.ingredient.glueTypeID = +args.value;
+  }
   save() {
     if (this.ingredient.id === 0) {
       if (this.ingredient.code === '') {

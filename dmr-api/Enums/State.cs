@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace EC_API.Enums
+namespace DMR_API.Enums
 {
     public enum State
     {

@@ -1,7 +1,6 @@
 ﻿using DMR_API.DTO;
 using DMR_API.Models;
-using EC_API.DTO;
-using EC_API.Enums;
+using DMR_API.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,15 +31,17 @@ namespace DMR_API._Services.Interface
         Task<bool> EditDelivered(int id, string qty );
         Task<bool> EditQuantity(int id, int qty );
         Task<bool> DeleteDelivered(int id);
-        Task<object> OldSummary(int building);
         Task<List<ConsumtionDto>> ConsumptionByLineCase1(ReportParams reportParams);
         Task<List<ConsumtionDto>> ConsumptionByLineCase2(ReportParams reportParams);
-        Task<object> Todolist2(int buildingID);
         Task<List<TodolistDto>> CheckTodolistAllBuilding();
-        Task<object> Todolist2ByDone(int buildingID);
         Task<object> Dispatch(DispatchParams todolistDto);
         Task<MixingInfo> Print(DispatchParams todolistDto);
+        MixingInfo PrintGlue(int mixingÌnoID);
         Task<object> Finish(int mixingÌnoID);
 
+        Task<bool> DeletePlan(int id);
+        Task<bool> CheckExistTimeRange(int lineID, DateTime statTime, DateTime endTime, DateTime dueDate);
+        Task<bool> CheckDuplicate(int lineID, int BPFCEstablishID, DateTime dueDate);
+        bool DeleteRangePlan(List<int> plans);
     }
 }

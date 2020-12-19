@@ -13,16 +13,16 @@ namespace DMR_API.Controllers
     [Route("api/[controller]/[action]")]
     public class RoleController : ControllerBase
     {
-        private readonly IRoleService _RoleService;
+        private readonly IRoleService _roleService;
         public RoleController(IRoleService RoleService)
         {
-            _RoleService = RoleService;
+            _roleService = RoleService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var role = await _RoleService.GetAllAsync();
+            var role = await _roleService.GetAllAsync();
             return Ok(role);
         }
      

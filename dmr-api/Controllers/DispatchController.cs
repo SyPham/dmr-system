@@ -2,7 +2,6 @@
 using DMR_API._Services.Interface;
 using DMR_API.DTO;
 using DMR_API.Helpers;
-using EC_API._Services.Interface;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -32,6 +31,12 @@ namespace DMR_API.Controllers
         {
             var res = await _dispatchService.Add(dispatch);
             return Ok(res);
+        }
+        [HttpPost]
+        public IActionResult Dispatch([FromBody] List<Dispatch> dispatch)
+        {
+            var batchs = _dispatchService.AddDispatchingRange(dispatch);
+            return Ok(batchs);
         }
         [HttpPut]
         public async Task<IActionResult> Update(Dispatch dispatch)

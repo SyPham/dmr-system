@@ -31,6 +31,7 @@ export class GlueComponent implements OnInit {
     BPFCEstablishID: 0,
     consumption: '',
     expiredTime: 0,
+    glueNameID: 0,
     createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
   };
   show: boolean;

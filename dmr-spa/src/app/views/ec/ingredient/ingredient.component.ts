@@ -6,13 +6,14 @@ import { IngredientModalComponent } from './ingredient-modal/ingredient-modal.co
 import { Pagination, PaginatedResult } from 'src/app/_core/_model/pagination';
 import { IngredientService } from 'src/app/_core/_service/ingredient.service';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
-import { IIngredient } from 'src/app/_core/_model/Ingredient';
+import { IGlueType, IIngredient } from 'src/app/_core/_model/Ingredient';
 import { ModalNameService } from 'src/app/_core/_service/modal-name.service';
 import { environment } from '../../../../environments/environment';
 import { QRCodeGenerator, DisplayTextModel } from '@syncfusion/ej2-angular-barcode-generator';
 import { ExcelExportProperties, Column, ColumnModel, GridComponent, RowDataBoundEventArgs, RowDDService } from '@syncfusion/ej2-angular-grids';
 import { DatePipe } from '@angular/common';
 import { DataManager } from '@syncfusion/ej2-data';
+import { Tooltip } from '@syncfusion/ej2-angular-popups';
 declare let $: any;
 const CURRENT_DATE = new Date();
 @Component({
@@ -22,6 +23,7 @@ const CURRENT_DATE = new Date();
   providers: [DatePipe, RowDDService]
 })
 export class IngredientComponent implements OnInit, AfterViewInit {
+
   editSettings = { showDeleteConfirmDialog: false, allowEditing: true, mode: 'Normal' };
   pageSettings = { pageCount: 20, pageSizes: true, currentPage: 1, pageSize: 20 };
   data: any;
@@ -32,6 +34,7 @@ export class IngredientComponent implements OnInit, AfterViewInit {
   defaultDate = new Date(null);
   currentDate = new Date();
   srcDropOptions = { targetID: 'DestGrid' };
+  glueTypeData: IGlueType[] = [];
   public displayTextMethod: DisplayTextModel = {
     visibility: false
   };
@@ -58,6 +61,7 @@ export class IngredientComponent implements OnInit, AfterViewInit {
     unit: 0,
     real: 0,
     cbd: 0,
+    glueTypeID: 0,
     replacementFrequency: 0,
     prepareTime: 0
   };
@@ -133,6 +137,7 @@ export class IngredientComponent implements OnInit, AfterViewInit {
           unit: 0,
           real: 0,
           cbd: 0,
+          glueTypeID: 0,
           replacementFrequency: 0,
           prepareTime: 0
         };
@@ -446,6 +451,22 @@ export class IngredientComponent implements OnInit, AfterViewInit {
       }
     }
   }
+  headerCellInfo(args) {
+    if ('replacementFrequency' === args.cell.column.field) {
+      const toolcontent = 'Replacement Frequency (hours)';
+      const tooltip: Tooltip = new Tooltip({
+        content: toolcontent
+      });
+      tooltip.appendTo(args.node);
+    }
+    if ('prepareTime' === args.cell.column.field) {
+      const toolcontent = 'Prepare Time (minutes)';
+      const tooltip: Tooltip = new Tooltip({
+        content: toolcontent
+      });
+      tooltip.appendTo(args.node);
+    }
+  }
   updateProductionDate(id, productionDate) {
     for (const key in this.dataPrint) {
       if (this.dataPrint[key].id === id) {
@@ -510,6 +531,8 @@ export class IngredientComponent implements OnInit, AfterViewInit {
             unit: item.unit,
             real: item.real,
             cbd: item.cbd,
+            glueTypeID: item.glueType === null ? 0 : item.glueType?.id,
+            glueType: item.glueType === null ? '' : item.glueType?.title,
             replacementFrequency: item.replacementFrequency,
             prepareTime: item.prepareTime,
             createdDate: new Date(item.createdDate),
@@ -573,7 +596,6 @@ export class IngredientComponent implements OnInit, AfterViewInit {
       this.data = res;
     });
   }
-
   delete(ingredient: IIngredient) {
     this.alertify.confirm('Delete Ingredient', 'Are you sure you want to delete this IngredientID "' + ingredient.id + '" ?', () => {
       this.ingredientService.delete(ingredient.id).subscribe(() => {
@@ -603,17 +625,17 @@ export class IngredientComponent implements OnInit, AfterViewInit {
     }
   }
   openIngredientModalComponent() {
-    const modalRef = this.modalService.open(IngredientModalComponent, { size: 'md' });
+    const modalRef = this.modalService.open(IngredientModalComponent, { size: 'xl' });
     modalRef.componentInstance.ingredient = this.ingredient;
-    modalRef.componentInstance.title = 'Add Ingredient';
+    modalRef.componentInstance.title = 'Add Chemical';
     modalRef.result.then((result) => {
     }, (reason) => {
     });
   }
   openIngredientEditModalComponent(item) {
-    const modalRef = this.modalService.open(IngredientModalComponent, { size: 'md' });
+    const modalRef = this.modalService.open(IngredientModalComponent, { size: 'xl' });
     modalRef.componentInstance.ingredient = item;
-    modalRef.componentInstance.title = 'Edit Ingredient';
+    modalRef.componentInstance.title = 'Edit Chemical';
     modalRef.result.then((result) => {
     }, (reason) => {
     });

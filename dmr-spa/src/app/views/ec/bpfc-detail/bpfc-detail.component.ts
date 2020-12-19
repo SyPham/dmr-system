@@ -99,6 +99,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     consumption: '',
     expiredTime: 0,
     createdBy: 0,
+    glueNameID: 0,
   };
   ingredient = {
     id: 0,
@@ -1361,6 +1362,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
                 partID: null,
                 materialID: null,
                 consumption: '',
+                glueNameID: 0,
                 expiredTime: 0,
                 createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
               };
@@ -1383,6 +1385,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
             partID: null,
             materialID: null,
             consumption: '',
+            glueNameID: 0,
             expiredTime: 0,
             createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
           };

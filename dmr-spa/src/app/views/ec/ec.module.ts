@@ -59,7 +59,6 @@ import { DeliveredHistoryComponent } from './delivered-history/delivered-history
 import { SearchComponent } from './search/search.component';
 import { AbnormalListComponent } from './abnormal-list/abnormal-list.component';
 import { StirComponent } from './stir/stir.component';
-import { TimePickerModule } from '@syncfusion/ej2-angular-calendars';
 import { DateTimePickerModule } from '@syncfusion/ej2-angular-calendars';
 import { Ng2SearchPipeModule } from 'ng2-search-filter';
 import { SelectQrCodeDirective } from './select.qrcode.directive';
@@ -69,7 +68,6 @@ import { PlanOutputQuantityComponent } from './plan-output-quantity/plan-output-
 import { DatePipe } from '@angular/common';
 import { CostingComponent } from './costing/costing.component';
 import { ConsumptionComponent } from './consumption/consumption.component';
-import { TreeGridModule } from '@syncfusion/ej2-angular-treegrid';
 import { GridAllModule, GridModule } from '@syncfusion/ej2-angular-grids';
 import { ScalingSettingComponent } from './scaling-setting/scaling-setting.component';
 import { Consumption1Component } from './consumption-1/consumption-1.component';
@@ -81,6 +79,14 @@ import { DispatchComponent } from './dispatch/dispatch.component';
 import { PrintGlueComponent } from './print-glue/print-glue.component';
 import { BpfcDetailComponent } from './bpfc-detail/bpfc-detail.component';
 import { Bpfc1Component } from './bpfc-1/bpfc-1.component';
+import { ToolbarModule } from '@syncfusion/ej2-angular-navigations';
+import { AutoSelectDispatchDirective } from './select.dispatch.directive';
+import { GlueTypeComponent } from './glue-type/glue-type.component';
+import { GlueTypeModalComponent } from './glue-type/glue-type-modal/glue-type-modal.component';
+import { TreeGridAllModule } from '@syncfusion/ej2-angular-treegrid/';
+import { StationComponent } from './plan/station/station.component';
+import { CountdownModule } from 'ngx-countdown';
+import { TimePickerModule } from '@progress/kendo-angular-dateinputs';
 declare var require: any;
 let defaultLang: string;
 const lang = localStorage.getItem('lang');
@@ -125,13 +131,15 @@ if (lang === 'vi') {
     SwitchModule,
     MaskedTextBoxModule,
     DatePickerModule,
-    TreeGridModule,
+    TreeGridAllModule,
     GridAllModule,
     RadioButtonModule,
     TooltipModule,
     TimePickerModule,
     Ng2SearchPipeModule,
     DateTimePickerModule,
+    CountdownModule,
+    ToolbarModule,
     TranslateModule.forChild({
       loader: {
         provide: TranslateLoader,
@@ -170,6 +178,7 @@ if (lang === 'vi') {
     AutofocusDirective,
     SelectTextDirective,
     AutoSelectDirective,
+    AutoSelectDispatchDirective,
     SearchDirective,
     GlueHistoryComponent,
     InventoryComponent,
@@ -189,7 +198,10 @@ if (lang === 'vi') {
     DispatchComponent,
     PrintGlueComponent,
     BpfcDetailComponent,
-    Bpfc1Component
+    Bpfc1Component,
+    GlueTypeModalComponent,
+    GlueTypeComponent,
+    StationComponent
   ]
 })
 export class ECModule {

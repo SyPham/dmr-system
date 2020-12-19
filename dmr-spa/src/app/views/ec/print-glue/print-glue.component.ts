@@ -2,9 +2,11 @@ import { DatePipe } from '@angular/common';
 import { Component, Input, OnInit } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { DisplayTextModel } from '@syncfusion/ej2-angular-barcode-generator';
-import { DispatchParams, IMixingInfo, Todolist } from 'src/app/_core/_model/plan';
+import { IToDoList } from 'src/app/_core/_model/IToDoList';
+import { DispatchParams, IMixingInfo } from 'src/app/_core/_model/plan';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { PlanService } from 'src/app/_core/_service/plan.service';
+import { TodolistService } from 'src/app/_core/_service/todolist.service';
 
 @Component({
   selector: 'app-print-glue',
@@ -18,7 +20,7 @@ export class PrintGlueComponent implements OnInit {
   };
   constructor(
     public activeModal: NgbActiveModal,
-    public planService: PlanService,
+    public todolistService: TodolistService,
     public alertify: AlertifyService,
     private datePipe: DatePipe,
 
@@ -148,9 +150,9 @@ export class PrintGlueComponent implements OnInit {
     this.finish();
   }
   finish() {
-    this.planService.finish(this.data.id).subscribe((data: any) => {
+    this.todolistService.printGlue(this.data.id).subscribe((data: any) => {
       this.alertify.success('success' + data, true);
-      this.planService.setValue(true);
+      this.todolistService.setValue(true);
     });
   }
 }

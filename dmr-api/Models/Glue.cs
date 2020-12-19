@@ -33,6 +33,9 @@ namespace DMR_API.Models
         [ForeignKey("MaterialID")]
         public Material Material { get; set; }
         public BPFCEstablish BPFCEstablish { get; set; }
+        public int? GlueNameID { get; set; }
+        [ForeignKey("GlueNameID")]
+        public GlueName GlueName { get; set; }
         public ICollection<GlueIngredient> GlueIngredients { get; set; }
         public ICollection<MixingInfo> MixingInfos { get; set; }
     }

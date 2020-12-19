@@ -1478,7 +1478,7 @@
             "FilterbarTitle": "\"Thanh lọc tế bào",
             "EmptyDataSourceError": "DataSource không được để trống khi tải ban đầu vì các cột được tạo từ dataSource trong Lưới cột AutoGenerate",
             "Add": "Thêm vào",
-            "Edit": "Biên tập",
+            "Edit": "Cập Nhật",
             "Cancel": "Hủy bỏ",
             "Update": "Cập nhật",
             "Delete": "Xóa bỏ",

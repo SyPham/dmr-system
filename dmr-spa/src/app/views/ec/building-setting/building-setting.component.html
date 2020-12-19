@@ -47,11 +47,17 @@
                         </ng-template>
                         </e-column>
                         <e-column field='machineCode' textAlign='Center' headerText='Machine' width='100'></e-column>
-                        <e-column field='machineType' textAlign='Center' headerText='Machine Type' width='130'></e-column>
-                        <e-column field='minRPM' textAlign='Center' headerText='Min RPM' width='100'>
+                        <!-- <e-column field='glueType.code' textAlign='Center' headerText='Glue Type' width='130'>
+                        <ng-template #editTemplate let-data>
+                            <ejs-dropdownlist #lineDropdownlist [dataSource]='glueTypes' [(ngModel)]="data.glueTypeID" popupHeight='200px'
+                                popupWidth='250px' [allowFiltering]='true' [fields]='fields' (select)='onChangeGlueType($event)'>
+                            </ejs-dropdownlist>
+                        </ng-template>
+                        </e-column> -->
+                        <!-- <e-column field='minRPM' textAlign='Center' headerText='Min RPM' width='100'>
                         <ng-template #template let-data>{{data.minRPM}}</ng-template>
                         </e-column>
-                        <e-column field='maxRPM' textAlign='Center' headerText='Max RPM' width='100'></e-column>
+                        <e-column field='maxRPM' textAlign='Center' headerText='Max RPM' width='100'></e-column> -->
                     </e-columns>
                 </ejs-grid>
             </div>

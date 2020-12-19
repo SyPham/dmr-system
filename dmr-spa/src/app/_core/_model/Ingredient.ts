@@ -16,7 +16,11 @@ export interface IIngredient  {
     cbd: number;
     replacementFrequency: number;
     prepareTime: number;
-
-
-
+    glueTypeID: number;
 }
+export interface IGlueType {
+    id: number;
+    title: string;
+    code: string;
+}
+

@@ -43,14 +43,7 @@ namespace DMR_API._Services.Services
             return await PagedList<PartDto>.CreateAsync(lists, param.PageNumber, param.PageSize);
         }
       
-        //Tìm kiếm Line
-        public async Task<PagedList<PartDto>> Search(PaginationParams param, object text)
-        {
-            var lists = _repoLine.FindAll().ProjectTo<PartDto>(_configMapper)
-            .Where(x => x.Name.Contains(text.ToString()))
-            .OrderByDescending(x => x.ID);
-            return await PagedList<PartDto>.CreateAsync(lists, param.PageNumber, param.PageSize);
-        }
+       
         //Xóa Brand
         public async Task<bool> Delete(object id)
         {
@@ -78,6 +71,13 @@ namespace DMR_API._Services.Services
         {
             return  _mapper.Map<Part, PartDto>(_repoLine.FindById(id));
         }
-
+        //Tìm kiếm Line
+        public async Task<PagedList<PartDto>> Search(PaginationParams param, object text)
+        {
+            var lists = _repoLine.FindAll().ProjectTo<PartDto>(_configMapper)
+            .Where(x => x.Name.Contains(text.ToString()))
+            .OrderByDescending(x => x.ID);
+            return await PagedList<PartDto>.CreateAsync(lists, param.PageNumber, param.PageSize);
+        }
     }
 }

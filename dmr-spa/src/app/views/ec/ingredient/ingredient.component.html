@@ -110,6 +110,7 @@
         gridLines='Both'
         (dataBound)='dataBound()'
         (rowDataBound)='rowDB($event)'
+        (headerCellInfo)='headerCellInfo($event)'
         (toolbarClick)='toolbarClick($event)'>
         <e-columns>
           <!-- <e-column field='#' headerText='#' width='40'>
@@ -132,13 +133,17 @@
           <e-column field='unit' headerText='Amount' textAlign='Center' width='100'>
             <ng-template #template let-data>{{data.unit}} kg</ng-template>
           </e-column>
-            <e-column field='unit' headerText='Amount' textAlign='Center' width='100'>
-            </e-column>
-          <e-column field='replacementFrequency' headerText='Replacement Frequency(hr.)' textAlign='Center'  width='180'></e-column>
-          <e-column field='prepareTime' headerText='Prepare Time(mins.)' textAlign='Center' width='180'></e-column>
-          <!-- <e-column field='code' headerText='Code' textAlign='Center' width='130'>
-            <ng-template #template let-data>{{data.code}}</ng-template>
-          </e-column> -->
+          <e-column field='glueType' headerText='Glue Type' textAlign='Center' width='130'>
+            <ng-template #template let-data>{{data.glueType === '' ? "N/A": data.glueType}}</ng-template>
+          </e-column>
+          <e-column field='replacementFrequency' headerText='RF (hr.)' textAlign='Center'  width='180'>
+            <ng-template #template let-data>{{data.replacementFrequency > 1 ? data.replacementFrequency + " hours" : data.replacementFrequency + " hour" }}</ng-template>
+          </e-column>
+          <e-column field='prepareTime' headerText='PT (mins.)' textAlign='Center' width='180'>
+            <ng-template #template let-data>{{data.prepareTime > 1 ? data.prepareTime + " minutes" : data.prepareTime + " minute"}}</ng-template>
+          </e-column>
+          <e-column field='createdDate' type='date' format='MM-dd-yyyy' headerText='Created Date' width='160' textAlign='Center'>
+          </e-column>
           <e-column field='Option' headerText='Option' textAlign='Center' width='130'>
             <ng-template let-data #template >
                 <div class="btn-group" data-toggle="tooltip" data-placement="top" title="Print QRCode">

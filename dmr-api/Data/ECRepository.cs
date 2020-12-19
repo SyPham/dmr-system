@@ -88,5 +88,10 @@ namespace DMR_API.Data
         {
             _context.AddRange(entity);
         }
+
+        public void Save()
+        {
+             _context.SaveChanges();
+        }
     }
 }

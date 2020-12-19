@@ -57,6 +57,9 @@ export class MixingComponent implements OnInit {
   glueName: string;
   role: IRole;
   estimatedTime: any;
+  estimatedStartTime: any;
+  estimatedFinishTime: any;
+  stdcon: number;
   constructor(
     private route: ActivatedRoute,
     private alertify: AlertifyService,
@@ -81,7 +84,9 @@ export class MixingComponent implements OnInit {
   onRouteChange() {
     this.route.data.subscribe(data => {
       this.glueID = this.route.snapshot.params.glueID;
-      this.estimatedTime = this.route.snapshot.params.estimatedTime;
+      this.estimatedStartTime = this.route.snapshot.params.estimatedStartTime;
+      this.estimatedFinishTime = this.route.snapshot.params.estimatedFinishTime;
+      this.stdcon = +this.route.snapshot.params.stdcon;
       this.getGlueWithIngredientByGlueID();
     });
   }
@@ -123,6 +128,10 @@ export class MixingComponent implements OnInit {
       try {
         this.qrCode = input[2];
         const result = await this.scanQRCode();
+        if (item.position === 'A') {
+          this.changeExpected('A', this.stdcon);
+          this.startTime = new Date();
+        }
         if (this.qrCode !== item.materialNO) {
           this.alertify.warning(`Please you should look for the chemical name "${item.name}"`);
           this.qrCode = '';
@@ -167,7 +176,12 @@ export class MixingComponent implements OnInit {
         }
         // chuyển vị trí quét khi scan
         switch (this.position) {
+          case 'A':
+            this.changeScanStatusByPosition('A', false);
+            this.changeScanStatusByPosition('B', true);
+            break;
           case 'B':
+            this.changeScanStatusByPosition('B', false);
             this.changeScanStatusByPosition('C', true);
             break;
           case 'C':
@@ -175,6 +189,7 @@ export class MixingComponent implements OnInit {
             this.changeScanStatusByPosition('D', true);
             break;
           case 'D':
+            this.changeScanStatusByPosition('D', false);
             this.changeScanStatusByPosition('E', true);
             break;
           case 'E':
@@ -349,7 +364,7 @@ export class MixingComponent implements OnInit {
     const currentValue = parseFloat(args);
 
     if (ingredient.allow === 0) {
-      let unit = ingredient.expected.replace(/[0-9|.]+/g, '').trim();
+      let unit = ingredient.position === 'A' ? this.stdcon : ingredient.expected.replace(/[0-9|.]+/g, '').trim();
       unit = ingredient.position === 'A' ? 'k' : unit;
       if (unit === UNIT_BIG_MACHINE) {
         min = parseFloat(ingredient.expected);
@@ -1069,33 +1084,30 @@ export class MixingComponent implements OnInit {
       this.alertify.warning(`Only the workers are able to press "Finished" button!<br> Chỉ có công nhân mới được nhấn "Hoàn Thành!"`, true);
       return;
     }
-    const date = new Date();
-    const buildingID = this.building.id;
     this.endTime = new Date();
-    this.guidances = {
-      id: 0,
+    const details = this.ingredients.map( item => {
+      return {
+          amount: item.position !== 'A' ? item.real / 1000 : item.real,
+          ingredientID: item.id,
+          batch: item.batch,
+          mixingInfoID: 0,
+          position: item.position
+      };
+    });
+    const mixing = {
       glueID: this.glueID,
       glueName: this.glueName,
-      chemicalA: this.findIngredientRealByPosition('A') + '',
-      chemicalB: this.findIngredientRealByPosition('B') + '',
-      chemicalC: this.findIngredientRealByPosition('C') + '',
-      chemicalD: this.findIngredientRealByPosition('D') + '',
-      chemicalE: this.findIngredientRealByPosition('E') + '',
-      batchA: this.findIngredientBatchByPosition('A'),
-      batchB: this.findIngredientBatchByPosition('B'),
-      batchC: this.findIngredientBatchByPosition('C'),
-      batchD: this.findIngredientBatchByPosition('D'),
-      batchE: this.findIngredientBatchByPosition('E'),
-      createdTime: date,
+      buildingID: this.building.id,
       mixBy: JSON.parse(localStorage.getItem('user')).User.ID,
-      buildingID,
-      startTime: this.startTime,
-      endTime: this.endTime,
-      estimatedTime: this.estimatedTime
+      estimatedStartTime: this.estimatedStartTime,
+      estimatedFinishTime: this.estimatedFinishTime,
+      startTime: this.startTime.toLocaleString(),
+      endTime: this.endTime.toLocaleString(),
+      details
     };
     this.onSignalr();
-    if (this.guidances) {
-      this.makeGlueService.Guidance(this.guidances).subscribe((glue: any) => {
+    if (mixing) {
+      this.makeGlueService.add(mixing).subscribe((glue: any) => {
         // this.checkValidPosition(item, args);
         // const buildingName = this.building.name;
         // this.UpdateConsumption(item.code, item.batch, item.real);

@@ -1,7 +1,7 @@
 <div class="card">
   <div class="card-header"></div>
-  <div class="card-body">
-     <div class="row mb-3" *ngIf="IsAdmin">
+  <div class="card-body p-0">
+     <div class="row my-3" *ngIf="IsAdmin">
        <div class="col-md-4"></div>
        <div class="col-md-4">
         <ejs-dropdownlist  [dataSource]='buildings' [fields]='fieldsBuildings'
@@ -11,25 +11,43 @@
        </div>
        <div class="col-md-4"></div>
      </div>
-    <ejs-grid #gridUndone *ngIf="isShowTodolistDone == false" [dataSource]='data' [searchSettings]="searchSettings" showColumnMenu='true'
-      [allowExcelExport]='true' allowPaging='true' allowSorting='true' allowResizing='true' gridLines='Both'
-      (actionBegin)="actionBegin($event)" (actionComplete)="actionComplete($event)"
+    <ejs-grid #gridTodo *ngIf="isShowTodolistDone == false" [dataSource]='data' [searchSettings]="searchSettings" showColumnMenu='true'
+      [allowExcelExport]='true' allowSorting='true' allowResizing='true' gridLines='Both'
+      (actionBegin)="actionBegin($event)" (actionComplete)="actionComplete($event)" height='600'
       (toolbarClick)='toolbarClick($event)' (dataBound)='dataBound()' [toolbar]='toolbarOptions'
-      [sortSettings]="sortSettings" [pageSettings]='pageSettings' (recordDoubleClick)='onDoubleClick($event)'>
+      [sortSettings]="sortSettings" (recordDoubleClick)='onDoubleClick($event)'>
+      <ng-template #toolbarTemplate let-data>
+        <ejs-toolbar #toolbarTodo (created)='createdTodo()' (clicked)='onClickToolbar($event)' >
+          <e-items>
+            <e-item id='todo' prefixIcon="fa fa-tasks" text=" {{ 'Todo' | translate }}"> </e-item>
+            <e-item id='done' prefixIcon='fa fa-check' text=" {{ 'Done' | translate }}"></e-item>
+            <e-item align='right'>
+              <ng-template #template>
+                <div class="e-toolbar-item e-search-wrapper e-toolbar-right" aria-disabled="false" title="Search">
+                  <div class="e-input-group e-search" role="search"> <input id="grid_925273528_0_searchbar"
+                      (change)='searchDone($event)' class="e-input" name="input" type="search" placeholder="Search"> <span
+                      id="grid_925273528_0_searchbutton" class="e-input-group-icon e-search-icon e-icons" tabindex="-1"
+                      title="Search" aria-label="search"></span> </div>
+                </div>
+              </ng-template>
+            </e-item>
+          </e-items>
+        </ejs-toolbar>
+      </ng-template>
       <e-columns>
         <e-column field='supplier' headerText='Supplier' width='100' textAlign='Center'>
           <ng-template #headerTemplate>
             {{ 'Supplier' | translate }}
           </ng-template>
         </e-column>
-        <e-column field='glue' headerText='Glue' width='170' textAlign='Center'>
+        <e-column field='glueName' headerText='Glue' width='170' textAlign='Center'>
           <ng-template #headerTemplate>
             {{ 'Glue' | translate }}
           </ng-template>
           <ng-template #template let-data>
             <ejs-tooltip #tooltip class="fix-css" position='RightCenter' (beforeRender)="onBeforeRender($event, data, data.index)"
               content="loading...">
-              {{data.glue}}
+              {{data.glueName}}
             </ejs-tooltip>
           </ng-template>
         </e-column>
@@ -38,58 +56,54 @@
             {{ 'Line' | translate }}
           </ng-template>
           <ng-template #template let-data>
-            {{data.lines.join(', ')}}
+            {{data.lineNames.join(', ')}}
           </ng-template>
         </e-column>
-        <e-column field='deliveredActual' headerText='Delivered/Actual' width='170' textAlign='Center'>
+        <e-column field='estimatedStartTime' type='date' format='HH:mm' headerText='EST' width='160' textAlign='Center'>
           <ng-template #headerTemplate>
-            {{ 'Delivered/Actual' | translate }}
+            <ejs-tooltip [content]="'EST_Tooltip' | translate">
+              {{ 'EST' | translate }}
+            </ejs-tooltip>
           </ng-template>
         </e-column>
-        <e-column field='standardConsumption' headerText='Std. Con.' width='100' textAlign='Center'>
+        <e-column field='estimatedFinishTime' type='date' format='HH:mm' headerText='EFT' width='160' textAlign='Center'>
           <ng-template #headerTemplate>
-            {{ 'Std. Con.' | translate }}
-          </ng-template>
-          <ng-template #template let-data>
-            {{data.standardConsumption}}kg
-          </ng-template>
-        </e-column>
-        <e-column field='status' headerText='Status' width='100' textAlign='Center'>
-          <ng-template #headerTemplate>
-            {{ 'Status' | translate }}
-          </ng-template>
-          <ng-template #template let-data>
-            {{data.status + '' | translate }}
+            <ejs-tooltip [content]="'EFT_Tooltip' | translate">
+              {{ 'EFT' | translate }}
+            </ejs-tooltip>
           </ng-template>
         </e-column>
-        <e-column field='estimatedTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Time' width='160'
-          textAlign='Center'>
-          <ng-template #headerTemplate>
-            {{ 'Estimated Time' | translate }}
-          </ng-template>
-        </e-column>
-        <e-column field='option' headerText='Option' width='100' textAlign='Center'>
+        <e-column field='option' headerText='Option' width='300' textAlign='Center'>
           <ng-template #headerTemplate>
             {{ 'Option' | translate }}
           </ng-template>
           <ng-template #template let-data>
-            <div class="btn-group-vertical">
-              <button type="button"
-                [routerLink]="['/ec/execution/todolist-2/mixing/' + data.glueID + '/' + data.estimatedTime]"
-                class="btn btn-sm btn-success my-2">
+            <div class="btn-group">
+              <button type="button" 
+              *ngIf="data.glueName.indexOf(' + ') !== -1"
+               [ngClass]="{'disabled': data.mixingInfoID > 0, 'cursor-pointer': data.mixingInfoID > 0}"
+                [routerLink]="['/ec/execution/todolist-2/mixing/' + data.glueID + '/' + data.estimatedStartTime + '/' + data.estimatedFinishTime+ '/' + data.standardConsumption]"
+                class="btn btn-sm btn-success">
                 <i class="fa fa-glass"></i>
                 {{ 'MIXING' | translate }}
               </button>
-              <button type="button" [routerLink]="['/ec/execution/todolist-2/stir/' + data.glue ]"
-                class="btn btn-sm btn-warning mb-2">
+              <button type="button"
+              *ngIf="data.glueName.indexOf(' + ') !== -1"
+               [ngClass]="{'disabled': data.startStirTime !== null, 'cursor-pointer': data.startStirTime !== null}"
+               [routerLink]="['/ec/execution/todolist-2/stir/' + data.mixingInfoID + '/' + data.glueName ]"
+                class="btn btn-sm btn-warning ml-1">
                 <i class="fa fa-fan"></i>
                 {{ 'STIR' | translate }}
               </button>
-              <button type="button" (click)='openDispatchModal(data)' class="btn btn-sm btn-info mb-2">
+              <button type="button"
+               [ngClass]="lockDispatch(data)"
+               (click)='openDispatchModal(data)' class="btn btn-sm btn-info ml-1">
               <i class="fas fa-balance-scale"></i>
                 {{ 'Dispatch' | translate }}
               </button>
-              <button type="button" (click)='openPrintModal(data)' class="btn btn-sm btn-secondary mb-2">
+              <button type="button"
+              [ngClass]="{'disabled': data.printTime !== null, 'cursor-pointer': data.printTime !== null}"
+               (click)='openPrintModal(data)' class="btn btn-sm btn-secondary ml-1">
                 <i class="fa fa-print"></i>
                 {{ 'Print' | translate }}
               </button>
@@ -100,10 +114,27 @@
     </ejs-grid>
 
     <ejs-grid #gridDone *ngIf="isShowTodolistDone" [dataSource]='doneData' [searchSettings]="searchSettings" showColumnMenu='true'
-      [allowExcelExport]='true' allowPaging='true' allowSorting='true' allowResizing='true' gridLines='Both'
-      (actionBegin)="actionBegin($event)" (actionComplete)="actionComplete($event)"
-      (toolbarClick)='toolbarClick($event)' (dataBound)='dataBound()' [toolbar]='toolbarOptions'
-      [sortSettings]="sortSettings" [pageSettings]='pageSettings' (recordDoubleClick)='onDoubleClick($event)'>
+      [allowExcelExport]='true' allowSorting='true' allowResizing='true' gridLines='Both'
+      (actionBegin)="actionBegin($event)" (actionComplete)="actionComplete($event)" height='600'
+      (toolbarClick)='toolbarClick($event)' (dataBound)='dataBoundDone()' [toolbar]='toolbarOptions'
+      [sortSettings]="sortSettings" (recordDoubleClick)='onDoubleClick($event)'>
+      <ng-template #toolbarTemplate let-data>
+        <ejs-toolbar #toolbarDone (created)='createdDone()' (clicked)='onClickToolbar($event)'>
+          <e-items>
+            <e-item id='todo' prefixIcon="fa fa-tasks" text=" {{ 'Todo' | translate }}"> </e-item>
+            <e-item id='done' prefixIcon='fa fa-check' text=" {{ 'Done' | translate }}"></e-item>
+            <e-item align='right' >
+              <ng-template #template>
+                <div class="e-toolbar-item e-search-wrapper" aria-disabled="false" title="Search">
+                  <div class="e-input-group e-search" role="search"> <input id="grid_925273528_0_searchbar" (change)='searchDone($event)' class="e-input" name="input"
+                      type="search" placeholder="Search"> <span id="grid_925273528_0_searchbutton"
+                      class="e-input-group-icon e-search-icon e-icons" tabindex="-1" title="Search" aria-label="search"></span> </div>
+                </div>
+              </ng-template>
+            </e-item>
+          </e-items>
+        </ejs-toolbar>
+      </ng-template>
       <e-columns>
         <e-column field='supplier' headerText='Supplier' width='100' textAlign='Center'>
           <ng-template #headerTemplate>
@@ -117,56 +148,130 @@
               <ng-template #template let-data>
                 <ejs-tooltip #tooltip class="fix-css" position='RightCenter' (beforeRender)="onBeforeRender($event, data, data.index)"
                   content="loading...">
-                  {{data.glue}}
+                  {{data.glueName}}
                 </ejs-tooltip>
               </ng-template>
         </e-column>
         <e-column field='lines' headerText='Line' width='170' textAlign='Center'>
-              <ng-template #headerTemplate>
-                {{ 'Line' | translate }}
-              </ng-template>
+          <ng-template #headerTemplate>
+            {{ 'Line' | translate }}
+          </ng-template>
           <ng-template #template let-data>
-            {{data.lines.join(', ')}}
+            {{data.lineNames.join(', ')}}
           </ng-template>
         </e-column>
-        <e-column field='deliveredActual' headerText='Delivered/Actual' width='170' textAlign='Center'>
-              <ng-template #headerTemplate>
-                {{ 'Delivered/Actual' | translate }}
-              </ng-template>
+        <e-column field='startMixingTime' type='date' format='HH:mm' headerText='SMT' width='160'
+          textAlign='Center'>
+          <ng-template #headerTemplate>
+            <ejs-tooltip [content]="'SMT_Tooltip' | translate">
+              {{ 'SMT' | translate }}
+            </ejs-tooltip>
+          </ng-template>
+        </e-column>
+        <e-column field='finishMixingTime' type='date' format='HH:mm' headerText='FMT' width='160' textAlign='Center'>
+          <ng-template #headerTemplate>
+            <ejs-tooltip  [content]="'FMT_Tooltip' | translate">
+              {{ 'FMT' | translate }}
+            </ejs-tooltip>
+          </ng-template>
+        </e-column>
+
+        <e-column field='startStirTime' type='date' format='HH:mm' headerText='SST' width='160'
+          textAlign='Center'>
+          <ng-template #headerTemplate>
+            <ejs-tooltip  [content]="'SST_Tooltip' | translate">
+              {{ 'SST' | translate }}
+            </ejs-tooltip>
+          </ng-template>
+        </e-column>
+        <e-column field='finishStirTime' type='date' format='HH:mm' headerText='FST' width='160' textAlign='Center'>
+        <ng-template #headerTemplate>
+          <ejs-tooltip  [content]="'FST_Tooltip' | translate">
+            {{ 'FST' | translate }}
+          </ejs-tooltip>
+        </ng-template>
+        </e-column>
+
+        <e-column field='startDispatchingTime' type='date' format='HH:mm' headerText='SDT' width='160'
+          textAlign='Center'>
+          <ng-template #headerTemplate>
+            <ejs-tooltip [content]="'SDT_Tooltip' | translate">
+              {{ 'SDT' | translate }}
+            </ejs-tooltip>
+          </ng-template>
+        </e-column>
+        <e-column field='finishDispatchingTime' type='date' format='HH:mm' headerText='FDT' width='160' textAlign='Center'>
+        <ng-template #headerTemplate>
+          <ejs-tooltip [content]="'FDT_Tooltip' | translate">
+            {{ 'FDT' | translate }}
+          </ejs-tooltip>
+        </ng-template>
+        </e-column>
+
+        <e-column field='printTime' type='date' format='HH:mm' headerText='PT' width='160' textAlign='Center'>
+        <ng-template #headerTemplate>
+          <ejs-tooltip [content]="'PT_Tooltip' | translate">
+            {{ 'PT' | translate }}
+          </ejs-tooltip>
+        </ng-template>
         </e-column>
         <e-column field='standardConsumption' headerText='Std. Con.' width='100' textAlign='Center'>
           <ng-template #headerTemplate>
-            {{ 'Std. Con.' | translate }}
+            <ejs-tooltip content='Standard Consumption'>
+                {{ 'Std. Con.' | translate }}
+            </ejs-tooltip>
           </ng-template>
           <ng-template #template let-data>
             {{data.standardConsumption}}kg
           </ng-template>
         </e-column>
-        <e-column field='status' headerText='Status' width='100' textAlign='Center'>
-          <ng-template #headerTemplate>
-            {{ 'Status' | translate }}
+        <e-column field='mixedConsumption' headerText='Mixed. Con.' width='100' textAlign='Center'>
+         <ng-template #headerTemplate>
+            <ejs-tooltip content='Mixing Consumption'>
+                {{ 'Mixed. Con.' | translate }}
+            </ejs-tooltip>
           </ng-template>
           <ng-template #template let-data>
-            {{data.status + '' | translate }}
+            {{data.standardConsumption}}kg
           </ng-template>
         </e-column>
-        <e-column field='estimatedTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Time' width='160'
-          textAlign='Center'>
+        <e-column field='deliveredConsumption' headerText='Delivered. Con.' width='100' textAlign='Center'>
           <ng-template #headerTemplate>
-            {{ 'Estimated Time' | translate }}
+            <ejs-tooltip content='Delivered Consumption'>
+              {{ 'Delivered. Con.' | translate }}
+            </ejs-tooltip>
+          </ng-template>
+          <ng-template #template let-data>
+            {{data.standardConsumption}}kg
           </ng-template>
         </e-column>
-        <e-column field='estimatedStartTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Start Time'
-          width='160' textAlign='Center'>
-            <ng-template #headerTemplate>
-              {{ 'Estimated Start Time' | translate }}
-            </ng-template>
+
+          <e-column field='status' headerText='Status' width='100' textAlign='Center'>
+          <ng-template #headerTemplate>
+            <ejs-tooltip [content]="'Status_Tooltip' | translate">
+              {{ 'Status' | translate }}
+            </ejs-tooltip>
+          </ng-template>
+          <ng-template #template let-data>
+            <span class="badge" [class.bg-success]='data.status === true' [class.bg-danger]='data.status === false'>{{data.status + '' | translate }}</span>
+          </ng-template>
         </e-column>
-        <e-column field='estimatedFinishTime' type='date' format='MM/dd/yyyy HH:mm' headerText='Estimated Finish Time'
+
+        <e-column field='estimatedStartTime' type='date' format='HH:mm' headerText='EST'
           width='160' textAlign='Center'>
           <ng-template #headerTemplate>
-            {{ 'Estimated Finish Time' | translate }}
+            <ejs-tooltip [content]="'EST_Tooltip' | translate">
+              {{ 'EST' | translate }}
+            </ejs-tooltip>
           </ng-template>
+        </e-column>
+        <e-column field='estimatedFinishTime' type='date' format='HH:mm' headerText='EFT'
+          width='160' textAlign='Center'>
+         <ng-template #headerTemplate>
+          <ejs-tooltip [content]="'EFT_Tooltip' | translate">
+            {{ 'EFT' | translate }}
+          </ejs-tooltip>
+        </ng-template>
         </e-column>
       </e-columns>
     </ejs-grid>

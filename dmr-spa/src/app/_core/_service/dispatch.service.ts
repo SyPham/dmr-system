@@ -19,6 +19,8 @@ export class DispatchService {
   add(obj: IDispatchForCreate) {
     return this.http.post(this.baseUrl + 'Dispatch/Add', obj);
   }
-
+  addDispatch(obj: IDispatchForCreate[]) {
+    return this.http.post(this.baseUrl + 'Dispatch/Dispatch', obj);
+  }
 }
 

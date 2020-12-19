@@ -16,10 +16,13 @@ export class BuildingSettingComponent implements OnInit {
   editSettings = { showDeleteConfirmDialog: false, allowEditing: true, allowAdding: true, allowDeleting: true, mode: 'Normal' };
   @ViewChild('gridBuilding') public gridBuilding: GridComponent;
   @ViewChild('gridSetting') public gridSetting: GridComponent;
+  fields: object = { text: 'title', value: 'title' };
   toolbarOptions: string[];
   buildings: object;
   settings: object;
   buildingID: any;
+  glueTypes: any;
+  glueTypeId: number;
   constructor(
     private buildingService: BuildingService,
     private alertify: AlertifyService,
@@ -30,8 +33,12 @@ export class BuildingSettingComponent implements OnInit {
     this.filterSettings = { type: 'Excel' };
     this.toolbarOptions = ['Excel Export', 'Search'];
     this.loadData();
+    this.getAllGlueType();
   }
   /// api
+  getAllGlueType() {
+    return this.settingService.getAllGlueType().toPromise();
+  }
   getBuildingForSetting() {
     return this.buildingService.getBuildingsForSetting().toPromise();
    }
@@ -51,16 +58,20 @@ export class BuildingSettingComponent implements OnInit {
   async loadData() {
     try {
       this.buildings = await this.getBuildingForSetting();
+      this.glueTypes = await this.getAllGlueType();
     } catch (error) {
       this.alertify.error(error + '');
     }
   }
-
+  onChangeGlueType(args) {
+    this.glueTypeId = +args.itemData.id;
+  }
   async edit(data) {
     const model = {
       id: data.id,
       minRPM: data.minRPM,
       maxRPM: data.maxRPM,
+      glueTypeID: this.glueTypeId,
       machineType: data.machineType,
       machineCode: data.machineCode,
       buildingID: this.buildingID
@@ -78,6 +89,7 @@ export class BuildingSettingComponent implements OnInit {
       id: 0,
       minRPM: data.minRPM,
       maxRPM: data.maxRPM,
+      glueTypeID: this.glueTypeId,
       machineType: data.machineType,
       machineCcode: data.machineCode,
       buildingID: this.buildingID

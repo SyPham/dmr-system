@@ -15,15 +15,6 @@ export class TodolistResolver implements Resolve<object> {
   ) {}
 
   resolve(route: ActivatedRouteSnapshot): Observable<object> {
-    return this.todolistService.getTasks().pipe(
-      catchError(error => {
-        console.log(error);
-        this.alertify.error('Problem retrieving data');
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        this.router.navigate(['/login']);
-        return of(null);
-      })
-    );
+    return of(null);
   }
 }

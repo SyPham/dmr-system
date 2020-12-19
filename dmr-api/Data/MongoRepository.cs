@@ -6,7 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace EC_API.Data
+namespace DMR_API.Data
 {
     public class MongoRepository<TDocument> : IMongoRepository<TDocument>
     where TDocument : IDocument

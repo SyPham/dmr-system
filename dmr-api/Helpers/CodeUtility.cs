@@ -258,7 +258,10 @@ namespace DMR_API.Helpers
 
             return day.AddDays(-dayOfWeek).AddDays(6);
         }
-
+        public static DateTime ToRemoveTicks(this DateTime dateTime)
+        {
+           return dateTime = dateTime.AddTicks(-(dateTime.Ticks % 10000000));
+        }
         public static DateTime ToGetStartDayOfWeek(int year, int dayofweek)
         {
             var fromDate = new DateTime(year, 1, 1);

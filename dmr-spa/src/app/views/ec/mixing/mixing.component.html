@@ -25,7 +25,7 @@
           <div class="col-md-6">
             <div class="row">
               <div class="col-md-8 text-center">
-                <label class="font-weight-bold" for="">{{ 'EXPECTED' | translate }} ({{unit}}) </label>
+                <label class="font-weight-bold" for="">{{ 'Std. Con.' | translate }} ({{unit}}) </label>
               </div>
               <div class="col-md-4 text-center">
                 <label class="font-weight-bold" for="">{{ 'ACTUAL' | translate }} ({{unit}})</label>
@@ -47,10 +47,12 @@
                   <input *ngIf="item.scanStatus; else scanBlock" class="form-control form-control-lg rounded-pill"
                     [autofocus]='item.scanStatus' autoselect [name]="item.code" [(ngModel)]="item.scanCode"
                     [class]="item.info" [ngClass]="lockClass(item)"
+                    placeholder="Scan QR Code"
                     (ngModelChange)='onNgModelChangeScanQRCode($event, item)' type="text">
                   <ng-template #scanBlock>
                     <input class="form-control form-control-lg rounded-pill" [(ngModel)]="item.scanCode"
                       [name]="item.code" [class]="item.info" [ngClass]="lockClass(item)"
+                      placeholder="Scan QR Codel"
                       (ngModelChange)='onNgModelChangeScanQRCode($event, item)' type="text">
                   </ng-template>
                 </div>
@@ -98,10 +100,6 @@
           <button type="button" [disabled]="disabled" (click)="Finish()" class="btn btn-success rounded-pill ml-2"><i
               class="fas fa-save"></i>
             {{ 'FINISHED' | translate }}</button>
-          <!-- <button type="button" (click)="gotoStir()" [disabled]="!showQRCode"
-            class="btn btn-warning rounded-pill ml-2"><i class="fa fa-arrow-circle-right"></i>
-            {{ 'STIR' | translate }}</button> -->
-
         </div>
         <p class="text-center my-2 text-danger" *ngIf="!disabled">{{ 'NOTE' | translate }}</p>
       </div>

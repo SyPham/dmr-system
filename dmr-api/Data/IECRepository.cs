@@ -29,6 +29,7 @@ namespace DMR_API.Data
         IQueryable<T> GetAll();
 
         Task<bool> SaveAll();
+        void Save();
         void AddRange(List<T> entity);
     }
 }

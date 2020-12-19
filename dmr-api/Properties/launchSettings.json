@@ -17,7 +17,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "EC_API": {
+    "DMR_API": {
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "swagger",

@@ -41,6 +41,12 @@ namespace DMR_API.Controllers
             var ingredients = await _ingredientService.GetAllAsync();
             return Ok(ingredients);
         }
+        [HttpGet]
+        public async Task<IActionResult> GetAllGlueTypeAsync()
+        {
+            var ingredients = await _ingredientService.GetAllGlueTypeAsync();
+            return Ok(ingredients);
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetAllIngredientInfo()

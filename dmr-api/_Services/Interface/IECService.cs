@@ -7,7 +7,6 @@ namespace DMR_API._Services.Interface
     public interface IECService<T> where T : class
     {
         Task<bool> Add(T model);
-        //Task<bool> Add1(T model);
 
         Task<bool> Update(T model);
 

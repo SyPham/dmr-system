@@ -11,6 +11,7 @@ using DMR_API.DTO;
 using DMR_API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using dmr_api.Models;
 
 namespace DMR_API._Services.Services
 {
@@ -25,25 +26,27 @@ namespace DMR_API._Services.Services
         private readonly IMixingInfoRepository _repoMixingInfo;
         private readonly IGlueRepository _repoGlue;
         private readonly IBuildingGlueRepository _repoBuildingGlue;
+        private readonly IGlueTypeRepository _repoGlueType;
         private readonly IMapper _mapper;
         private readonly MapperConfiguration _configMapper;
         private readonly IHttpContextAccessor _accessor;
 
         public IngredientService(
-            IMixingInfoRepository repoMixingInfo, 
-            IGlueRepository repoGlue, 
-            IGlueIngredientRepository repoGlueIngredient, 
-            IIngredientInfoReportRepository repoIngredientInfoReport, 
-            IPlanRepository repoPlan, 
-            IIngredientRepository repoIngredient, 
-            IHttpContextAccessor accessor, 
-            IIngredientInfoRepository repoIngredientInfo, 
+            IMixingInfoRepository repoMixingInfo,
+            IGlueRepository repoGlue,
+            IGlueIngredientRepository repoGlueIngredient,
+            IIngredientInfoReportRepository repoIngredientInfoReport,
+            IPlanRepository repoPlan,
+            IIngredientRepository repoIngredient,
+            IHttpContextAccessor accessor,
+            IGlueTypeRepository repoGlueType,
+            IIngredientInfoRepository repoIngredientInfo,
             ISupplierRepository repoSupplier,
             IBuildingGlueRepository repoBuildingGlue,
-            IMapper mapper, 
+            IMapper mapper,
             MapperConfiguration configMapper
             )
-        { 
+        {
             _configMapper = configMapper;
             _mapper = mapper;
             _repoIngredient = repoIngredient;
@@ -53,7 +56,7 @@ namespace DMR_API._Services.Services
             _repoPlan = repoPlan;
             _repoIngredientInfoReport = repoIngredientInfoReport;
             _repoGlueIngredient = repoGlueIngredient;
-
+            _repoGlueType = repoGlueType;
             _repoGlue = repoGlue;
             _repoMixingInfo = repoMixingInfo;
             _repoBuildingGlue = repoBuildingGlue;
@@ -87,9 +90,10 @@ namespace DMR_API._Services.Services
         public async Task<string> AddRangeAsync(List<IngredientForImportExcelDto> model)
         {
             var suppliers = await _repoSupplier.FindAll().ToListAsync();
-            var ingredientList =  _repoIngredient.FindAll();
+            var ingredientList = _repoIngredient.FindAll();
             string error = string.Empty;
-            foreach(var item in model) {
+            foreach (var item in model)
+            {
                 var checkMaterial = ingredientList.FirstOrDefault(x => x.MaterialNO.Equals(item.MaterialNO));
                 var checkName = ingredientList.FirstOrDefault(x => x.Name.Equals(item.Name));
                 if (checkMaterial != null)
@@ -106,8 +110,8 @@ namespace DMR_API._Services.Services
             if (error != string.Empty) return error;
             model.ForEach(item =>
             {
-                
-                item.isShow = true; 
+
+                item.isShow = true;
                 var supply = suppliers.FirstOrDefault(x => x.Name.ToLower().Equals(item.SupplierName.ToSafetyString().ToLower()));
                 item.SupplierID = supply != null ? supply.ID : 0;
             });
@@ -115,7 +119,7 @@ namespace DMR_API._Services.Services
             _repoIngredient.AddRange(ingredients);
             try
             {
-             await _repoIngredient.SaveAll();
+                await _repoIngredient.SaveAll();
                 return "ok";
             }
             catch
@@ -166,16 +170,21 @@ namespace DMR_API._Services.Services
 
         // Lấy toàn bộ danh sách Ingredient 
         public async Task<List<IngredientDto>> GetAllAsync()
+        => await _repoIngredient.FindAll()
+                .Where(x => x.isShow == true)
+                .Include(x => x.Supplier)
+                .Include(x => x.GlueType)
+                .ProjectTo<IngredientDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+        public async Task<List<GlueType>> GetAllGlueTypeAsync()
         {
-            return await _repoIngredient.FindAll().Where(x => x.isShow == true).Include(x => x.Supplier).ProjectTo<IngredientDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            return await _repoGlueType.FindAll().OrderBy(x => x.ID).ToListAsync();
         }
-
         // Lấy toàn bộ danh sách IngredientInfo
         public async Task<List<IngredientInfoDto>> GetAllIngredientInfoAsync()
         {
             var resultStart = DateTime.Now;
             var resultEnd = DateTime.Now;
-            return await _repoIngredientInfo.FindAll().Where(x => x.CreatedDate >= resultStart.Date && x.CreatedDate <= resultEnd.Date ).ProjectTo<IngredientInfoDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            return await _repoIngredientInfo.FindAll().Where(x => x.CreatedDate >= resultStart.Date && x.CreatedDate <= resultEnd.Date).ProjectTo<IngredientInfoDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
         }
 
         // Lấy toàn bộ danh sách IngredientInfo
@@ -183,7 +192,7 @@ namespace DMR_API._Services.Services
         {
             var resultStart = DateTime.Now;
             var resultEnd = DateTime.Now;
-            return await _repoIngredientInfo.FindAll().Where(x => x.CreatedDate >= resultStart.Date && x.CreatedDate <= resultEnd.Date ).ProjectTo<IngredientInfoDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            return await _repoIngredientInfo.FindAll().Where(x => x.CreatedDate >= resultStart.Date && x.CreatedDate <= resultEnd.Date).ProjectTo<IngredientInfoDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
         }
 
         // Lấy toàn bộ danh sách IngredientInfo theo building
@@ -193,7 +202,7 @@ namespace DMR_API._Services.Services
             var resultEnd = DateTime.Now;
             return await _repoIngredientInfo.FindAll().Where(x => x.CreatedDate >= resultStart.Date && x.CreatedDate <= resultEnd.Date && x.BuildingName == name).ProjectTo<IngredientInfoDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
         }
-        
+
         // Lấy toàn bộ danh sách IngredientReport
         public async Task<List<IngredientInfoReportDto>> GetAllIngredientInfoReportAsync()
         {
@@ -219,7 +228,7 @@ namespace DMR_API._Services.Services
         }
 
         // Filter Ingredient Report theo ngay + building
-        public async Task<object> GetAllIngredientReportByRangeWithBuilding(DateTime min, DateTime max , string name)
+        public async Task<object> GetAllIngredientReportByRangeWithBuilding(DateTime min, DateTime max, string name)
         {
             return await _repoIngredientInfoReport.FindAll()
                 .Where(x => x.CreatedTime.Date >= min.Date && x.CreatedTime.Date <= max.Date && x.BuildingName == name)
@@ -260,7 +269,7 @@ namespace DMR_API._Services.Services
             return result;
         }
 
-        public async Task<object> ScanQRCodeFromChemialWareHouse(string qrCode,string building, int userid)
+        public async Task<object> ScanQRCodeFromChemialWareHouse(string qrCode, string building, int userid)
         {
             var obj = qrCode.Split('-');
             var Barcode = obj[2];
@@ -339,7 +348,7 @@ namespace DMR_API._Services.Services
             return true;
         }
 
-        public async Task<object> ScanQRCodeOutput(string qrCode,string building, int userid)
+        public async Task<object> ScanQRCodeOutput(string qrCode, string building, int userid)
         {
 
             // load tat ca supplier
@@ -361,12 +370,14 @@ namespace DMR_API._Services.Services
             {
                 // check tiep trong bang ingredientReport xem co du lieu chua 
                 var checkStatus = _repoIngredientInfo.FindAll().Where(x => x.Code == Barcode && x.BuildingName == building && x.Batch == Batch && x.CreatedDate == currentDay.Date && x.Status == false).OrderBy(y => y.CreatedTime).FirstOrDefault();
-                 // nếu khác Null thi update lai
+                // nếu khác Null thi update lai
                 if (checkStatus != null)
                 {
                     checkStatus.Status = true;
                     await UpdateIngredientInfo(checkStatus);
-                } else {
+                }
+                else
+                {
                     return new
                     {
                         status = false,
@@ -376,14 +387,15 @@ namespace DMR_API._Services.Services
             }
 
             // nếu chưa tồn tại thì thêm mới
-            else {
-                 return new
-                    {
-                        status = false,
-                        message = "Hãy scan QR Code hàng nhập trước :) !"
-                    };
+            else
+            {
+                return new
+                {
+                    status = false,
+                    message = "Hãy scan QR Code hàng nhập trước :) !"
+                };
             }
-                
+
             return true;
         }
 
@@ -524,7 +536,7 @@ namespace DMR_API._Services.Services
                 if (await _repoIngredientInfoReport.CheckBarCodeExists(qrCode))
                 {
                     // var resultEnd = DateTime.Now;
-                    var result = _repoIngredientInfoReport.FindAll().FirstOrDefault(x => x.Code == qrCode && x.Batch == batch );
+                    var result = _repoIngredientInfoReport.FindAll().FirstOrDefault(x => x.Code == qrCode && x.Batch == batch);
                     result.Consumption = consump.ToSafetyString();
                     // if (result.Qty != 0)
                     // {
@@ -560,7 +572,7 @@ namespace DMR_API._Services.Services
                 }
                 return true;
             }
-            catch 
+            catch
             {
                 return false;
             }
@@ -590,10 +602,13 @@ namespace DMR_API._Services.Services
                 {
                     var result = _repoIngredientInfoReport.FindAll().FirstOrDefault(x => x.Code == code && x.Batch == batch);
                     result.Qty = result.Qty - qty;
-                    if(result.Qty == 0) {
+                    if (result.Qty == 0)
+                    {
                         _repoIngredientInfoReport.Remove(result);
-                       await _repoIngredientInfoReport.SaveAll();
-                    } else {
+                        await _repoIngredientInfoReport.SaveAll();
+                    }
+                    else
+                    {
                         await UpdateIngredientInfoReport(result);
                     }
                 }
@@ -611,7 +626,7 @@ namespace DMR_API._Services.Services
             var from = DateTime.Now.AddDays(-5).Date;
             var to = DateTime.Now.Date;
             return await _repoIngredientInfo.FindAll()
-            .Where(x=> x.CreatedDate >= from && x.CreatedDate >= to ).AnyAsync( x=> x.BuildingName.Equals(building) && x.Name.Trim().Equals(ingredientName.Trim()) && x.Batch.Equals(batch));
+            .Where(x => x.CreatedDate >= from && x.CreatedDate >= to).AnyAsync(x => x.BuildingName.Equals(building) && x.Name.Trim().Equals(ingredientName.Trim()) && x.Batch.Equals(batch));
         }
     }
 }

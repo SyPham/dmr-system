@@ -1,4 +1,6 @@
 ﻿using System;
+using dmr_api.Models;
+
 namespace DMR_API.Models
 {
     public class Ingredient
@@ -28,6 +30,8 @@ namespace DMR_API.Models
         public double CBD { get; set; }
         public int ReplacementFrequency { get; set; }
         public int PrepareTime { get; set; }
+        public int? GlueTypeID { get; set; }
+        public GlueType GlueType { get; set; }
 
 
     }

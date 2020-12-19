@@ -3,6 +3,7 @@ using DMR_API.DTO;
 using DMR_API.Models;
 using AutoMapper;
 using System.Linq;
+
 namespace DMR_API.Helpers.AutoMapper
 {
     public class EfToDtoMappingProfile : Profile
@@ -24,6 +25,7 @@ namespace DMR_API.Helpers.AutoMapper
                 .ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.CreatedDate.ToParseStringDateTime()));
             CreateMap<Ingredient, IngredientDto>()
                 .ForMember(d => d.Supplier, o => o.MapFrom(x => x.Supplier.Name))
+                .ForMember(d => d.GlueType, o => o.MapFrom(x => x.GlueType))
                 .ForMember(d => d.VOC, o => o.MapFrom(x => x.VOC.ToDouble()))
                 .ForMember(d => d.Unit, o => o.MapFrom(x => x.Unit.ToDouble()))
                 .ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.CreatedDate.ToParseStringDateTime()));
@@ -31,12 +33,18 @@ namespace DMR_API.Helpers.AutoMapper
 
             CreateMap<Ingredient, IngredientDto1>()
                 .ForMember(d => d.Supplier, o => o.MapFrom(x => x.Supplier.Name))
+                .ForMember(d => d.GlueType, o => o.MapFrom(x => x.GlueType))
                 .ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.CreatedDate.ToParseStringDateTime()));/*.ForMember(d => d.Position, o => o.MapFrom(s => s.Position != null ? alpha[s.Position -1] : ""))*/;
             CreateMap<Ingredient, IngredientForImportExcelDto>().ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.CreatedDate.ToParseStringDateTime()));
 
             CreateMap<Line, LineDto>();
+            CreateMap<Station, StationDto>()
+                .ForMember(d => d.GlueName, o => o.MapFrom(x => x.Glue.GlueName.Name));
             CreateMap<Plan, PlanDto>()
                  .ForMember(d => d.Glues, o => o.MapFrom(x => x.BPFCEstablish.Glues.Where(x => x.isShow).Select(x => x.Name)))
+                 .ForMember(d => d.StartTime, o => o.MapFrom(x => new TimeDto(x.StartWorkingTime)))
+                 .ForMember(d => d.EndTime, o => o.MapFrom(x => new TimeDto (x.FinishWorkingTime)))
+                 .ForMember(d => d.IsGenerate, o => o.MapFrom(x => x.ToDoList.Count > 0))
                  .ForMember(d => d.ModelName, o => o.MapFrom(x => x.BPFCEstablish.ModelName.Name))
                 .ForMember(d => d.ModelNoName, o => o.MapFrom(x => x.BPFCEstablish.ModelNo.Name))
                 .ForMember(d => d.ArticleName, o => o.MapFrom(x => x.BPFCEstablish.ArticleNo.Name))
@@ -82,7 +90,7 @@ namespace DMR_API.Helpers.AutoMapper
 
             CreateMap<MixingInfo, MixingInfoDto>()
             .ForMember(d => d.ExpiredTime, o => o.MapFrom(x => x.ExpriedTime()))
-             .ForMember(d => d.RealTotal, o => o.MapFrom(real => real.ChemicalA.ToDouble() + real.ChemicalB.ToDouble() + real.ChemicalC.ToDouble() + real.ChemicalD.ToDouble() + real.ChemicalE.ToDouble()));
+             .ForMember(d => d.RealTotal, o => o.MapFrom(real => real.MixingInfoDetails.Sum(x=>x.Amount)));
 
             CreateMap<MixingInfoForCreateDto, MixingInfo>();
 
@@ -94,17 +102,23 @@ namespace DMR_API.Helpers.AutoMapper
             CreateMap<BuildingGlueForCreateDto, BuildingGlue>();
             CreateMap<IngredientInfoDto, IngredientInfo>();
             CreateMap<IngredientInfoReportDto, IngredientInfoReport>();
-            CreateMap<StirDTO, Stir>();
-            CreateMap<SettingDTO, Setting>();
+            CreateMap<Stir, StirDTO>()
+             .ForMember(d => d.GlueType, o => o.MapFrom(x => x.MixingInfo.Glue.GlueIngredients.FirstOrDefault(x=> x.Position == "A").Ingredient.GlueType))
+                ;
+            CreateMap<Setting, SettingDTO>();
             CreateMap<PlanForCloneDto, Plan>();
             CreateMap<ScaleMachineDto, ScaleMachine>();
-
+            CreateMap<ToDoList, ToDoListDto>();
             CreateMap<Glue, ConsumtionDto>()
            .ForMember(d => d.ModelName, o => o.MapFrom(x => x.BPFCEstablish.ModelName.Name))
            .ForMember(d => d.ModelNo, o => o.MapFrom(x => x.BPFCEstablish.ModelNo.Name))
            .ForMember(d => d.Std, o => o.MapFrom(x => x.Consumption.ToFloat()))
            .ForMember(d => d.ArticleNo, o => o.MapFrom(x => x.BPFCEstablish.ArticleNo.Name))
            .ForMember(d => d.ArticleNo, o => o.MapFrom(x => x.BPFCEstablish.ArticleNo.Name));
+            CreateMap<MixingInfoDetailForAddDto, MixingInfoDetail>()
+           .ForMember(d => d.MixingInfo, o => o.Ignore())
+           .ForMember(d => d.Ingredient, o => o.Ignore());
+
         }
 
     }

@@ -11,10 +11,8 @@ using DMR_API.DTO;
 using DMR_API.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http;
-using EC_API.DTO;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
-using EC_API.Helpers;
 
 namespace DMR_API._Services.Services
 {

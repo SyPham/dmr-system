@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace EC_API.Data.MongoModels
+namespace DMR_API.Data.MongoModels
 {
     [BsonCollection("rawdatas")]
     public class RawData: Document
@@ -24,7 +24,8 @@ namespace EC_API.Data.MongoModels
         [BsonElement("sequence")]
         public int Sequence { get; set; }
         [BsonElement("createddatetime")]
-        [BsonRepresentation(BsonType.Document)]
+        [BsonRepresentation(BsonType.DateTime)]
+        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime CreatedDateTime { get; set; }
         public int __v { get; set; }
     }

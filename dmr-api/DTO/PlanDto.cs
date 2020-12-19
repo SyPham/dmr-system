@@ -1,4 +1,5 @@
-﻿using DMR_API.Models;
+﻿using DMR_API.Helpers;
+using DMR_API.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,8 +27,26 @@ namespace DMR_API.DTO
         public int Quantity { get; set; }
         public int ArticleNoID { get; set; }
         public int ArtProcessID { get; set; }
+        public bool IsGenerate { get; set; }
+        public TimeDto StartTime { get; set; }
+        public TimeDto EndTime { get; set; }
+
         public DateTime DueDate { get; set; }
         public DateTime CreatedDate { get; set; }
+        public DateTime StartWorkingTime { get; set; }
+        public DateTime FinishWorkingTime { get; set; }
+    }
+    public class TimeDto
+    {
+        public TimeDto(DateTime dt)
+        {
+            var dateTime = dt;
+            Hour = dateTime.ToString("HH").ToInt();
+            Minute = dateTime.ToString("mm").ToInt();
+        }
+
+        public int Hour { get; set; }
+        public int Minute { get; set; }
     }
     public class ConsumtionDto
     {
@@ -52,9 +71,13 @@ namespace DMR_API.DTO
     public class TodolistDto
     {
         public int ID { get; set; }
+        public int PlanID { get; set; }
         public int GlueID { get; set; }
+        public int LineID { get; set; }
+        public string LineName { get; set; }
+        public int BuildingID { get; set; }
+        public int PrepareTime { get; set; }
         public int MixingInfoID { get; set; }
-        public int? BuildingID { get; set; }
         public double StandardConsumption { get; set; }
         public List<string> Lines { get; set; }
         public List<string> BPFCs { get; set; }
@@ -63,16 +86,27 @@ namespace DMR_API.DTO
         public string Supplier { get; set; }
         public string DeliveredActual { get; set; }
         public bool Status { get; set; }
+        public bool AbnormalStatus { get; set; }
         public DateTime EstimatedTime { get; set; }
         public List<DateTime> EstimatedTimes { get; set; }
         public DateTime EstimatedStartTime { get; set; }
         public DateTime EstimatedFinishTime { get; set; }
+
+        public double MixedConsumption { get; set; }
+        public double DeliveredConsumption { get; set; }
 
     }
     public class DispatchParams {
         public string Glue { get; set; }
         public int ID { get; set; }
         public DateTime EstimatedTime { get; set; }
+
+        public DateTime EstimatedStartTime { get; set; }
+        public DateTime EstimatedFinishTime { get; set; }
+
+
+        public DateTime StartDispatchingTime { get; set; }
+        public DateTime FinishDispatchingTime { get; set; }
         public List<string> Lines { get; set; }
 
     }
@@ -103,6 +137,7 @@ namespace DMR_API.DTO
     {
         public int ID { get; set; }
         public double StandardAmount { get; set; }
+        public double MixedConsumption { get; set; }
         public string Line { get; set; }
         public string Glue { get; set; }
         public int LineID { get; set; }

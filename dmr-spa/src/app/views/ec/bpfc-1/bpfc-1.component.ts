@@ -97,6 +97,7 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
     BPFCEstablishID: 0,
     consumption: '',
     expiredTime: 0,
+    glueNameID: 0,
     createdBy: 0,
   };
   ingredient: IIngredient = {
@@ -115,6 +116,7 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
     unit: 0,
     real: 0,
     cbd: 0,
+    glueTypeID: 0,
     replacementFrequency: 0,
     prepareTime: 0
   };
@@ -508,6 +510,7 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
       this.glue.id = args.rowData.id || 0;
       this.glue.code = args.data.code || '';
       this.glue.consumption = args.data.consumption;
+      this.glue.glueNameID = args.data.glueNameID;
       this.glue.kindID = this.kindID || null;
       this.glue.partID = this.partID || null;
       this.glue.materialID = this.materialID || null;
@@ -547,6 +550,8 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
               this.removeLocalStore('details');
               this.glueIngredientDetail = [];
               this.oldDetail = [];
+              this.grid.refresh();
+              this.grid2.refresh();
               this.alertify.success('Glue has been deleted');
             },
             (error) => {
@@ -1248,6 +1253,22 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
         }
       });
   }
+  mapGlueIngredientByGlueID(params) {
+    this.glueIngredientService.mapGlueIngredientByGlueID(params).subscribe(res => {
+      this.alertify.success('Cập nhật thành công!');
+      this.getAllGluesByBPFCID(this.BPFCID);
+      this.detailGlue = true;
+      this.modified = true;
+      this.modified = true;
+      if (this.subID === undefined) {
+        this.sortBySup(0);
+        this.getDetail(this.glueid);
+      } else {
+        this.sortBySup(this.subID);
+        this.getDetail(this.glueid);
+      }
+    });
+  }
 
   openIngredientModalComponent() {
     const modalRef = this.modalService.open(IngredientModalComponent, {
@@ -1299,6 +1320,7 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
                 materialID: null,
                 consumption: '',
                 expiredTime: 0,
+                glueNameID: 0,
                 createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
               };
               this.glue = glue;
@@ -1321,6 +1343,7 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
             materialID: null,
             consumption: '',
             expiredTime: 0,
+            glueNameID: 0,
             createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
           };
           this.glue = glue;
@@ -1599,6 +1622,7 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
                 materialNO: item.materialNO,
                 unit: item.unit,
                 real: item.real,
+                glueTypeID: 0,
                 cbd: item.cbd,
                 replacementFrequency: 0,
                 prepareTime: 0
@@ -1726,26 +1750,32 @@ export class Bpfc1Component implements OnInit, AfterViewInit {
         selectedrecords.materialID === 0 ? null : selectedrecords.materialID;
       this.selectedRow = this.gridglue.getSelectedRowIndexes();
       // update glue
-      this.glueService.update(selectedrecords).subscribe((res) => {
-        this.alertify.success('Cập nhật thành công!');
-        this.getAllGluesByBPFCID(this.BPFCID);
-        this.detailGlue = true;
-        this.modified = true;
-        // const bpfcInfo = {
-        //   modelNameID: this.modelNameID,
-        //   modelNoID: this.modelNoID,
-        //   articleNoID: this.articleNoID,
-        //   artProcessID: this.artProcessID,
-        // };
-        // this.getBPFCID(bpfcInfo);
-      });
+      // this.glueService.update(selectedrecords).subscribe((res) => {
+      //   this.alertify.success('Cập nhật thành công!');
+      //   this.getAllGluesByBPFCID(this.BPFCID);
+      //   this.detailGlue = true;
+      //   this.modified = true;
+      //   // const bpfcInfo = {
+      //   //   modelNameID: this.modelNameID,
+      //   //   modelNoID: this.modelNoID,
+      //   //   articleNoID: this.articleNoID,
+      //   //   artProcessID: this.artProcessID,
+      //   // };
+      //   // this.getBPFCID(bpfcInfo);
+      // });
       if (details.length > 0) {
-        this.mapGlueIngredients(details);
+        const params = {
+          glueName: selectedrecords.name,
+          glueID: selectedrecords.id,
+          glueIngredientForMapDto: details
+        };
+        this.mapGlueIngredientByGlueID(params);
+
+        // this.mapGlueIngredients(details);
         // for (const item of details) {
         //   this.mapGlueIngredient(item);
         // }
         // this.alertify.success('Successfully!');
-        this.modified = true;
       }
     }
   }

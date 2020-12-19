@@ -16,6 +16,7 @@ namespace DMR_API.DTO
         public int ID { get; set; }
         public string Code { get; set; }
         public int GlueID { get; set; }
+        public int? GlueNameID { get; set; }
         public string Name { get; set; }
         public string CreatedDate { get; set; }
         public string GlueName { get; set; }

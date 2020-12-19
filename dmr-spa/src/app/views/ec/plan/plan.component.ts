@@ -1,16 +1,13 @@
 import { PlanService } from './../../../_core/_service/plan.service';
-import { Plan } from './../../../_core/_model/plan';
-import { Component, OnInit, ViewChild, TemplateRef, OnDestroy } from '@angular/core';
+import { IPlan, ITime, Plan } from './../../../_core/_model/plan';
+import { Component, OnInit, ViewChild, TemplateRef, OnDestroy, AfterViewInit } from '@angular/core';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
-import { PageSettingsModel, GridComponent} from '@syncfusion/ej2-angular-grids';
-import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-
+import { PageSettingsModel, GridComponent, SelectionService, QueryCellInfoEventArgs } from '@syncfusion/ej2-angular-grids';
+import { NgbModal, NgbModalRef, NgbTimepicker } from '@ng-bootstrap/ng-bootstrap';
 import { DatePipe } from '@angular/common';
-
 import { FormGroup } from '@angular/forms';
 import { BPFCEstablishService } from 'src/app/_core/_service/bpfc-establish.service';
 import { BuildingService } from 'src/app/_core/_service/building.service';
-import { AuthService } from 'src/app/_core/_service/auth.service';
 import { IRole } from 'src/app/_core/_model/role';
 import { IBuilding } from 'src/app/_core/_model/building';
 import { FilteringEventArgs } from '@syncfusion/ej2-angular-dropdowns';
@@ -18,7 +15,11 @@ import { Query } from '@syncfusion/ej2-data/';
 import { EmitType } from '@syncfusion/ej2-base';
 import { Subscription } from 'rxjs';
 import { DataService } from 'src/app/_core/_service/data.service';
-
+import { TodolistService } from 'src/app/_core/_service/todolist.service';
+import { Tooltip } from '@syncfusion/ej2-angular-popups';
+import { StationComponent } from './station/station.component';
+import { StationService } from 'src/app/_core/_service/station.service';
+declare var $;
 const ADMIN = 1;
 const SUPERVISER = 2;
 @Component({
@@ -26,13 +27,18 @@ const SUPERVISER = 2;
   templateUrl: './plan.component.html',
   styleUrls: ['./plan.component.css'],
   providers: [
-    DatePipe
+    DatePipe,
+    SelectionService
   ]
 })
-export class PlanComponent implements OnInit, OnDestroy {
+export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('cloneModal') public cloneModal: TemplateRef<any>;
+  @ViewChild('stationModal') public stationModal: TemplateRef<any>;
   @ViewChild('planForm')
   orderForm: FormGroup;
+  @ViewChild('timepicker') startTimepicker: NgbTimepicker;
+  startTime: ITime = { hour: 7, minute: 0 };
+  endTime: ITime = { hour: 16, minute: 30 };
   pageSettings: PageSettingsModel;
   toolbarOptions: object;
   editSettings: object;
@@ -52,7 +58,8 @@ export class PlanComponent implements OnInit, OnDestroy {
   grid: GridComponent;
   dueDate: any;
   modalReference: NgbModalRef;
-  data: object[];
+  data: IPlan[];
+  plan: IPlan;
   searchSettings: any = { hierarchyMode: 'Parent' };
   modalPlan: Plan = {
     id: 0,
@@ -61,12 +68,26 @@ export class PlanComponent implements OnInit, OnDestroy {
     BPFCName: '',
     hourlyOutput: 0,
     workingHour: 0,
-    dueDate: new Date()
+    dueDate: new Date(),
+    startWorkingTime: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDay(), 7, 0, 0),
+    finishWorkingTime: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDay(), 16, 30, 0),
+    startTime: {
+      hour: 7,
+      minute: 0
+    },
+    endTime: {
+      hour: 16,
+      minute: 30
+    }
+
   };
   public textLine = 'Select a line name';
   public fieldsGlue: object = { text: 'name', value: 'name' };
   public fieldsLine: object = { text: 'name', value: 'name' };
   public fieldsBPFC: object = { text: 'name', value: 'name' };
+  startWorkingTimeParams = { params: { value: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 7, 30, 0) } };
+  // tslint:disable-next-line:max-line-length
+  finishWorkingTimeParams = { params: { value: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 16, 30, 0) } };
   public buildingName: object[];
   public modelName: object[];
   buildingNameEdit: any;
@@ -77,15 +98,20 @@ export class PlanComponent implements OnInit, OnDestroy {
   glueDetails: any;
   setFocus: any;
   subscription: Subscription[] = [];
+  selectOptions: object;
   constructor(
     private alertify: AlertifyService,
     public modalService: NgbModal,
     private planService: PlanService,
+    private todolistService: TodolistService,
     private buildingService: BuildingService,
+    private stationSevice: StationService,
     private dataService: DataService,
     private bPFCEstablishService: BPFCEstablishService,
     public datePipe: DatePipe
   ) { }
+  ngAfterViewInit(): void {
+  }
 
   ngOnInit(): void {
     this.date = new Date();
@@ -96,11 +122,16 @@ export class PlanComponent implements OnInit, OnDestroy {
     const ROLE: IRole = JSON.parse(localStorage.getItem('level'));
     this.role = ROLE;
     this.building = BUIDLING;
+    this.watch();
     this.gridConfig();
     this.getAll();
     this.getAllBPFC();
     this.checkRole();
-    this.ClearForm();
+    this.clearForm();
+  }
+  onTimeChange(agrs) {
+    console.log(agrs);
+    // this.endTime = {hour: +value.hour, minute: +value.minute};
   }
   public onFiltering: EmitType<FilteringEventArgs> = (
     e: FilteringEventArgs
@@ -111,6 +142,14 @@ export class PlanComponent implements OnInit, OnDestroy {
       e.text !== '' ? query.where('name', 'contains', e.text, true) : query;
     // pass the filter data source, filter query to updateData method.
     e.updateData(this.BPFCs, query);
+  }
+  watch() {
+    const watchAction = this.stationSevice.getValue().subscribe(status => {
+      if (status === true) {
+        this.getAll();
+      }
+    });
+    this.subscription.push(watchAction);
   }
   checkRole(): void {
     const ROLES = [ADMIN, SUPERVISER];
@@ -127,6 +166,7 @@ export class PlanComponent implements OnInit, OnDestroy {
     this.subscription.forEach(subscription => subscription.unsubscribe());
   }
   gridConfig(): void {
+    this.selectOptions = { checkboxOnly: true };
     this.pageSettings = { pageCount: 20, pageSizes: true, pageSize: 10 };
     this.editparams = { params: { popupHeight: '300px' } };
     this.editSettings = { showDeleteConfirmDialog: false, allowEditing: true, allowAdding: true, allowDeleting: true, mode: 'Normal' };
@@ -140,33 +180,33 @@ export class PlanComponent implements OnInit, OnDestroy {
     const cloneVi = 'Nhân Bản';
     this.subscription.push(this.dataService.getValueLocale().subscribe(lang => {
       if (lang === 'vi') {
-        this.toolbarOptions = ['Add', 'Update', 'Cancel',
-          { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-remove', id: 'ExcelExport' },
-          { text: deleteRangeVi, tooltipText: deleteRangeVi, prefixIcon: 'fa fa-trash', id: 'DeleteRange' }, 'Search',
-          { text: cloneVi, tooltipText: cloneVi, prefixIcon: 'fa fa-copy', id: 'Clone' }
+        this.toolbarOptions = ['Add',
+          { text: 'Cập Nhật', tooltipText: 'Cập Nhật', prefixIcon: 'fa fa-tasks', id: 'Update' },
+          { text: 'Nhân Bản', tooltipText: 'Nhân Bản', prefixIcon: 'fa fa-clone', id: 'Clone' },
+          { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
         ];
         return;
       } else if (lang === 'en') {
-        this.toolbarOptions = ['Add', 'Update', 'Cancel',
-          { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-remove', id: 'ExcelExport' },
-          { text: deleteRangeEn, tooltipText: deleteRangeEn, prefixIcon: 'fa fa-trash', id: 'DeleteRange' }, 'Search',
-          { text: cloneEn, tooltipText: cloneEn, prefixIcon: 'fa fa-copy', id: 'Clone' }
+        this.toolbarOptions = ['Add',
+          { text: 'Update', tooltipText: 'Update', prefixIcon: 'fa fa-tasks', id: 'Update' },
+          { text: 'Clone', tooltipText: 'Clone', prefixIcon: 'fa fa-clone', id: 'Clone' },
+          { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
         ];
         return;
       } else {
         const langLocal = localStorage.getItem('lang');
         if (langLocal === 'vi') {
-          this.toolbarOptions = ['Add', 'Update', 'Cancel',
-            { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-remove', id: 'ExcelExport' },
-            { text: deleteRangeVi, tooltipText: deleteRangeVi, prefixIcon: 'fa fa-trash', id: 'DeleteRange' }, 'Search',
-            { text: cloneVi, tooltipText: cloneVi, prefixIcon: 'fa fa-copy', id: 'Clone' }
+          this.toolbarOptions = ['Add',
+            { text: 'Cập Nhật', tooltipText: 'Cập Nhật', prefixIcon: 'fa fa-tasks', id: 'Update' },
+            { text: 'Nhân Bản', tooltipText: 'Nhân Bản', prefixIcon: 'fa fa-clone', id: 'Clone' },
+            { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
           ];
           return;
         } else if (langLocal === 'en') {
-          this.toolbarOptions = ['Add', 'Update', 'Cancel',
-            { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-remove', id: 'ExcelExport' },
-            { text: deleteRangeEn, tooltipText: deleteRangeEn, prefixIcon: 'fa fa-trash', id: 'DeleteRange' }, 'Search',
-            { text: cloneEn, tooltipText: cloneEn, prefixIcon: 'fa fa-copy', id: 'Clone' }
+          this.toolbarOptions = ['Add',
+            { text: 'Update', tooltipText: 'Update', prefixIcon: 'fa fa-tasks', id: 'Update' },
+            { text: 'Clone', tooltipText: 'Clone', prefixIcon: 'fa fa-clone', id: 'Clone' },
+            { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
           ];
           return;
         }
@@ -202,27 +242,64 @@ export class PlanComponent implements OnInit, OnDestroy {
   actionComplete(args) {
     if (args.requestType === 'beginEdit') {
       if (this.setFocus.field !== 'buildingName' && this.setFocus.field !== 'bpfcName') {
-        (args.form.elements.namedItem(this.setFocus?.field) as HTMLInputElement).focus();
+        // (args.form.elements.namedItem(this.setFocus?.field) as HTMLInputElement).focus();
       }
     }
   }
+  convertTimeToDatetime(time: { hour: number, minute: number }) {
+    const date = new Date().toDateString() + ` ${time.hour}:${time.minute}`;
+    return date;
+  }
+  convertDatetimeToTime(date: Date) {
+    const value = date;
+    const time = { hour: value.getHours(), minute: value.getMinutes() };
+    return time;
+  }
+  rowDataBound(args) {
+    // khong xai nua
+    // if (args.data.isGenerate === true) {
+    //   args.row.getElementsByClassName('e-gridchkbox')[0].classList.add('disablecheckbox');
+    //   args.row.getElementsByClassName('e-checkbox-wrapper')[0].classList.add('disablecheckbox');
+    // }
+  }
+  onChangeStartTime(value: Date) {
+    this.startTime = { hour: value.getHours(), minute: value.getMinutes() };
+  }
+  onChangeEndTime(value: Date) {
+    this.endTime = { hour: value.getHours(), minute: value.getMinutes() };
+
+  }
   actionBegin(args) {
+    console.log(this.data);
+    if (args.requestType === 'beginEdit') {
+      this.clearForm();
+      const data = args.rowData;
+      this.modalPlan.startTime = this.startTime;
+      this.modalPlan.endTime = this.endTime;
+      this.modalPlan.finishWorkingTime = data.finishWorkingTime;
+      this.modalPlan.startWorkingTime = data.startWorkingTime;
+    }
     if (args.requestType === 'cancel') {
-      this.ClearForm();
+      this.clearForm();
+      this.grid.refresh();
     }
 
     if (args.requestType === 'save') {
       if (args.action === 'edit') {
         this.modalPlan.id = args.data.id || 0;
-        this.modalPlan.buildingID = this.buildingNameEdit;
+        this.modalPlan.buildingID = this.buildingNameEdit ?? args.data.buildingID;
         this.modalPlan.dueDate = this.dueDate;
         this.modalPlan.workingHour = args.data.workingHour;
         this.modalPlan.BPFCEstablishID = args.data.bpfcEstablishID;
         this.modalPlan.BPFCName = args.data.bpfcName;
         this.modalPlan.hourlyOutput = args.data.hourlyOutput;
+        this.modalPlan.startTime = this.startTime;
+        this.modalPlan.endTime = this.endTime;
+        this.modalPlan.finishWorkingTime = args.data.finishWorkingTime;
+        this.modalPlan.startWorkingTime = args.data.startWorkingTime;
         this.planService.update(this.modalPlan).subscribe(res => {
           this.alertify.success('Cập nhật thành công! <br>Updated succeeded!');
-          this.ClearForm();
+          this.clearForm();
           this.getAll();
         });
       }
@@ -233,26 +310,57 @@ export class PlanComponent implements OnInit, OnDestroy {
         this.modalPlan.BPFCEstablishID = this.bpfcEdit;
         this.modalPlan.BPFCName = args.data.bpfcName;
         this.modalPlan.hourlyOutput = args.data.hourlyOutput || 0;
+        this.modalPlan.startTime = this.startTime;
+        this.modalPlan.endTime = this.endTime;
         this.planService.create(this.modalPlan).subscribe(res => {
           if (res) {
             this.alertify.success('Tạo thành công!<br>Created succeeded!');
             this.getAll();
-            this.ClearForm();
+            this.clearForm();
           } else {
             this.alertify.warning('Dữ liệu đã tồn tại! <br>This plan has already existed!!!');
             this.getAll();
-            this.ClearForm();
+            this.clearForm();
           }
         }, error => {
-            this.grid.refresh();
-            this.getAll();
-            this.ClearForm();
+          this.alertify.error(error, true);
+          this.grid.refresh();
+          this.getAll();
+          this.clearForm();
         });
       }
     }
   }
 
-  private ClearForm() {
+  private clearForm() {
+    this.modalPlan = {
+      id: 0,
+      buildingID: 0,
+      BPFCEstablishID: 0,
+      BPFCName: '',
+      hourlyOutput: 0,
+      workingHour: 0,
+      dueDate: new Date(),
+      startWorkingTime: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDay(), 7, 0, 0),
+      finishWorkingTime: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDay(), 16, 30, 0),
+      startTime: {
+        hour: 7,
+        minute: 0
+      },
+      endTime: {
+        hour: 16,
+        minute: 30
+      }
+
+    };
+    this.startTime = {
+      hour: 7,
+      minute: 0
+    };
+    this.endTime = {
+      hour: 16,
+      minute: 30
+    };
     this.bpfcEdit = 0;
     this.hourlyOutput = 0;
     this.workHour = 0;
@@ -303,8 +411,13 @@ export class PlanComponent implements OnInit, OnDestroy {
           hourlyOutput: item.hourlyOutput,
           buildingName: item.buildingName,
           buildingID: item.buildingID,
+          startWorkingTime: new Date(item.startWorkingTime),
+          finishWorkingTime: new Date(item.finishWorkingTime),
+          startTime: item.startTime,
+          endTime: item.endTime,
           bpfcEstablishID: item.bpfcEstablishID,
-          glues: item.glues || []
+          glues: item.glues || [],
+          isGenerate: item.isGenerate
         };
       });
     });
@@ -319,14 +432,23 @@ export class PlanComponent implements OnInit, OnDestroy {
       });
     });
   }
-
+  delete(id) {
+    this.alertify.confirm('Delete Plan <br> Xóa kế hoạc làm việc', 'Are you sure you want to delete this Plans ?<br> Bạn có chắc chắn muốn xóa không?', () => {
+      this.planService.deleteRange([id]).subscribe(() => {
+        this.getAll();
+        this.alertify.success('Xóa thành công! <br>Plans has been deleted');
+      }, error => {
+        this.alertify.error('Xóa thất bại! <br>Failed to delete the Model Name');
+      });
+    });
+  }
   /// Begin API
   openModal(ref) {
     const selectedRecords = this.grid.getSelectedRecords();
     if (selectedRecords.length !== 0) {
       this.plansSelected = selectedRecords.map((item: any) => {
         return {
-          id: 0,
+          id: item.id,
           bpfcEstablishID: item.bpfcEstablishID,
           workingHour: item.workingHour,
           hourlyOutput: item.hourlyOutput,
@@ -339,21 +461,34 @@ export class PlanComponent implements OnInit, OnDestroy {
       this.alertify.warning('Hãy chọn 1 hoặc nhiều dòng để nhân bản!<br>Please select the plan!', true);
     }
   }
-
+  openCloneModal(item) {
+    this.modalReference = this.modalService.open(this.cloneModal);
+    this.plansSelected = [{
+        id: item.id,
+        bpfcEstablishID: item.bpfcEstablishID,
+        workingHour: item.workingHour,
+        hourlyOutput: item.hourlyOutput,
+        dueDate: item.dueDate,
+        buildingID: item.buildingID
+    }];
+  }
   toolbarClick(args: any): void {
     switch (args.item.id) {
       case 'Clone':
         this.openModal(this.cloneModal);
         break;
-      case 'DeleteRange':
-        if (this.grid.getSelectedRecords().length === 0) {
-          this.alertify.warning('Hãy chọn 1 hoặc nhiều dòng để xóa <br>Please select the plans!!', true);
-        } else {
-          const selectedRecords = this.grid.getSelectedRecords().map((item: any) => {
-            return item.id;
-          });
-          this.deleteRange(selectedRecords);
-        }
+      // case 'DeleteRange':
+      //   if (this.grid.getSelectedRecords().length === 0) {
+      //     this.alertify.warning('Hãy chọn 1 hoặc nhiều dòng để xóa <br>Please select the plans!!', true);
+      //   } else {
+      //     const selectedRecords = this.grid.getSelectedRecords().map((item: any) => {
+      //       return item.id;
+      //     });
+      //     this.deleteRange(selectedRecords);
+      //   }
+      //   break;
+      case 'Update':
+        this.generateTodolist();
         break;
       case 'ExcelExport':
         this.grid.excelExport();
@@ -394,9 +529,14 @@ export class PlanComponent implements OnInit, OnDestroy {
           hourlyOutput: item.hourlyOutput,
           buildingName: item.buildingName,
           buildingID: item.buildingID,
+          startWorkingTime: new Date(item.startWorkingTime),
+          finishWorkingTime: new Date(item.finishWorkingTime),
+          startTime: item.startTime,
+          endTime: item.endTime,
           bpfcEstablishID: item.bpfcEstablishID,
+          isGenerate: item.isGenerate,
           glues: item.glues || []
-        };
+        } as IPlan;
       });
     });
   }
@@ -415,7 +555,7 @@ export class PlanComponent implements OnInit, OnDestroy {
     this.endDate = (args.value as Date);
     this.search(this.startDate, this.endDate);
   }
-  tooltip(data) {
+  tooltipContext(data) {
     if (data) {
       const array = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
       const glues = [];
@@ -429,10 +569,42 @@ export class PlanComponent implements OnInit, OnDestroy {
       return '';
     }
   }
-
+  tooltip(args: QueryCellInfoEventArgs) {
+    if (args.column.field === 'bpfcName') {
+      const data = args.data as any;
+      const tooltip: Tooltip = new Tooltip({
+        content: this.tooltipContext(data.glues)
+      }, args.cell as HTMLTableCellElement);
+    }
+  }
   onClickFilter() {
     this.search(this.startDate, this.endDate);
   }
-
+  generateTodolist() {
+    const selectedRecords = this.grid.dataSource as any[];
+    const data = selectedRecords.filter(x => x.isGenerate === false);
+    if (data.length === 0) {
+      this.alertify.warning(`Tất cả các kế hoạch làm việc đã được tạo nhiệm vụ!<br>
+      All work plans have been created with tasks !`, true);
+      return;
+    }
+    const plansSelected: number[] = data.map((item: any) => {
+        return item.id;
+    });
+    this.todolistService.generateToDoList(plansSelected).subscribe(() => {
+      this.alertify.success('Tạo nhiệm vụ thành công!<br>Success!', true);
+      this.getAll();
+    });
+  }
   // End API
+
+  // modal
+  openStationComponent(data) {
+    const modalRef = this.modalService.open(StationComponent, { size: 'lg', backdrop: 'static', keyboard: false });
+    modalRef.componentInstance.plan = data as IPlan;
+    modalRef.result.then((result) => {
+    }, (reason) => {
+    });
+  }
+  // end modal
 }

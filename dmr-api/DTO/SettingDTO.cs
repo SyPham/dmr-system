@@ -12,6 +12,7 @@ namespace DMR_API.DTO
         public string MachineType { get; set; }
         public string MachineCode { get; set; }
         public int MinRPM { get; set; }
+        public int GlueTypeID { get; set; }
         public int MaxRPM { get; set; }
         public int BuildingID { get; set; }
     }

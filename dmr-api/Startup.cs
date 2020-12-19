@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,10 +12,7 @@ using DMR_API.Data;
 using DMR_API.Helpers;
 using DMR_API.Helpers.AutoMapper;
 using DMR_API.SignalrHub;
-using EC_API._Repositories;
-using EC_API._Services.Interface;
-using EC_API.Data;
-using EC_API.Helpers;
+using DMR_API._Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -30,6 +27,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+
 namespace DMR_API
 {
     public class Startup
@@ -63,7 +62,10 @@ namespace DMR_API
             services.AddDbContext<DataContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddDbContext<IoTContext>(options => options.UseMySQL(Configuration.GetConnectionString("IoTConnection")));
             services.AddControllers().AddNewtonsoftJson(options =>
-                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+            {
+                 options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Unspecified; 
+                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+            }
             );
             //Auto Mapper
             services.AddAutoMapper(typeof(Startup));
@@ -124,6 +126,8 @@ namespace DMR_API
 
             });
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IJWTService, JWTService>();
+
             //Repository
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IGlueIngredientRepository, GlueIngredientRepository>();
@@ -155,6 +159,7 @@ namespace DMR_API
             services.AddScoped<IModelNoRepository, ModelNoRepository>();
             services.AddScoped<IBPFCEstablishRepository, BPFCEstablishRepository>();
             services.AddScoped<IMixingInfoRepository, MixingInfoRepository>();
+            services.AddScoped<IMixingInfoDetailRepository, MixingInfoDetailRepository>();
             services.AddScoped<IMixingRepository, MixingRepository>();
             services.AddScoped<IBuildingGlueRepository, BuildingGlueRepository>();
             services.AddScoped<IIngredientInfoRepository, IngredientInfoRepository>();
@@ -168,6 +173,10 @@ namespace DMR_API
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IScaleMachineRepository, ScaleMachineRepository>();
             services.AddScoped<IDispatchRepository, DispatchRepository>();
+            services.AddScoped<IGlueTypeRepository, GlueTypeRepository>();
+            services.AddScoped<IToDoListRepository, ToDoListRepository>();
+            services.AddScoped<IGlueNameRepository, GlueNameRepository>();
+            services.AddScoped<IStationRepository, StationRepository>();
 
             //Services
             services.AddScoped<IMixingService, MixingService>();
@@ -203,16 +212,22 @@ namespace DMR_API
             services.AddScoped<IScaleMachineService, ScaleMachineService>();
 
             services.AddScoped<IDispatchService, DispatchService>();
+            services.AddScoped<IToDoListService, ToDoListService>();
+            services.AddScoped<IGlueTypeService, GlueTypeService>();
+            services.AddScoped<IStirService, StirService>();
 
+            services.AddScoped<IStationService, StationService>(); //  duy trì trạng thái trong một request
             //extension
             services.AddScoped<IMailExtension, MailExtension>();
 
+            //Không bao giờ inject Scoped & Transient service vào Singleton service
+            //Không bao giờ inject Transient Service vào Scope Service
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, DataContext dataContext)
         {
-            
+
             dataContext.Database.Migrate();
             if (env.IsDevelopment())
             {
@@ -231,7 +246,7 @@ namespace DMR_API
             app.UseCors(x => x
                            .AllowAnyMethod()
                            .AllowAnyHeader()
-                        //    .SetIsOriginAllowed(origin => true) // allow any origin
+                           //    .SetIsOriginAllowed(origin => true) // allow any origin
                            .AllowCredentials()); // allow credentials
             app.UseHttpsRedirection();
             app.UseRouting();

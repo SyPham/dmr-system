@@ -6,6 +6,14 @@ export interface Plan {
     BPFCEstablishID: number;
     BPFCName: string;
     dueDate: any;
+    startWorkingTime: any;
+    finishWorkingTime: any;
+    startTime: ITime;
+    endTime: ITime;
+}
+export interface ITime {
+    hour: number;
+    minute: number;
 }
 export interface Consumtion {
     id: number;
@@ -24,30 +32,19 @@ export interface Consumtion {
     dueDate: Date;
     mixingDate: Date;
 }
-export interface Todolist {
-    id: number;
-    supplier: string;
-    glue: string;
-    glueID: number;
-    lines: string[];
-    deliveredActual: string;
-    standardConsumption: number;
-    status: boolean;
-    estimatedTime: Date;
-    estimatedStartTime: Date;
-    estimatedFinishTime: Date;
-
-}
 export interface IDispatch {
     id: number;
     lineID: number;
     line: string;
     standardAmount: number;
+    mixedConsumption: number;
     mixingInfoID: number;
     glue: string;
     real: number;
     warningStatus: boolean;
-    scanStaus: boolean;
+    scanStatus: boolean;
+    isLock: boolean;
+    isNew: boolean;
 }
 export interface IDispatchForCreate {
     id: number;
@@ -56,12 +53,17 @@ export interface IDispatchForCreate {
     mixingInfoID: number;
     createdTime: Date;
     estimatedTime: Date;
+    standardAmount: number;
+    startDispatchingTime: any;
+    finishDispatchingTime: any;
 }
 export interface DispatchParams {
     id: number;
     lines: string[];
     glue: string;
     estimatedTime: Date;
+    estimatedStartTime: Date;
+    estimatedFinishTime: Date;
 }
 export interface IMixingInfo {
     id: number;
@@ -80,7 +82,25 @@ export interface IMixingInfo {
     mixBy: number;
     buildingID: number;
     estimatedTime: any;
+    estimatedStartTime: any;
+    estimatedFinishTime: any;
     startTime: any;
     endTime: any;
     createdTime: any;
+}
+
+
+export interface IPlan {
+    id: number;
+    bpfcName: string;
+    dueDate: Date;
+    createdDate: Date;
+    workingHour: number;
+    hourlyOutput: number;
+    buildingName: string;
+    buildingID: number;
+    startWorkingTime: Date;
+    finishWorkingTime: Date;
+    bpfcEstablishID: number;
+    glues: string[];
 }

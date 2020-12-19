@@ -9,7 +9,8 @@ namespace DMR_API._Services.Interface
 {
     public interface IMixingInfoService
     {
-        Task<MixingInfo> Mixing(MixingInfoForCreateDto mixing);
+        MixingInfo Mixing(MixingInfoForCreateDto mixing);
+        bool AddMixingInfo(MixingInfoForAddDto mixing);
         Task<List<MixingInfoDto>> GetMixingInfoByGlueName(string glueName);
         Task<object> Stir(string glueName);
         Task<object> GetRPM(int mixingInfoID, string building, string startTime, string endTime);

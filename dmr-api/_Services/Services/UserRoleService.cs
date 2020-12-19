@@ -5,7 +5,6 @@ using DMR_API._Services.Interface;
 using DMR_API.DTO;
 using DMR_API.Helpers;
 using DMR_API.Models;
-using EC_API._Services.Interface;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

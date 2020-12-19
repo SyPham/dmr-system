@@ -1,6 +1,7 @@
 ﻿using dmr_api.Models;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,16 +14,16 @@ namespace DMR_API.Models
         public string GlueName { get; set; }
         public int BuildingID { get; set; }
         public string Code { get; set; }
-        public string ChemicalA { get; set; }
-        public string ChemicalB { get; set; }
-        public string ChemicalC { get; set; }
-        public string ChemicalD { get; set; }
-        public string ChemicalE { get; set; }
-        public string BatchA { get; set; }
-        public string BatchB { get; set; }
-        public string BatchC { get; set; }
-        public string BatchD { get; set; }
-        public string BatchE { get; set; }
+        //public string ChemicalA { get; set; }
+        //public string ChemicalB { get; set; }
+        //public string ChemicalC { get; set; }
+        //public string ChemicalD { get; set; }
+        //public string ChemicalE { get; set; }
+        //public string BatchA { get; set; }
+        //public string BatchB { get; set; }
+        //public string BatchC { get; set; }
+        //public string BatchD { get; set; }
+        //public string BatchE { get; set; }
         public int MixBy { get; set; }
         public DateTime ExpiredTime { get; set; }
         public DateTime CreatedTime { get; set; }
@@ -30,8 +31,14 @@ namespace DMR_API.Models
         public DateTime EstimatedTime { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
+        public DateTime? PrintTime { get; set; }
+        public DateTime EstimatedStartTime { get; set; }
+        public DateTime EstimatedFinishTime { get; set; }
         public Glue Glue { get; set; }
         public virtual ICollection<BuildingGlue> BuildingGlues { get; set; }
+        public ICollection<Dispatch> Dispatches { get; set; }
+        public ICollection<Stir> Stirs { get; set; }
+        public ICollection<MixingInfoDetail> MixingInfoDetails { get; set; }
 
     }
 }

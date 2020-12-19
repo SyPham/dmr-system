@@ -5,7 +5,7 @@ using DMR_API._Services.Interface;
 using DMR_API.DTO;
 using DMR_API.Helpers;
 using DMR_API.Models;
-using EC_API.Data;
+using DMR_API.Data;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using System;
@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace DMR_API._Services.Services
 {
@@ -23,8 +24,10 @@ namespace DMR_API._Services.Services
         private readonly IGlueRepository _repoGlue;
         private readonly IRawDataRepository _repoRawData;
         private readonly IStirRepository _repoStir;
-        private readonly IMongoRepository<EC_API.Data.MongoModels.RawData> _rowDataRepository;
+        private readonly IMongoRepository<DMR_API.Data.MongoModels.RawData> _rowDataRepository;
         private readonly ISettingRepository _repoSetting;
+        private readonly IToDoListService _toDoListService;
+        private readonly IMixingInfoDetailRepository _repoMixingInfoDetail;
         private readonly IMapper _mapper;
         private readonly MapperConfiguration _configMapper;
 
@@ -32,9 +35,12 @@ namespace DMR_API._Services.Services
             IMixingInfoRepository repoMixingInfor,
             IMixingService repoMixing,
             IRawDataRepository repoRawData,
-            IMongoRepository<EC_API.Data.MongoModels.RawData> rowDataRepository,
+            IMongoRepository<DMR_API.Data.MongoModels.RawData> rowDataRepository,
             ISettingRepository repoSetting,
-            IMapper mapper, IGlueRepository repoGlue,
+            IToDoListService toDoListService,
+             IMixingInfoDetailRepository _repoMixingInfoDetail,
+
+        IMapper mapper, IGlueRepository repoGlue,
             IStirRepository repoStir,
             MapperConfiguration configMapper)
         {
@@ -47,26 +53,61 @@ namespace DMR_API._Services.Services
             _repoRawData = repoRawData;
             _configMapper = configMapper;
             _repoSetting = repoSetting;
+            _toDoListService = toDoListService;
+            this._repoMixingInfoDetail = _repoMixingInfoDetail;
         }
 
-        public async Task<MixingInfo> Mixing(MixingInfoForCreateDto mixing)
+        public MixingInfo Mixing(MixingInfoForCreateDto mixing)
         {
-            try
+
+            using (TransactionScope scope = new TransactionScope())
             {
-                var item = _mapper.Map<MixingInfoForCreateDto, MixingInfo>(mixing);
-                item.Code = CodeUtility.RandomString(8);
-                item.CreatedTime = DateTime.Now;
-                var glue = await _repoGlue.FindAll().FirstOrDefaultAsync(x => x.isShow == true && x.ID == mixing.GlueID);
-                item.ExpiredTime = DateTime.Now.AddMinutes(glue.ExpiredTime);
-                _repoMixingInfor.Add(item);
-                await _repoMixingInfor.SaveAll();
-                // await _repoMixing.AddOrUpdate(item.ID);
-                return item;
+                try
+                {
+                    string code = CodeUtility.RandomString(8);
+                    while (true)
+                    {
+                        var checkExistingCode = _repoMixingInfor.FindAll(x => x.Code == code).Any();
+                        if (checkExistingCode is true)
+                        {
+                            code = CodeUtility.RandomString(8);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    var item = _mapper.Map<MixingInfoForCreateDto, MixingInfo>(mixing);
+                    item.Code = code;
+                    item.CreatedTime = DateTime.Now;
+                    var glue = _repoGlue.FindAll().FirstOrDefault(x => x.isShow == true && x.ID == mixing.GlueID);
+                    item.ExpiredTime = DateTime.Now.AddMinutes(glue.ExpiredTime);
+                    _repoMixingInfor.Add(item);
+                    //await _repoMixingInfor.SaveAll();
+                    _repoMixingInfor.Save();
+
+                    // await _repoMixing.AddOrUpdate(item.ID);
+                    var todo = new ToDoListForUpdateDto()
+                    {
+                        GlueName = mixing.GlueName,
+                        StartTime = mixing.StartTime,
+                        FinishTime = mixing.EndTime,
+                        MixingInfoID = item.ID,
+                        EstimatedFinishTime = mixing.EstimatedFinishTime,
+                        EstimatedStartTime = mixing.EstimatedStartTime,
+                        Amount = mixing.ChemicalA.ToDouble() + mixing.ChemicalB.ToDouble() + mixing.ChemicalC.ToDouble() + mixing.ChemicalD.ToDouble() + mixing.ChemicalE.ToDouble()
+                    };
+                    _toDoListService.UpdateMixingTimeRange(todo);
+                    scope.Complete();
+                    return item;
+                }
+                catch
+                {
+                    scope.Dispose();
+                    return new MixingInfo();
+                }
             }
-            catch
-            {
-                return new MixingInfo();
-            }
+
         }
 
         public async Task<List<MixingInfoDto>> GetMixingInfoByGlueName(string glueName)
@@ -86,9 +127,22 @@ namespace DMR_API._Services.Services
             var STIRRED = 1;
             var NOT_STIRRED_YET = 0;
             var NA = 2;
+
             var minDate = DateTime.MinValue;
 
-            var model = from a in _repoMixingInfor.FindAll().Where(x => x.GlueName.Equals(glueName) && x.CreatedTime.Date == currentDate)
+            var model = from a in _repoMixingInfor.FindAll(x => x.GlueName.Equals(glueName) && x.CreatedTime.Date == currentDate)
+                        .Include(x => x.MixingInfoDetails)
+                        .Include(x=>x.Glue)
+                                    .ThenInclude(x => x.GlueIngredients)
+                                    .ThenInclude(x => x.Ingredient)
+                                    .ThenInclude(x => x.GlueType)
+                                    .Select(a=> new {
+                                        a.GlueName,
+                                        a.CreatedTime,
+                                        Qty = a.MixingInfoDetails.Select(a => a.Amount).Sum(),
+                                        a.ID,
+                                        a.Glue.GlueIngredients.FirstOrDefault(x=>x.Position == "A").Ingredient.GlueType
+                                    })
                         join b in _repoStir.FindAll().Include(x => x.Setting).Where(x => x.GlueName.Equals(glueName) && x.CreatedTime.Date == currentDate) on a.ID equals b.MixingInfoID into gj
                         from ab in gj.DefaultIfEmpty()
                         select new
@@ -96,13 +150,9 @@ namespace DMR_API._Services.Services
                             a.ID,
                             StirID = ab.ID,
                             a.GlueName,
-                            a.ChemicalA,
-                            a.ChemicalB,
-                            a.ChemicalC,
-                            a.ChemicalD,
-                            a.ChemicalE,
+                            a.Qty,
                             a.CreatedTime,
-                            ab.StartTime,
+                            ab.StartTime ,
                             ab.EndTime,
                             ab.SettingID,
                             ab.Setting,
@@ -110,6 +160,7 @@ namespace DMR_API._Services.Services
                             ab.Status,
                             ab.RPM,
                             ab.TotalMinutes,
+                            a.GlueType,
                             MixingStatus = ab.ID > 0 && ab.SettingID == null ? NA : ab.SettingID != null ? STIRRED : NOT_STIRRED_YET
                         };
             return await model.ToListAsync();
@@ -246,6 +297,68 @@ namespace DMR_API._Services.Services
 
             // var model = _rowDataRepository.AsQueryable().Select(x => new {x.MachineID, x.RPM, x.CreatedDateTime }).OrderByDescending(x=>x.CreatedDateTime).ToList();
             return model;
+        }
+
+        public bool AddMixingInfo(MixingInfoForAddDto mixing)
+        {
+          
+            using (TransactionScope scope = new TransactionScope())
+            {
+                try
+                {
+                    var mixingInfo = new MixingInfo
+                    {
+                        GlueID = mixing.GlueID,
+                        GlueName = mixing.GlueName,
+                        BuildingID = mixing.BuildingID,
+                        MixBy = mixing.MixBy,
+                        EstimatedFinishTime = mixing.EstimatedFinishTime,
+                        EstimatedStartTime = mixing.EstimatedStartTime
+
+                    };
+
+                    string code = CodeUtility.RandomString(8);
+                    while (true)
+                    {
+                        var checkExistingCode = _repoMixingInfor.FindAll(x => x.Code == code).Any();
+                        if (checkExistingCode is true)
+                        {
+                            code = CodeUtility.RandomString(8);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    mixingInfo.Code = code;
+                    _repoMixingInfor.Add(mixingInfo);
+                    _repoMixingInfor.Save();
+
+                    var details = _mapper.Map<List<MixingInfoDetail>>(mixing.Details.ToList());
+                    details.ForEach(x => x.MixingInfoID = mixingInfo.ID);
+                    _repoMixingInfoDetail.AddRange(details);
+                    _repoMixingInfoDetail.Save();
+
+                    var todo = new ToDoListForUpdateDto()
+                    {
+                        GlueName = mixing.GlueName,
+                        StartTime = mixing.StartTime,
+                        FinishTime = mixing.EndTime,
+                        MixingInfoID = mixingInfo.ID,
+                        EstimatedFinishTime = mixing.EstimatedFinishTime,
+                        EstimatedStartTime = mixing.EstimatedStartTime,
+                        Amount = details.Sum(x => x.Amount)
+                    };
+                    _toDoListService.UpdateMixingTimeRange(todo);
+                    scope.Complete();
+                    return true;
+                }
+                catch
+                {
+                    scope.Dispose();
+                    return false;
+                }
+            }
         }
     }
 }

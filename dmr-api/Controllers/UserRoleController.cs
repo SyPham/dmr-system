@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using DMR_API._Services.Interface;
 using DMR_API.DTO;
-using EC_API._Services.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 

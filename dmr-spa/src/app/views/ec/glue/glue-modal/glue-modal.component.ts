@@ -25,16 +25,17 @@ export class GlueModalComponent implements OnInit {
     kindID: null,
     partID: null,
     materialID: null,
+    glueNameID: 0,
     consumption: '',
     expiredTime: 0,
     createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
     BPFCEstablishID: 0,
   };
   showBarCode: boolean;
-  public MaterialName: object []
-  public partName: object []
+  public MaterialName: object [];
+  public partName: object [];
   public fieldsGlue: object = { text: 'name', value: 'id' };
-  public textGlue: string = 'Select';
+  public textGlue = 'Select';
   constructor(
     public activeModal: NgbActiveModal,
     private alertify: AlertifyService,
@@ -68,9 +69,9 @@ export class GlueModalComponent implements OnInit {
     }));
   }
   getAllMaterialName(){
-    this.glueService.getAllMaterialName().subscribe((res =>{
+    this.glueService.getAllMaterialName().subscribe((res => {
       this.MaterialName = res;
-    }))
+    }));
   }
   getAllModelName() {
     this.modalNameService.getAllModalName().subscribe((res => {
@@ -119,8 +120,8 @@ export class GlueModalComponent implements OnInit {
 
   makeid(length) {
     let result           = '';
-    let characters       = '0123456789';
-    let charactersLength = characters.length;
+    const characters       = '0123456789';
+    const charactersLength = characters.length;
     for ( let i = 0; i < length; i++ ) {
        result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }

@@ -50,7 +50,18 @@ export class ConsumptionComponent implements OnInit {
     BPFCName: '',
     hourlyOutput: 0,
     workingHour: 0,
-    dueDate: new Date()
+    dueDate: new Date(),
+    startWorkingTime: new Date(),
+    finishWorkingTime: new Date(),
+    startTime: {
+      hour: 7,
+      minute: 0
+    },
+    endTime: {
+      hour: 16,
+      minute: 30
+    }
+
   };
   public textLine = 'Select a line name';
   public fieldsGlue: object = { text: 'name', value: 'name' };

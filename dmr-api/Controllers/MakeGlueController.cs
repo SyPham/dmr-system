@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
-using EC_API.DTO;
 
 namespace DMR_API.Controllers
 {
@@ -66,12 +65,19 @@ namespace DMR_API.Controllers
             return Ok(item);
         }
         [HttpPost("Guidance")]
-        public async Task<IActionResult> Guidance(MixingInfoForCreateDto update)
+        public IActionResult Guidance(MixingInfoForCreateDto update)
         {
             update.EstimatedTime = update.EstimatedTime.ToLocalTime();
             update.EndTime = update.EndTime.ToLocalTime();
             update.StartTime = update.StartTime.ToLocalTime();
-            return Ok(await _mixingInfoService.Mixing(update));
+            return Ok(_mixingInfoService.Mixing(update));
+        }
+        [HttpPost("Add")]
+        public IActionResult Add(MixingInfoForAddDto update)
+        {
+            var status = _mixingInfoService.AddMixingInfo(update);
+           if (status) return NoContent();
+           return BadRequest("Fail!");
         }
 
         [HttpPost("GetMixingInfoByGlueID")]

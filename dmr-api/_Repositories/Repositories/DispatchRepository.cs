@@ -7,7 +7,7 @@ using System.Linq;
 using DMR_API.DTO;
 using System.Collections.Generic;
 using dmr_api.Models;
-using EC_API._Repositories;
+using DMR_API._Repositories;
 
 namespace DMR_API._Repositories.Repositories
 {

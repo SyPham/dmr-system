@@ -1,4 +1,5 @@
-﻿using DMR_API.DTO;
+﻿using dmr_api.Models;
+using DMR_API.DTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace DMR_API._Services.Interface
         Task<List<IngredientInfoReportDto>> GetAllIngredientInfoReportByBuildingNameAsync(string name);
         Task<object> GetAllIngredientReportByRange(DateTime min, DateTime max);
         Task<object> GetAllIngredientReportByRangeWithBuilding(DateTime min, DateTime max, string name);
-        
+        Task<List<GlueType>> GetAllGlueTypeAsync();
         Task<object> ScanQRCodeFromChemialWareHouse(string qrCode, string building, int userid);
          Task<object> ScanQRCodeOutput(string qrCode, string building, int userid);
         Task<object> ScanQRCodeFromChemialWareHouseDate(string qrCode, string start , string end);

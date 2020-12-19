@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace EC_API.DTO
+namespace DMR_API.DTO
 {
     public class AuthenticateResponse
     {

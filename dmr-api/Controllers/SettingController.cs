@@ -28,7 +28,12 @@ namespace DMR_API.Controllers
             var settings = await _settingService.GetAllAsync();
             return Ok(settings);
         }
-
+        [HttpGet]
+        public async Task<IActionResult> GetAllGlueType()
+        {
+            var settings = await _settingService.GetAllGlueTypeAsync();
+            return Ok(settings);
+        }
         [HttpGet("{buildingID}")]
         public async Task<IActionResult> GetSettingByBuilding(int buildingID)
         {
@@ -44,11 +49,11 @@ namespace DMR_API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(StirDTO create)
+        public IActionResult Create(StirDTO create)
         {
 
             //create.CreatedDate = DateTime.Now;
-            if (await _settingService.Add(create))
+            if ( _settingService.Add(create))
             {
                 return NoContent();
             }

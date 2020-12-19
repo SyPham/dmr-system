@@ -15,9 +15,18 @@ namespace DMR_API.Controllers
     public class StirController : ControllerBase
     {
         private readonly IMixingInfoService _mixingInfoService;
-        public StirController(IMixingInfoService mixingInfoService)
+        private readonly IStirService _stirService;
+
+        public StirController(IMixingInfoService mixingInfoService,
+            IStirService stirService)
         {
             _mixingInfoService = mixingInfoService;
+            _stirService = stirService;
+        }
+        [HttpGet("{mixingInfoID}")]
+        public async Task<IActionResult> GetStirByMixingInfoID(int mixingInfoID)
+        {
+            return Ok(await _stirService.GetStirByMixingInfoID(mixingInfoID));
         }
         [HttpGet("{glueName}")]
         public async Task<IActionResult> GetStirInfo(string glueName)
@@ -44,5 +53,60 @@ namespace DMR_API.Controllers
         {
             return Ok(await _mixingInfoService.GetRPMByMachineCode(machineCode, start, end));
         }
+
+
+        [HttpPost]
+        public async Task<IActionResult> Create(StirDTO create)
+        {
+
+            if (_stirService.GetById(create.ID) != null)
+                return BadRequest("Line ID already exists!");
+            //create.CreatedDate = DateTime.Now;
+            if (await _stirService.Add(create))
+            {
+                return NoContent();
+            }
+
+            throw new Exception("Creating the model name failed on save");
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> Update(StirDTO update)
+        {
+            if (await _stirService.Update(update))
+                return NoContent();
+            return BadRequest($"Updating model name {update.ID} failed on save");
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            if (await _stirService.Delete(id))
+                return NoContent();
+            throw new Exception("Error deleting the model name");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var lines = await _stirService.GetAllAsync();
+            return Ok(lines);
+        }
+        [HttpGet("{buildingID}/{qrCode}")]
+        public async Task<IActionResult> ScanMachine(int buildingID, string qrCode)
+        {
+            return Ok(await _stirService.ScanMachine(buildingID, qrCode));
+        }
+        [HttpPut("{mixingInfoID}")]
+        public async Task<IActionResult> UpdateStartScanTime(int mixingInfoID)
+        {
+            if (await _stirService.UpdateStartScanTime(mixingInfoID))
+            {
+                return NoContent();
+            }
+
+            throw new Exception("Updating the stiring failed on save");
+        }
+
     }
 }

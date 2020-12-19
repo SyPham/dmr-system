@@ -4,6 +4,8 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { IToDoList, IToDoListForCancel } from '../_model/IToDoList';
+import { DispatchParams, IDispatch } from '../_model/plan';
 const httpOptions = {
   headers: new HttpHeaders({
     'Content-Type': 'application/json',
@@ -14,38 +16,45 @@ const httpOptions = {
   providedIn: 'root'
 })
 export class TodolistService {
-  baseUrl = environment.apiUrl;
+  baseUrl = environment.apiUrlEC;
+  data = new BehaviorSubject<boolean>(null);
   constructor(private http: HttpClient) {}
-  getTasks() {
-    return this.http.get(`${this.baseUrl}Tasks/GetListTreeTask/%20/%20/%20/%20/%20/%20/%20`).pipe(
-      map(response => {
-        console.log('get tasks todolist: ', response);
-        return response;
-      })
-    );
+
+  setValue(message): void {
+    this.data.next(message);
   }
-  sortProject() {
-    return this.http.get(`${this.baseUrl}Tasks/GetListTreeTask/project`);
+  getValue(): Observable<boolean> {
+    return this.data.asObservable();
   }
-  sortRoutine() {
-    return this.http.get(`${this.baseUrl}Tasks/GetListTreeTask/routine`);
+
+  cancel(todo: IToDoListForCancel) {
+    return this.http.post(`${this.baseUrl}ToDoList/Cancel`, todo);
   }
-  sortAbnormal() {
-    return this.http.get(`${this.baseUrl}Tasks/GetListTreeTask/abnormal`);
+  cancelRange(todo: IToDoListForCancel[]) {
+    return this.http.post(`${this.baseUrl}ToDoList/cancelRange`, todo);
   }
-  sortHigh() {
-    return this.http.get(`${this.baseUrl}Tasks/GetListTreeTask/H/%20`);
+  done(building: number) {
+    return this.http.get<IToDoList[]>(this.baseUrl + 'ToDoList/Done/' + building, {});
   }
-  sortMedium() {
-    return this.http.get(`${this.baseUrl}Tasks/GetListTreeTask/M/%20`);
+  todo(building: number) {
+    return this.http.get<IToDoList[]>(this.baseUrl + 'ToDoList/ToDo/' + building, {});
   }
-  sortLow() {
-    return this.http.get(`${this.baseUrl}Tasks/GetListTreeTask/L/%20`);
+  printGlue(mixingInfoID: number) {
+    return this.http.get(this.baseUrl + 'ToDoList/printGlue/' + mixingInfoID, {});
   }
-  sortByAssignedJob() {
-    return this.http.get(`${this.baseUrl}Tasks/SortBy/assigned/Assigned`);
+  findPrintGlue(mixingInfoID: number) {
+    return this.http.get(this.baseUrl + 'ToDoList/FindPrintGlue/' + mixingInfoID, {});
   }
-  sortByBeAssignedJob() {
-    return this.http.get(`${this.baseUrl}Tasks/SortBy/beAssigned/BeAssigned`);
+  dispatch(obj: DispatchParams) {
+    return this.http.post<IDispatch[]>(this.baseUrl + 'ToDoList/Dispatch', obj);
+  }
+  updateStartStirTimeByMixingInfoID(building: number) {
+    return this.http.put<IToDoList[]>(this.baseUrl + 'ToDoList/updateStartStirTimeByMixingInfoID/' + building, {});
+  }
+  updateFinishStirTimeByMixingInfoID(building: number) {
+    return this.http.put<IToDoList[]>(this.baseUrl + 'ToDoList/updateFinishStirTimeByMixingInfoID/' + building, {});
+  }
+  generateToDoList(plans: number[]) {
+    return this.http.post<IToDoList[]>(this.baseUrl + 'ToDoList/GenerateToDoList', plans);
   }
 }

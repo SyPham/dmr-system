@@ -16,7 +16,9 @@ export class SettingService {
   getAllSetting() {
     return this.http.get(this.baseUrl + 'Setting/GetAllSetting', {});
   }
-
+  getAllGlueType() {
+    return this.http.get(this.baseUrl + 'Setting/GetAllGlueType', {});
+  }
   getSettingByBuilding(buildingID) {
     return this.http.get(this.baseUrl + 'Setting/GetSettingByBuilding/' + buildingID, {});
   }

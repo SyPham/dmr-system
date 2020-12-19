@@ -53,6 +53,9 @@ export class GlueIngredientService {
   mappGlueIngredient(glueIngredient) {
     return this.http.post(`${this.baseUrl}GlueIngredient/MapGlueIngredient`, glueIngredient);
   }
+  mapGlueIngredientByGlueID(params) {
+    return this.http.post(`${this.baseUrl}GlueIngredient/MapGlueIngredientByGlueID`, params);
+  }
   mapGlueIngredient(glueIngredients: any[]) {
     return this.http.post(`${this.baseUrl}GlueIngredient/MapGlueIngredients`, glueIngredients);
   }

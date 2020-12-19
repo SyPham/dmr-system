@@ -20,6 +20,7 @@ namespace DMR_API._Services.Services
     {
         private readonly IGlueIngredientRepository _repoGlueIngredient;
         private readonly IGlueRepository _repoGlue;
+        private readonly IGlueNameRepository _repoGlueName;
         private readonly IPartNameRepository _repoPartName;
         private readonly IPartName2Repository _repoPartName2;
         private readonly IPartRepository _repoPart;
@@ -35,6 +36,7 @@ namespace DMR_API._Services.Services
         public GlueService(
             IHttpContextAccessor accessor,
             IGlueRepository repoBrand,
+            IGlueNameRepository repoGlueName,
             IModelNameRepository repoModelName,
             IGlueIngredientRepository repoGlueIngredient,
             IPartNameRepository repoPartName,
@@ -52,6 +54,7 @@ namespace DMR_API._Services.Services
             _mapper = mapper;
             _accessor = accessor;
             _repoGlue = repoBrand;
+            _repoGlueName = repoGlueName;
             _repoPartName = repoPartName;
             _repoPartName2 = repoPartName2;
             _repoPart = repoPart;
@@ -79,26 +82,77 @@ namespace DMR_API._Services.Services
         //Thêm Brand mới vào bảng Glue
         public async Task<bool> Add(GlueCreateDto model)
         {
-            var glue = _mapper.Map<Glue>(model);
-            glue.Code = await GenatateGlueCode(glue.Code);
-            glue.CreatedDate = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss tt");
-            var nameList = new List<int>();
-            foreach (var item in _repoGlue.FindAll().Where(x => x.isShow == true && x.BPFCEstablishID == model.BPFCEstablishID))
+            try
             {
-                if (item.Name.ToInt() > 0)
-                {
-                    nameList.Add(item.Name.ToInt());
-                }
-            }
-            var name = nameList.OrderByDescending(x => x).FirstOrDefault();
-            glue.Name = (name + 1).ToString();
-            glue.isShow = true;
-            _repoGlue.Add(glue);
 
-            return await _repoGlue.SaveAll();
+                var glue = _mapper.Map<Glue>(model);
+                // Neu chau co GlueName trong bang GlueName thi them moi va cap nhat ID vao Glues
+                // nguoc lai thi update
+                var glueNameModal = _repoGlueName.FindAll(x => x.Name == model.Name).FirstOrDefault();
+                if (glueNameModal is null)
+                {
+                    var glueNameItem = new GlueName { Name = model.Name };
+                    _repoGlueName.Add(glueNameItem);
+                    _repoGlueName.Save();
+
+                    glue.GlueNameID = glueNameItem.ID;
+                    glue.Name = model.Name;
+                }
+                else
+                {
+                    glue.Name = model.Name;
+                    glue.GlueNameID = glueNameModal.ID;
+                }
+                glue.isShow = true;
+                glue.Code = await GenatateGlueCode(glue.Code);
+                glue.CreatedDate = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss tt");
+
+                var nameList = new List<int>();
+                foreach (var item in _repoGlue.FindAll().Include(x => x.GlueName).Where(x => x.isShow == true && x.BPFCEstablishID == model.BPFCEstablishID))
+                {
+                    if (item.GlueName.Name.ToInt() > 0)
+                    {
+                        nameList.Add(item.Name.ToInt());
+                    }
+                }
+                if (nameList.Count > 0)
+                {
+                    var name = nameList.OrderByDescending(x => x).FirstOrDefault();
+                    var nameTemp = name + "";
+                    var glueNameModalTemp = _repoGlueName.FindAll(x => x.Name == nameTemp).FirstOrDefault();
+                    if (glueNameModal is null)
+                    {
+                        var glueNameItem = new GlueName { Name = model.Name };
+                        _repoGlueName.Add(glueNameItem);
+                        _repoGlueName.Save();
+
+                        glue.GlueNameID = glueNameItem.ID;
+                        glue.Name = (name + 1).ToString();
+                        _repoGlue.Save();
+
+                    }
+                    else
+                    {
+                        glue.Name = model.Name;
+                        glue.GlueNameID = glueNameModal.ID;
+                        glue.Name = glueNameModalTemp.Name;
+                        glue.isShow = true;
+                        _repoGlue.Add(glue);
+                        _repoGlue.Save();
+                    }
+                }
+                _repoGlue.Add(glue);
+                _repoGlue.Save();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
         }
 
-        
+
 
         //Lấy danh sách Brand và phân trang
         public async Task<PagedList<GlueCreateDto>> GetWithPaginations(PaginationParams param)
@@ -145,7 +199,7 @@ namespace DMR_API._Services.Services
         public async Task<bool> Update(GlueCreateDto model)
         {
             var glue = _mapper.Map<Glue>(model);
-            glue.isShow = true ;
+            glue.isShow = true;
             _repoGlue.Update(glue);
             var result = await _repoGlue.SaveAll();
             await _hubContext.Clients.All.SendAsync("summaryRecieve", "ok");
@@ -166,15 +220,15 @@ namespace DMR_API._Services.Services
             else
                 return false;
         }
-        
+
         //Lấy toàn bộ danh sách Brand 
         public async Task<List<GlueCreateDto>> GetAllAsync()
         {
             return await _repoGlue.FindAll().ProjectTo<GlueCreateDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
         }
 
-        
-       
+
+
 
         //Lấy Brand theo Brand_Id
         public GlueCreateDto GetById(object id)
@@ -190,13 +244,12 @@ namespace DMR_API._Services.Services
 
         public async Task<List<GlueCreateDto1>> GetAllGluesByBPFCID(int BPFCID)
         {
-            var lists = await _repoGlue.FindAll()
-                .Include(x=>x.Kind)
-                .Include(x=>x.Part)
+            var lists = await _repoGlue.FindAll(x => x.BPFCEstablishID == BPFCID && x.isShow == true)
+                .Include(x => x.Kind)
+                .Include(x => x.Part)
                 .Include(x => x.Material)
                 .Include(x => x.GlueIngredients)
                 .ThenInclude(x => x.Ingredient)
-                .Where(x => x.BPFCEstablishID == BPFCID && x.isShow == true)
                 .ProjectTo<GlueCreateDto1>(_configMapper)
                 .OrderByDescending(x => x.ID).ToListAsync();
             return lists;

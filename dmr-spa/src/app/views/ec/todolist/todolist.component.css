@@ -1,7 +1,17 @@
-.e-grid .e-headercell {
-    background-color: #212529;
-    color: #ffffff;
-}
 .e-icons .e-columnmenu {
     color: #ffffff;
+}
+.e-tooltip-wrap .e-tip-content {
+     color: #ffffff;
+    font-size: 16px;
+    font-weight: bold;
+}
+.e-headercelldiv {
+    font-size: 12px!important;
+}
+.e-grid .e-headercell ejs-tooltip {
+    font-weight: bold!important;
+}
+.cursor-pointer{
+  pointer-events: none !important;
 }

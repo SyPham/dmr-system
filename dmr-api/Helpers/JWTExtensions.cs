@@ -19,7 +19,7 @@ namespace DMR_API.Helpers
         /// <returns>IEnumerable<Claim> . Follow sample to get value in Claim List
         /// Ex: DecodeToken().First(claim => claim.Type == "Name").Value
         /// </returns>
-        public static IEnumerable<Claim> DecodeToken(string token)
+        public static IEnumerable<Claim> DecodeToken(this string token)
         {
             var handler = new JwtSecurityTokenHandler();
             string authHeader = token.ToSafetyString();

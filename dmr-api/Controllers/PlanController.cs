@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using Org.BouncyCastle.Crypto.Tls;
-using EC_API.DTO;
 using DMR_API.SignalrHub;
 using Microsoft.AspNetCore.SignalR;
 
@@ -97,10 +96,24 @@ namespace DMR_API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(PlanDto create)
         {
+            var startTime = create.DueDate.Date.Add(new TimeSpan(create.StartTime.Hour, create.StartTime.Minute, 0));
+            var endTime = create.DueDate.Date.Add(new TimeSpan(create.EndTime.Hour, create.EndTime.Minute, 0));
+
+            create.StartWorkingTime = startTime;
+            create.FinishWorkingTime = endTime;
+            var dateNow = DateTime.Now.Date;
+            if (create.DueDate.Date < dateNow) 
+                return BadRequest("The duedate must be greater than or equal to the current date!<br> Ngày hết hạn phải lớn hơn hoặc bằng ngày hiện tại! ");
+
+            if (await _planService.CheckDuplicate(create.BuildingID, create.BPFCEstablishID, create.DueDate))
+                return BadRequest("Plan already exists!<br> Kế hoạch làm việc này đã tồn tại! ");
 
             if (_planService.GetById(create.ID) != null)
-                return BadRequest("Plan ID already exists!");
-            create.CreatedDate = DateTime.Now;
+                return BadRequest("Plan ID already exists!<br> Kế hoạch làm việc này đã tồn tại!");
+
+            if (await _planService.CheckExistTimeRange(create.BuildingID, startTime, endTime, create.DueDate))
+                return BadRequest("The time range of plans already exists!<br> Khoảng thời gian này đã trùng lắp với 1 khoảng thời gian khác.!");
+
             var model = await _planService.Add(create);
             if (model)
                 await _hubContext.Clients.All.SendAsync("ReceiveCreatePlan");
@@ -138,12 +151,7 @@ namespace DMR_API.Controllers
             var model = await _planService.Summary(buildingID);
             return Ok(model);
         }
-        [HttpGet("{buildingID}")]
-        public async Task<IActionResult> OldSummary(int buildingID)
-        {
-            var model = await _planService.OldSummary(buildingID);
-            return Ok(model);
-        }
+
         [HttpPost]
         public async Task<IActionResult> ClonePlan(List<PlanForCloneDto> create)
         {
@@ -269,18 +277,7 @@ namespace DMR_API.Controllers
                 return File(bin, "application/octet-stream", "report.xlsx");
             }
         }
-        [HttpGet("{building}")]
-        public async Task<IActionResult> Todolist2(int building)
-        {
-            var batchs = await _planService.Todolist2(building);
-            return Ok(batchs);
-        }
-        [HttpGet("{building}")]
-        public async Task<IActionResult> Todolist2ByDone(int building)
-        {
-            var batchs = await _planService.Todolist2ByDone(building);
-            return Ok(batchs);
-        }
+
         [HttpPost]
         public async Task<IActionResult> Dispatch([FromBody] DispatchParams todolistDto)
         {
@@ -288,10 +285,23 @@ namespace DMR_API.Controllers
             return Ok(batchs);
         }
         [HttpPost]
-        public async Task<IActionResult> Print([FromBody] DispatchParams todolistDto)
+        public IActionResult DeleteRangePlan(List<int> plans)
         {
-            var batchs = await _planService.Print(todolistDto);
+            var batchs = _planService.DeleteRangePlan(plans);
             return Ok(batchs);
         }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePlan(int id)
+        {
+            var glue = await _planService.DeletePlan(id);
+            return Ok(glue);
+        }
+        [HttpGet("{mixingInfoID}")]
+        public IActionResult PrintGlue(int mixingInfoID)
+        {
+            var glue = _planService.PrintGlue(mixingInfoID);
+            return Ok(glue);
+        }
+
     }
 }

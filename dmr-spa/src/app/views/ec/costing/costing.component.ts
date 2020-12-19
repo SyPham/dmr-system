@@ -57,6 +57,7 @@ export class CostingComponent implements OnInit {
         unit: data.unit,
         real: data.real,
         cbd: data.cbd,
+        glueTypeID: data.glueTypeID,
         replacementFrequency: data.replacementFrequency,
         prepareTime: data.prepareTime
       };

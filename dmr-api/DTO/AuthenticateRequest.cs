@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace EC_API.DTO
+namespace DMR_API.DTO
 {
     public class AuthenticateRequest
     {

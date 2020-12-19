@@ -28,10 +28,6 @@ namespace DMR_API._Repositories.Repositories
             return await _context.Glues.AnyAsync(x => x.ID == id);
         }
 
-        public bool Save()
-        {
-            return _context.SaveChanges() > 0;
-        }
         //Login khi them repo
     }
 }

@@ -10,5 +10,6 @@ export interface IGlue  {
     kindID: number;
     partID: number;
     materialID: number;
+    glueNameID: number;
     BPFCEstablishID: number;
 }

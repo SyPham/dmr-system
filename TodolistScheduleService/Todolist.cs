@@ -203,7 +203,9 @@ namespace TodolistScheduleService
 
 
             var mixingInfoModel = await _context.MixingInfos
-           .Where(x => x.CreatedTime.Date == currentDate).ToListAsync();
+                .Include(x => x.MixingInfoDetails)
+           .Where(x => x.CreatedTime.Date == currentDate)
+           .ToListAsync();
             var dispatchModel = await _context.Dispatches
           .Where(x => x.CreatedTime.Date == currentDate).ToListAsync();
 
@@ -233,7 +235,7 @@ namespace TodolistScheduleService
                     foreach (var item in glue)
                     {
                         itemTodolist.GlueID = item.GlueID;
-                        itemTodolist.BuildingID = item.BuildingID;
+                        itemTodolist.BuildingID = item.BuildingID ?? 0;
                         var supplier = string.Empty;
                         var checmicalA = item.Ingredients.ToList().FirstOrDefault(x => x.Position == "A");
                         int prepareTime = 0;
@@ -313,7 +315,7 @@ namespace TodolistScheduleService
         }
         double CalculateGlueTotal(MixingInfo mixingInfo)
         {
-            return mixingInfo.ChemicalA.ToDouble() + mixingInfo.ChemicalB.ToDouble() + mixingInfo.ChemicalC.ToDouble() + mixingInfo.ChemicalD.ToDouble() + mixingInfo.ChemicalE.ToDouble();
+            return mixingInfo.MixingInfoDetails.Sum(x => x.Amount);
         }
     }
 }
