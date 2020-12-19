@@ -26,7 +26,7 @@ namespace DMR_API.DTO
         public DateTime ExpiredTime { get; set; }
         public DateTime CreatedTime { get; set; }
         public Glue Glue { get; set; }
-        //public DateTime EstimatedTime { get; set; }
+        public DateTime EstimatedTime { get; set; }
         public bool Status { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }

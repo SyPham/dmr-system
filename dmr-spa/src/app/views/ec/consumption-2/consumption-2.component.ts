@@ -134,12 +134,8 @@ export class Consumption2Component implements OnInit {
     this.consumptionByLineCase2();
   }
   toolbarClick(args: any): void {
-    switch (args.item.text) {
-      case 'Excel Export':
+    if (args.item.id.indexOf('excelexport') !== -1) {
         this.reportConsumptionCase2();
-        break;
-      default:
-        break;
     }
   }
   tooltip(data) {

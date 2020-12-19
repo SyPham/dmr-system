@@ -167,6 +167,9 @@
               {{ 'SMT' | translate }}
             </ejs-tooltip>
           </ng-template>
+          <ng-template #template let-data>
+            {{data.startMixingTime === null ? 'N/A': data.startMixingTime | date: 'HH:mm'}}
+          </ng-template>
         </e-column>
         <e-column field='finishMixingTime' type='date' format='HH:mm' headerText='FMT' width='160' textAlign='Center'>
           <ng-template #headerTemplate>
@@ -174,6 +177,9 @@
               {{ 'FMT' | translate }}
             </ejs-tooltip>
           </ng-template>
+            <ng-template #template let-data>
+              {{data.finishMixingTime === null ? 'N/A': data.finishMixingTime | date: 'HH:mm'}}
+            </ng-template>
         </e-column>
 
         <e-column field='startStirTime' type='date' format='HH:mm' headerText='SST' width='160'
@@ -183,12 +189,18 @@
               {{ 'SST' | translate }}
             </ejs-tooltip>
           </ng-template>
+            <ng-template #template let-data>
+              {{data.startStirTime === null ? 'N/A': data.startStirTime | date: 'HH:mm'}}
+            </ng-template>
         </e-column>
         <e-column field='finishStirTime' type='date' format='HH:mm' headerText='FST' width='160' textAlign='Center'>
         <ng-template #headerTemplate>
           <ejs-tooltip  [content]="'FST_Tooltip' | translate">
             {{ 'FST' | translate }}
           </ejs-tooltip>
+        </ng-template>
+        <ng-template #template let-data>
+          {{data.finishStirTime === null ? 'N/A': data.finishStirTime | date: 'HH:mm'}}
         </ng-template>
         </e-column>
 
@@ -199,12 +211,18 @@
               {{ 'SDT' | translate }}
             </ejs-tooltip>
           </ng-template>
+          <ng-template #template let-data>
+            {{data.startDispatchingTime === null ? 'N/A': data.startDispatchingTime | date: 'HH:mm'}}
+          </ng-template>
         </e-column>
         <e-column field='finishDispatchingTime' type='date' format='HH:mm' headerText='FDT' width='160' textAlign='Center'>
         <ng-template #headerTemplate>
           <ejs-tooltip [content]="'FDT_Tooltip' | translate">
             {{ 'FDT' | translate }}
           </ejs-tooltip>
+        </ng-template>
+        <ng-template #template let-data>
+          {{data.finishDispatchingTime === null ? 'N/A': data.finishDispatchingTime | date: 'HH:mm'}}
         </ng-template>
         </e-column>
 
@@ -232,7 +250,7 @@
             </ejs-tooltip>
           </ng-template>
           <ng-template #template let-data>
-            {{data.standardConsumption}}kg
+            {{data.mixedConsumption}}kg
           </ng-template>
         </e-column>
         <e-column field='deliveredConsumption' headerText='Delivered. Con.' width='100' textAlign='Center'>
@@ -242,7 +260,7 @@
             </ejs-tooltip>
           </ng-template>
           <ng-template #template let-data>
-            {{data.standardConsumption}}kg
+            {{data.deliveredConsumption}}kg
           </ng-template>
         </e-column>
 

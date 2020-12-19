@@ -280,7 +280,10 @@ export class ConsumptionComponent implements OnInit {
   }
 
   toolbarClick(args: any): void {
-    switch (args.item.text) {
+    if (args.item.id.indexOf('excelexport') !== -1) {
+         this.getReport({ startDate: this.startDate, endDate: this.endDate });
+    }
+    switch (args.item.id) {
       case 'Clone':
         this.openModal(this.cloneModal);
         break;
