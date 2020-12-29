@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Transactions;
 using Microsoft.Extensions.Configuration;
 using DMR_API.Helpers.Enum;
+using Microsoft.AspNetCore.Http;
 
 namespace DMR_API._Services.Services
 {
@@ -25,6 +26,7 @@ namespace DMR_API._Services.Services
         private readonly IModelNameRepository _repoModelName;
         private readonly IModelNoRepository _repoModelNo;
         private readonly IMailExtension _mailExtension;
+        private readonly IHttpContextAccessor _accessor;
         private readonly IArticleNoRepository _repoArticleNo;
         private readonly IConfiguration _configuration;
         private readonly IArtProcessRepository _repoArtProcess;
@@ -38,6 +40,7 @@ namespace DMR_API._Services.Services
             IModelNoRepository repoModelNo,
             IConfiguration configuration,
             IMailExtension mailExtension,
+            IHttpContextAccessor accessor,
             IArticleNoRepository repoArticleNo,
             IGlueRepository repoGlue,
             IGlueIngredientRepository repoGlueIngredient,
@@ -57,17 +60,65 @@ namespace DMR_API._Services.Services
             _repoModelNo = repoModelNo;
             _repoArticleNo = repoArticleNo;
             _mailExtension = mailExtension;
+            _accessor = accessor;
             _repoArtProcess = repoArtProcess;
             _repoGlueIngredient = repoGlueIngredient;
             _repoGlue = repoGlue;
         }
 
-        //Thêm Brand mới vào bảng BPFCEstablish
+        //Thêm BPFC mới vào bảng BPFCEstablish
         public async Task<bool> Add(BPFCEstablishDto model)
         {
             var item = _mapper.Map<BPFCEstablish>(model);
             _repoBPFCEstablish.Add(item);
             return await _repoBPFCEstablish.SaveAll();
+        }
+        public async Task<object> GetDoneBPFC()
+        {
+            var model = await _repoBPFCEstablish
+                .FindAll(x=> !x.IsDelete)
+                .Include(x => x.ModelName)
+                .Include(x => x.ModelNo)
+                .Include(x => x.ArticleNo)
+                .Include(x => x.ArtProcess).ThenInclude(x => x.Process)
+                .ProjectTo<BPFCEstablishDto>(_configMapper).ToListAsync();
+            var total = model.Count;
+            var doneTotal = model.Where(x => x.FinishedStatus).Count();
+            var undoneTotal = model.Where(x => !x.FinishedStatus).Count();
+            var percentageOFDone = Math.Round( ((double)doneTotal / total) * 100, 0);
+            var res = $"% of Done {percentageOFDone}% ({doneTotal}/{total})";
+            return new
+            {
+                doneTotal,
+                undoneTotal,
+                percentageOfDone = res,
+                data = model.Where(x => x.FinishedStatus == true).OrderByDescending(x => x.ID).ToList()
+            };
+        }
+
+        public async Task<object> GetUndoneBPFC()
+        {
+            var model = await _repoBPFCEstablish
+               .FindAll(x => !x.IsDelete)
+               .Include(x => x.ModelName)
+               .Include(x => x.ModelNo)
+               .Include(x => x.ArticleNo)
+               .Include(x => x.ArtProcess)
+               .ThenInclude(x => x.Process)
+               .ProjectTo<BPFCEstablishDto>(_configMapper).ToListAsync();
+
+            var total = model.Count;
+            var doneTotal = model.Where(x => x.FinishedStatus).Count();
+            var undoneTotal = model.Where(x => !x.FinishedStatus).Count();
+            var percentageOFDone = Math.Round(((double)doneTotal / total) * 100, 0);
+            var res = $"% of Done {percentageOFDone}% ({doneTotal}/{total})";
+            return new
+            {
+                doneTotal,
+                undoneTotal,
+                percentageOfDone = res,
+                data = model.Where(x => x.FinishedStatus == false).OrderByDescending(x => x.ID).ToList()
+            };
         }
 
         public async Task<object> GetDetailBPFC(int bpfcID)
@@ -79,7 +130,7 @@ namespace DMR_API._Services.Services
                 .ProjectTo<BPFCEstablishDto>(_configMapper).OrderBy(x => x.ID).ToListAsync();
             return model;
         }
-        //Lấy danh sách Brand và phân trang
+        //Lấy danh sách BPFC và phân trang
         public async Task<PagedList<BPFCEstablishDto>> GetWithPaginations(PaginationParams param)
         {
             var lists = _repoBPFCEstablish.FindAll().ProjectTo<BPFCEstablishDto>(_configMapper).OrderBy(x => x.ID);
@@ -94,15 +145,20 @@ namespace DMR_API._Services.Services
             .OrderBy(x => x.ID);
             return await PagedList<BPFCEstablishDto>.CreateAsync(lists, param.PageNumber, param.PageSize);
         }
-        //Xóa Brand
+        //Xóa BPFC
         public async Task<bool> Delete(object id)
         {
-            var BPFCEstablish = _repoBPFCEstablish.FindById(id);
-            _repoBPFCEstablish.Remove(BPFCEstablish);
+            string token = _accessor.HttpContext.Request.Headers["Authorization"];
+            var userID = JWTExtensions.GetDecodeTokenByProperty(token, "nameid").ToInt();
+            var BPFCEstablish = await _repoBPFCEstablish.FindAll(x => x.ID.Equals(id)).FirstOrDefaultAsync() ;
+            BPFCEstablish.IsDelete = true;
+            BPFCEstablish.DeleteTime = DateTime.Now.ToLocalTime();
+            BPFCEstablish.DeleteBy = userID;
+            _repoBPFCEstablish.Update(BPFCEstablish);
             return await _repoBPFCEstablish.SaveAll();
         }
 
-        //Cập nhật Brand
+        //Cập nhật BPFC
         public async Task<bool> Update(BPFCEstablishDto model)
         {
             var BPFCEstablish = _mapper.Map<BPFCEstablish>(model);
@@ -110,16 +166,17 @@ namespace DMR_API._Services.Services
             return await _repoBPFCEstablish.SaveAll();
         }
 
-        //Lấy toàn bộ danh sách Brand 
+        //Lấy toàn bộ danh sách BPFC 
         public async Task<List<BPFCEstablishDto>> GetAllAsync()
         {
             return await _repoBPFCEstablish
-                .FindAll()
+                .FindAll(x => !x.IsDelete)
                 .Include(x => x.ModelName)
                 .Include(x => x.ModelNo)
                 .Include(x => x.ArticleNo)
-                .Include(x => x.ArtProcess).ThenInclude(x => x.Process)
-                .ProjectTo<BPFCEstablishDto>(_configMapper).OrderBy(x => x.ID).OrderByDescending(x => x.ID).ToListAsync();
+                .Include(x => x.ArtProcess)
+                .ThenInclude(x => x.Process)
+                .ProjectTo<BPFCEstablishDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
         }
         public async Task<List<BPFCHistoryDto>> GetAllHistoryAsync()
         {
@@ -260,7 +317,7 @@ namespace DMR_API._Services.Services
             }
         }
 
-        //Lấy Brand theo Brand_Id
+        //Lấy BPFC theo Brand_Id
         public BPFCEstablishDto GetById(object id)
         {
             return _mapper.Map<BPFCEstablish, BPFCEstablishDto>(_repoBPFCEstablish.FindById(id));
@@ -753,7 +810,7 @@ namespace DMR_API._Services.Services
 
         public async Task<List<string>> GetGlueByBPFCID(int bpfcID)
         {
-            List<string> glues = await _repoBPFCEstablish.FindAll(x=> x.ID == bpfcID).Include(x => x.Glues).SelectMany(x => x.Glues.Where(a => a.isShow).Select(a => a.Name))
+            List<string> glues = await _repoBPFCEstablish.FindAll(x => x.ID == bpfcID).Include(x => x.Glues).SelectMany(x => x.Glues.Where(a => a.isShow).Select(a => a.Name))
                 .ToListAsync();
             return glues;
         }

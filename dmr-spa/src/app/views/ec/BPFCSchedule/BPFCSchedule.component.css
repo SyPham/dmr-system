@@ -1,4 +1,8 @@
- .e-grid td.e-active {
+ /* .e-grid td.e-active {
         background: #6597ce!important;
         color: #000;
-    }
+    } */
+.active-btn {
+    background-color: #00000073 !important;
+    color: white !important;
+}

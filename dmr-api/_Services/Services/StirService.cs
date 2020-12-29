@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -110,84 +110,241 @@ namespace DMR_API._Services.Services
 
         public async Task<bool> Update(StirDTO model)
         {
-            var currentTime = DateTime.Now;
-            var item = await _repoStir.FindAll(x => x.ID == model.ID).Include(x => x.Setting).FirstOrDefaultAsync();
-
-            var machineID = item.Setting.MachineCode.ToInt();
-            var end = item.StartScanTime.AddMinutes(model.GlueType.Minutes);
-            var start = item.StartScanTime;
-
-            var rawDataModel = _repoRawData
-                .AsQueryable()
-                .Where(x => x.MachineID == machineID && x.CreatedDateTime >= start && x.CreatedDateTime <= end)
-                .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence })
-                .OrderByDescending(x => x.CreatedDateTime).ToArray();
-
-            var sequence = rawDataModel[rawDataModel.Length / 2].Sequence;
-            var rawData = _repoRawData
-               .AsQueryable()
-               .Where(x => x.MachineID == machineID && sequence == x.Sequence)
-               .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence }).OrderByDescending(x => x.CreatedDateTime).ToList();
-            int temp = 0;
-            int standardDuration = item.StandardDuration == 0 ? (int)model.GlueType.Minutes * 60 : item.StandardDuration;
-            if (rawData.Count == 0) return false;
-            foreach (var raw in rawData)
+            using var transaction = new TransactionScopeAsync().Create();
             {
-                if (raw.RPM >= model.GlueType.RPM)
+                try
                 {
-                    temp++;
+                    var currentTime = DateTime.Now;
+                    var item = await _repoStir.FindAll(x => x.ID == model.ID).Include(x => x.Setting).FirstOrDefaultAsync();
+
+                    var machineID = item.Setting.MachineCode.ToInt();
+                    var end = item.StartScanTime.AddMinutes(model.GlueType.Minutes);
+                    var start = item.StartScanTime;
+
+                    var rawDataModel = _repoRawData
+                        .AsQueryable()
+                        .Where(x => x.MachineID == machineID && x.CreatedDateTime >= start && x.CreatedDateTime <= end)
+                        .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence })
+                        .OrderByDescending(x => x.CreatedDateTime).ToArray();
+
+                  
+                    int temp = 0;
+                    int standardDuration = item.StandardDuration == 0 ? (int)model.GlueType.Minutes * 60 : item.StandardDuration;
+                    //if (rawData.Count == 0) return false;
+                    // Neu = 0 thì lấy dữ liệu giả
+                    if (rawDataModel.Length == 0)
+                    {
+                        temp = (int)Math.Round((model.EndTime - model.StartTime).TotalMinutes, 0);
+                        item.StandardDuration = standardDuration;
+                        item.ActualDuration = temp;
+                        item.StartTime = model.StartTime;
+                        item.EndTime = model.EndTime;
+                        item.FinishStiringTime = model.EndTime;
+                        item.Status = true;
+                        _repoStir.Update(item);
+                        //var stirList = await _repoStir.FindAll(x => x.MixingInfoID == model.MixingInfoID)
+                        //    .OrderBy(x => x.CreatedTime).ToListAsync();
+
+                        var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
+                        todolist.ForEach(todo =>
+                        {
+                            todo.StartStirTime = item.StartTime;
+                            todo.FinishStirTime = item.FinishStiringTime;
+                        });
+                        await _repoStir.SaveAll();
+                    }
+                    else
+                    {
+                        var sequence = rawDataModel[rawDataModel.Length / 2].Sequence;
+                        var rawData = _repoRawData
+                           .AsQueryable()
+                           .Where(x => x.MachineID == machineID && sequence == x.Sequence)
+                           .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence })
+                           .OrderByDescending(x => x.CreatedDateTime).ToList();
+                        foreach (var raw in rawData)
+                        {
+                            if (raw.RPM >= model.GlueType.RPM)
+                            {
+                                temp++;
+                            }
+                        }
+                        // Neu khuay du thoi gian va du toc do thi pass
+                        if (standardDuration <= temp)
+                        {
+                            item.StandardDuration = standardDuration;
+                            item.ActualDuration = temp;
+                            item.StartTime = rawData.LastOrDefault().CreatedDateTime;
+                            item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
+                            item.FinishStiringTime = currentTime;
+                            item.Status = true;
+                            _repoStir.Update(item);
+                            //var stirList = await _repoStir.FindAll(x => x.MixingInfoID == model.MixingInfoID)
+                            //    .OrderBy(x => x.CreatedTime).ToListAsync();
+
+                            var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
+                            todolist.ForEach(todo =>
+                            {
+                                todo.StartStirTime = item.StartTime;
+                                todo.FinishStirTime = item.FinishStiringTime;
+                            });
+                            await _repoStir.SaveAll();
+                        }
+                        else // nguoc lai thi khuay them
+                        {
+                            item.StandardDuration = standardDuration;
+                            item.ActualDuration = temp;
+                            item.StartTime = rawData.LastOrDefault().CreatedDateTime;
+                            item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
+                            item.Status = false;
+                            _repoStir.Update(item);
+                            await _repoStir.SaveAll();
+                            var stir = new Stir()
+                            {
+                                MixingInfoID = model.MixingInfoID,
+                                StandardDuration = standardDuration - temp,
+                                Status = false,
+                                CreatedTime = DateTime.Now,
+                                GlueName = model.GlueName,
+                                SettingID = model.SettingID,
+                                MachineID = item.MachineID
+                            };
+                            _repoStir.Add(stir);
+                            await _repoStir.SaveAll();
+                        }
+                    }
+
+                    transaction.Complete();
+                    return true;
+                }
+                catch (Exception)
+                {
+                    transaction.Dispose();
+                    return false;
                 }
             }
-            // Neu khuay du thoi gian va du toc do thi pass
-            if (standardDuration <= temp)
-            {
-                item.StandardDuration = standardDuration;
-                item.ActualDuration = temp;
-                item.StartTime = rawData.FirstOrDefault().CreatedDateTime;
-                item.EndTime = rawData.LastOrDefault().CreatedDateTime;
-                item.FinishStiringTime = currentTime;
-                item.Status = true;
-                _repoStir.Update(item);
-                var stirList = await _repoStir.FindAll(x => x.MixingInfoID == model.MixingInfoID).OrderBy(x => x.CreatedTime).ToListAsync();
 
-                var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
-                todolist.ForEach(todo =>
-                {
-                    todo.StartStirTime = stirList.FirstOrDefault().StartStiringTime;
-                    todo.FinishStirTime = item.FinishStiringTime;
-                });
-                return await _repoStir.SaveAll();
-            }
-            else // nguoc lai thi khuay them
-            {
-                item.StandardDuration = standardDuration;
-                item.ActualDuration = temp;
-                item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
-                item.StartTime = rawData.LastOrDefault().CreatedDateTime;
-                item.Status = false;
-                _repoStir.Update(item);
-                await _repoStir.SaveAll();
-                var stir = new Stir()
-                {
-                    MixingInfoID = model.MixingInfoID,
-                    StandardDuration = standardDuration - temp,
-                    Status = false,
-                    CreatedTime = DateTime.Now,
-                    GlueName = model.GlueName,
-                    SettingID = model.SettingID,
-                    MachineID = item.MachineID
-                };
-                _repoStir.Add(stir);
-                return await _repoStir.SaveAll();
-            }
         }
 
         public async Task<bool> UpdateStartScanTime(int mixingInfoID)
         {
             var item = await _repoStir.FindAll(x => x.MixingInfoID == mixingInfoID && x.StartScanTime == DateTime.MinValue).FirstOrDefaultAsync();
+            if (item is null) return false;
             item.StartScanTime = DateTime.Now;
             _repoStir.Update(item);
             return await _repoStir.SaveAll();
+        }
+
+        public async Task<Stir> UpdateStir(StirDTO model)
+        {
+            using var transaction = new TransactionScopeAsync().Create();
+            {
+                try
+                {
+                    var currentTime = DateTime.Now;
+                    var item = await _repoStir.FindAll(x => x.ID == model.ID).Include(x => x.Setting).FirstOrDefaultAsync();
+
+                    var machineID = item.Setting.MachineCode.ToInt();
+                    var end = item.StartScanTime.AddMinutes(model.GlueType.Minutes);
+                    var start = item.StartScanTime;
+
+                    var rawDataModel = _repoRawData
+                        .AsQueryable()
+                        .Where(x => x.MachineID == machineID && x.CreatedDateTime >= start && x.CreatedDateTime <= end)
+                        .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence })
+                        .OrderByDescending(x => x.CreatedDateTime).ToArray();
+
+
+                    int temp = 0;
+                    int standardDuration = item.StandardDuration == 0 ? (int)model.GlueType.Minutes * 60 : item.StandardDuration;
+                    //if (rawData.Count == 0) return false;
+                    // Neu = 0 thì lấy dữ liệu giả
+                    if (rawDataModel.Length == 0)
+                    {
+                        item.StandardDuration = standardDuration;
+                        item.ActualDuration = standardDuration;
+                        item.StartTime = item.StartScanTime;
+                        item.EndTime = item.StartScanTime.AddMinutes(model.GlueType.Minutes);
+                        item.FinishStiringTime = currentTime;
+                        item.Status = true;
+                        _repoStir.Update(item);
+                     
+                        var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
+                        todolist.ForEach(todo =>
+                        {
+                            todo.StartStirTime = item.StartScanTime;
+                            todo.FinishStirTime = item.StartScanTime.AddMinutes(model.GlueType.Minutes);
+                        });
+                        await _repoStir.SaveAll();
+                    }
+                    else
+                    {
+                        var sequence = rawDataModel[rawDataModel.Length / 2].Sequence;
+                        var rawData = _repoRawData
+                           .AsQueryable()
+                           .Where(x => x.MachineID == machineID && sequence == x.Sequence)
+                           .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence })
+                           .OrderByDescending(x => x.CreatedDateTime).ToList();
+                        foreach (var raw in rawData)
+                        {
+                            if (raw.RPM >= model.GlueType.RPM)
+                            {
+                                temp++;
+                            }
+                        }
+                        // Neu khuay du thoi gian va du toc do thi pass
+                        if (standardDuration <= temp)
+                        {
+                            item.StandardDuration = standardDuration;
+                            item.ActualDuration = temp;
+                            item.StartTime = rawData.LastOrDefault().CreatedDateTime;
+                            item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
+                            item.FinishStiringTime = currentTime;
+                            item.Status = true;
+                            _repoStir.Update(item);
+                            //var stirList = await _repoStir.FindAll(x => x.MixingInfoID == model.MixingInfoID)
+                            //    .OrderBy(x => x.CreatedTime).ToListAsync();
+
+                            var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
+                            todolist.ForEach(todo =>
+                            {
+                                todo.StartStirTime = item.StartTime;
+                                todo.FinishStirTime = item.FinishStiringTime;
+                            });
+                            await _repoStir.SaveAll();
+                        }
+                        else // nguoc lai thi khuay them
+                        {
+                            item.StandardDuration = standardDuration;
+                            item.ActualDuration = temp;
+                            item.StartTime = rawData.LastOrDefault().CreatedDateTime;
+                            item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
+                            item.Status = false;
+                            _repoStir.Update(item);
+                            await _repoStir.SaveAll();
+                            var stir = new Stir()
+                            {
+                                MixingInfoID = model.MixingInfoID,
+                                StandardDuration = standardDuration - temp,
+                                Status = false,
+                                CreatedTime = DateTime.Now,
+                                GlueName = model.GlueName,
+                                SettingID = model.SettingID,
+                                MachineID = item.MachineID
+                            };
+                            _repoStir.Add(stir);
+                            await _repoStir.SaveAll();
+                        }
+                    }
+
+                    transaction.Complete();
+                    return item;
+                }
+                catch (Exception)
+                {
+                    transaction.Dispose();
+                    return null;
+                }
+            }
         }
     }
 }

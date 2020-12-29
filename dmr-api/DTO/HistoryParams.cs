@@ -8,5 +8,6 @@ namespace DMR_API.DTO
     public class HistoryParams
     {
         public string GlueName { get; set; }
+        public int BuildingID { get; set; }
     }
 }

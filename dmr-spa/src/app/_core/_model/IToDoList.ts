@@ -1,3 +1,5 @@
+import { IIngredient } from './summary';
+
 export interface IToDoList {
     id: number;
     planID: number;
@@ -26,4 +28,15 @@ export interface IToDoList {
 export interface IToDoListForCancel {
     id: number;
     lineNames: string[];
+}
+export interface IScanner {
+    QRCode: string;
+    ingredient: IIngredient;
+}
+export interface IToDoListForReturn {
+    total: number;
+    doneTotal: number;
+    todoTotal: number;
+    percentageOfDone: number;
+    data: IToDoList[];
 }

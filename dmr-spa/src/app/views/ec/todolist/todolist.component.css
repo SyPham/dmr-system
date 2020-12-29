@@ -15,3 +15,13 @@
 .cursor-pointer{
   pointer-events: none !important;
 }
+
+.done {
+    background:  #545b62!important;
+    box-shadow: none!important;
+    color:  #f8f9fa!important;
+}
+
+.done > span {
+    color:  #f8f9fa!important;
+}

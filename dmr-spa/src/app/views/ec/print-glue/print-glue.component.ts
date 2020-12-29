@@ -1,10 +1,18 @@
 import { DatePipe } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { DisplayTextModel } from '@syncfusion/ej2-angular-barcode-generator';
-import { IToDoList } from 'src/app/_core/_model/IToDoList';
-import { DispatchParams, IMixingInfo } from 'src/app/_core/_model/plan';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+import { IBuilding } from 'src/app/_core/_model/building';
+import { IMixingInfo, IMixingInfoDetails } from 'src/app/_core/_model/IMixingInfo';
+import { IScanner, IToDoList } from 'src/app/_core/_model/IToDoList';
+import { DispatchParams } from 'src/app/_core/_model/plan';
+import { IRole } from 'src/app/_core/_model/role';
+import { AbnormalService } from 'src/app/_core/_service/abnormal.service';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
+import { IngredientService } from 'src/app/_core/_service/ingredient.service';
+import { MakeGlueService } from 'src/app/_core/_service/make-glue.service';
 import { PlanService } from 'src/app/_core/_service/plan.service';
 import { TodolistService } from 'src/app/_core/_service/todolist.service';
 
@@ -13,20 +21,163 @@ import { TodolistService } from 'src/app/_core/_service/todolist.service';
   templateUrl: './print-glue.component.html',
   styleUrls: ['./print-glue.component.css']
 })
-export class PrintGlueComponent implements OnInit {
-  @Input() data: any;
+export class PrintGlueComponent implements OnInit, OnDestroy {
+  @Input() data: IMixingInfo;
+  @Input() value: IToDoList;
+  subject = new Subject<IScanner>();
+  subscription: Subscription[] = [];
   public displayTextMethod: DisplayTextModel = {
     visibility: false
   };
+  qrCode: string;
+  role: IRole;
+  user: any;
+  building: IBuilding;
+  isShow: boolean;
+  isShowQRCode: boolean;
+  chemicalA: IMixingInfoDetails;
   constructor(
     public activeModal: NgbActiveModal,
     public todolistService: TodolistService,
     public alertify: AlertifyService,
     private datePipe: DatePipe,
+    private ingredientService: IngredientService,
+    private abnormalService: AbnormalService,
+    private makeGlueService: MakeGlueService
 
   ) { }
 
   ngOnInit() {
+    const BUIDLING: IBuilding = JSON.parse(localStorage.getItem('building'));
+    const ROLE: IRole = JSON.parse(localStorage.getItem('level'));
+    const USER = JSON.parse(localStorage.getItem('user')).User;
+    this.role = ROLE;
+    this.user = USER;
+    this.building = BUIDLING;
+    this.checkQRCode();
+    this.isShow = this.value.mixingInfoID === 0 && !this.value.glueName.includes(' + ');
+    this.isShowQRCode = this.value.mixingInfoID === 0 && !this.value.glueName.includes(' + ');
+    this.chemicalA = this.data?.mixingInfoDetails.filter(x => x.position === 'A')[0];
+  }
+  ngOnDestroy(): void {
+    this.subscription.forEach(item => item.unsubscribe());
+  }
+  checkQRCode() {
+    this.subscription.push(this.subject
+      .pipe(debounceTime(500)).subscribe(async (input) => {
+        const valid = await this.validateQRCode(input);
+        if (valid.status === false) { return; }
+        const mixing = {
+          glueName: this.value.glueName,
+          glueID: this.value.glueID,
+          buildingID: this.building.id,
+          mixBy: this.user.ID,
+          estimatedStartTime: this.value.estimatedStartTime,
+          estimatedFinishTime: this.value.estimatedFinishTime,
+          details: [{
+            amount: this.value.standardConsumption,
+            ingredientID: valid.ingredient.id,
+            batch: input[1],
+            mixingInfoID: 0,
+            position: 'A'
+          }]
+        };
+        this.makeGlueService.add(mixing).subscribe((item: IMixingInfo) => {
+          this.alertify.success('Success!');
+          this.isShow = false;
+          this.data = item;
+        }, error => this.alertify.error(error));
+      }));
+    }
+  async validateQRCode(args: IScanner): Promise<{ status: boolean; ingredient: any; }> {
+    // const commonPattern = /(\d+)-(\w+)-([\w\-\d]+)/g;
+    const input = args.QRCode.split('-') || [];
+    const dateAndBatch = /(\d+)-(\w+)-/g;
+    const validFormat = args.QRCode.match(dateAndBatch);
+    const qrcode = args.QRCode.replace(validFormat[0], '');
+    const qrCodeTemp = validFormat[0] + qrcode;
+    if (qrCodeTemp.length !== args.QRCode.length) {
+      this.alertify.warning('The QR Code is invalid!<br> Mã QR không hợp lệ! Vui lòng thử lại mã khác.', true);
+      return {
+        status: false,
+        ingredient: null
+      };
+    }
+    this.qrCode = qrcode;
+    const result = await this.scanQRCode();
+    if (result.name !== this.value.glueName) {
+      this.alertify.warning(`Please you should look for the chemical name "${this.value.glueName}"<br> Vui lòng quét đúng hóa chất "${this.value.glueName}"!`, true);
+      this.qrCode = '';
+      return {
+        status: false,
+        ingredient: null
+      };
+    }
+    const checkLock = await this.hasLock(result.name, input[1]);
+    if (checkLock === true) {
+      this.alertify.error('This chemical has been locked! <br> Hóa chất này đã bị khóa!', true);
+      this.qrCode = '';
+      return {
+        status: false,
+        ingredient: null
+      };
+    }
+    return {
+      status: true,
+      ingredient: result
+    };
+  }
+  scanQRCode(): Promise<any> {
+    return this.ingredientService.scanQRCode(this.qrCode).toPromise();
+  }
+  hasLock(ingredient, batch): Promise<any> {
+    let buildingName = this.building.name;
+    if (this.role.id === 1 || this.role.id === 2) {
+      buildingName = 'E';
+    }
+    return new Promise((resolve, reject) => {
+      this.abnormalService.hasLock(ingredient, buildingName, batch).subscribe(
+        (res) => {
+          resolve(res);
+        },
+        (err) => {
+          reject(false);
+        }
+      );
+    });
+  }
+  async onNgModelChangeScanQRCode(args) {
+    const scanner: IScanner = {
+      QRCode: args,
+      ingredient: null
+    };
+    this.subject.next(scanner);
+  }
+  async onNgModelChangeScanQRCode2(value) {
+    const input = value.split('-') || [];
+    const valid = await this.validateQRCode(input);
+    if (valid.status === false) { return; }
+    const mixing = {
+      glueName: this.value.glueName,
+      glueID: this.value.glueID,
+      buildingID: this.building.id,
+      mixBy: this.user.ID,
+      estimatedStartTime: this.value.estimatedStartTime,
+      estimatedFinishTime: this.value.estimatedFinishTime,
+      details: [{
+        amount: this.value.standardConsumption,
+        ingredientID: valid.ingredient.id,
+        batch: input[1],
+        mixingInfoID: 0,
+        position: 'A'
+      }]
+    };
+    this.makeGlueService.add(mixing).subscribe((item: IMixingInfo) => {
+      this.alertify.success('Success!');
+      this.isShow = false;
+      this.todolistService.setValue(true);
+      this.data = item;
+    }, error => this.alertify.error(error));
   }
   printData() {
 
@@ -34,7 +185,7 @@ export class PrintGlueComponent implements OnInit {
     const printContent = document.getElementById('qrcode');
 
     // tslint:disable-next-line:max-line-length
-    const exp = this.data.expiredTime === '0001-01-01T00:00:00' ? 'N/A' : this.datePipe.transform(new Date(this.data.expiredTime), 'yyyyMMdd HH:mm');
+    const exp = (this.data.expiredTime as any) === '0001-01-01T00:00:00' ? 'N/A' : this.datePipe.transform(new Date(this.data.expiredTime), 'yyyyMMdd HH:mm');
     html += `
        <div class='content'>
         <div class='qrcode'>
@@ -42,9 +193,9 @@ export class PrintGlueComponent implements OnInit {
          </div>
           <div class='info'>
           <ul>
-              <li class='subInfo'>Name: ${this.data.glue}</li>
+              <li class='subInfo'>Name: ${this.data.glueName}</li>
               <li class='subInfo'>QR Code: ${this.data.code}</li>
-              <li class='subInfo'>Batch: ${this.data.batchA}</li>
+              <li class='subInfo'>Batch: ${this.chemicalA?.batch === undefined ? 'N/A' : this.chemicalA?.batch}</li>
               <li class='subInfo'>MFG: ${this.datePipe.transform(new Date(this.data.createdTime), 'yyyyMMdd HH:mm')}</li>
               <li class='subInfo'>EXP: ${exp}</li>
           </ul>
@@ -52,94 +203,57 @@ export class PrintGlueComponent implements OnInit {
       </div>
       `;
     this.configurePrint(html);
-
   }
   configurePrint(html) {
     const WindowPrt = window.open('', '_blank', 'left=0,top=0,width=1000,height=900,toolbar=0,scrollbars=0,status=0');
-    // WindowPrt.document.write(printContent.innerHTML);
     WindowPrt.document.write(`
     <html>
       <head>
       </head>
       <style>
-          body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: #FAFAFA;
-        font: 12pt "Tahoma";
-    }
-    * {
-        box-sizing: border-box;
-        -moz-box-sizing: border-box;
-    }
-    .page {
-        width: 210mm;
-        min-height: 297mm;
-        padding: 20mm;
-        margin: 10mm auto;
-        border: 1px #D3D3D3 solid;
-        border-radius: 5px;
-        background: white;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-    }
-    .subpage {
-        padding: 1cm;
-        border: 5px red solid;
-        height: 257mm;
-        outline: 2cm #FFEAEA solid;
-    }
-     .content {
-        height: 221px;
-        display:block;
-        clear:both;
-         border: 1px #D3D3D3 solid;
-    }
-    .content .qrcode {
-      float:left;
+        * {
+          box-sizing: border-box;
+          -moz-box-sizing: border-box;
+        }
 
-      width: 177px;
-      height:177px;
-      margin-top: 12px;
-      margin-bottom: 12px;
-      margin-left: 5px;
-       border: 1px #D3D3D3 solid;
-    }
-    .content .info {
-       float:left;
-       list-style: none;
-    }
-    .content .info ul {
-       float:left;
-       list-style: none;
-       padding: 0;
-       margin: 0;
-      margin-top: 25px;
-    }
-    .content .info ul li.subInfo {
-      padding: .20rem .75rem;
-    }
-    @page {
-        size: A4;
-        margin: 0;
-    }
-    @media print {
-        html, body {
-            width: 210mm;
-            height: 297mm;
+        .content {
+          page-break-after: always;
+          clear: both;
         }
-        .page {
-            margin: 0;
-            border: initial;
-            border-radius: initial;
-            width: initial;
-            min-height: initial;
-            box-shadow: initial;
-            background: initial;
-            page-break-after: always;
+
+        .content .qrcode {
+          float:left;
+          width: 100px;
+          margin-top: 10px;
+          padding: 0;
+          margin-left: 0px;
         }
-    }
+
+        .content .info {
+          float:left;
+          list-style: none;
+          width: 200px;
+        }
+        .content .info ul {
+          float:left;
+          list-style: none;
+          padding: 0px;
+          margin: 0px;
+          margin-top: 20px;
+          font-weight: bold;
+          word-wrap: break-word;
+        }
+
+        @page {
+          size: 2.65 1.20 in;
+          page-break-after: always;
+          margin: 0;
+        }
+        @media print {
+          html, body {
+            width: 90mm; // Chi co nhan millimeter
+          }
+        }
       </style>
       <body onload="window.print(); window.close()">
         ${html}
@@ -152,7 +266,8 @@ export class PrintGlueComponent implements OnInit {
   finish() {
     this.todolistService.printGlue(this.data.id).subscribe((data: any) => {
       this.alertify.success('success' + data, true);
-      this.todolistService.setValue(true);
+      this.activeModal.close();
+      this.todolistService.setValue(false);
     });
   }
 }

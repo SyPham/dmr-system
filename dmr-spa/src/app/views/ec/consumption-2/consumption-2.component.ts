@@ -82,8 +82,8 @@ export class Consumption2Component implements OnInit {
     this.endDate = new Date();
     this.level = JSON.parse(localStorage.getItem('level')).level;
     this.gridConfig();
-    this.buildingID = 0;
     this.getBuilding();
+    this.buildingID = JSON.parse(localStorage.getItem('building')).id;
     this.consumptionByLineCase2();
   }
   gridConfig(): void {

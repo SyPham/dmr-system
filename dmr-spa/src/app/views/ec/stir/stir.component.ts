@@ -6,7 +6,7 @@ import { DatePipe } from '@angular/common';
 import { SettingService } from 'src/app/_core/_service/setting.service';
 import { StirService } from 'src/app/_core/_service/stir.service';
 import { GridComponent } from '@syncfusion/ej2-angular-grids';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { TodolistService } from 'src/app/_core/_service/todolist.service';
 import { IStir, IStirForAdd, IStirForUpdate } from 'src/app/_core/_model/stir';
@@ -70,6 +70,7 @@ export class StirComponent implements OnInit {
     public ingredientService: IngredientService,
     public settingService: SettingService,
     public stirService: StirService,
+    private router: Router,
     public todolistService: TodolistService,
     private translate: TranslateService
   ) { }
@@ -346,7 +347,7 @@ export class StirComponent implements OnInit {
       if (this.stirData.length === 0) {
         const create = await this.create(stirModel);
       } else {
-        await this.updateStartScanTime(this.mixingInfoID);
+       const status = await this.updateStartScanTime(this.mixingInfoID);
       }
       const data = await this.getStirByMixingInfoID(this.mixingInfoID);
       this.stirData = data;
@@ -379,11 +380,15 @@ export class StirComponent implements OnInit {
         startScanTime: new Date().toLocaleString(),
         finishStiringTime: new Date().toLocaleString(),
       };
-      const create = await this.update(stirModel as IStirForUpdate);
+      const update = await this.update(stirModel as IStirForUpdate) as IStir;
       const data = await this.getStirByMixingInfoID(this.mixingInfoID);
       this.stirData = data;
       this.getStandardRPMAndDuration();
+      if (update.status === true) {
+        this.router.navigate(['/ec/execution/todolist-2']);
+      }
     } catch (error) {
+      this.alertify.error(error.toString());
     }
   }
 

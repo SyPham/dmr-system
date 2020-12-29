@@ -100,7 +100,9 @@ namespace DMR_API._Services.Services
         {
             try
             {
-                var setting = _mapper.Map<Setting>(model);
+                var setting = await _repoSetting.FindAll().FirstOrDefaultAsync(x => x.ID == model.ID);
+                setting.GlueTypeID = model.GlueTypeID;
+                setting.MachineCode = model.MachineCode;
                 _repoSetting.Update(setting);
                 return await _repoSetting.SaveAll();
             }
@@ -176,11 +178,11 @@ namespace DMR_API._Services.Services
         {
             try
             {
-                var item = await _repoStir.FindAll().FirstOrDefaultAsync(x => x.ID == id);
+                var item = await _repoSetting.FindAll().FirstOrDefaultAsync(x => x.ID == id);
                 if (item == null)
                     return false;
-                _repoStir.Remove(item);
-                return await _repoStir.SaveAll();
+                _repoSetting.Remove(item);
+                return await _repoSetting.SaveAll();
 
             }
             catch

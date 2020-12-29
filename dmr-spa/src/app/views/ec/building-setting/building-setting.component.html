@@ -9,7 +9,7 @@
                     [allowExcelExport]='true'
                     allowFiltering='true'
                     [filterSettings]='filterSettings'
-                    [toolbar]='toolbarOptions'
+                    [toolbar]='toolbar'
                     allowResizing= 'true'
                     showColumnMenu='true'
                     (rowSelected)='rowSelectedBuilding($event)'
@@ -47,13 +47,25 @@
                         </ng-template>
                         </e-column>
                         <e-column field='machineCode' textAlign='Center' headerText='Machine' width='100'></e-column>
-                        <!-- <e-column field='glueType.code' textAlign='Center' headerText='Glue Type' width='130'>
-                        <ng-template #editTemplate let-data>
-                            <ejs-dropdownlist #lineDropdownlist [dataSource]='glueTypes' [(ngModel)]="data.glueTypeID" popupHeight='200px'
-                                popupWidth='250px' [allowFiltering]='true' [fields]='fields' (select)='onChangeGlueType($event)'>
-                            </ejs-dropdownlist>
-                        </ng-template>
-                        </e-column> -->
+                        <e-column field='glueType.code' textAlign='Center' headerText='Glue Type' width='130'>
+                            <ng-template #editTemplate let-data>
+                                <ejs-dropdownlist #lineDropdownlist [dataSource]='glueTypes' [(ngModel)]="data.glueTypeID" popupHeight='200px'
+                                    popupWidth='250px' [allowFiltering]='true' [fields]='fields'(select)='onSelectGlueType($event)'>
+                                </ejs-dropdownlist>
+                            </ng-template>
+                            <ng-template #template let-data>
+                               {{data.glueType.title}}
+                            </ng-template>
+                        </e-column>
+                        <e-column field='' textAlign='Center' headerText='Print' width='100'>
+                            <ng-template #template let-data>
+                                <button (click)='openPrintModal(printQRCodeModal, data)' class='btn btn-sm btn-primary'>Print QR Code</button>
+                            </ng-template>
+                            <ng-template #editTemplate let-data>
+                               N/A
+                            </ng-template>
+                        </e-column>
+                      
                         <!-- <e-column field='minRPM' textAlign='Center' headerText='Min RPM' width='100'>
                         <ng-template #template let-data>{{data.minRPM}}</ng-template>
                         </e-column>
@@ -65,3 +77,32 @@
     </div>
     <div class="card-footer"></div>
 </div>
+
+<ng-template #printQRCodeModal let-modal>
+    <div class="modal-header">
+        <h4 class="modal-title">
+            <i class="fas fa-plus"></i> Print QR Code
+        </h4>
+        <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-4"></div>
+            <div class="col-md-4 text-left">
+                <div class='center '>
+                    <ejs-qrcodegenerator #barcode style="display: block;" id='qrcode' #barcode width="100px" height="130px" [displayText]='displayTextMethod' mode="SVG" [value]="qrcode">
+                    </ejs-qrcodegenerator>
+                </div>
+                <div><label>QrCode:</label> {{qrcode}}</div>
+            </div>
+            <div class="col-md-4"></div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-primary float-left" (click)="modal.close('Close click')">Close</button>
+        <button type="button" class="btn btn-primary float-right" (click)="printData()">Print</button>
+    </div>
+
+</ng-template>

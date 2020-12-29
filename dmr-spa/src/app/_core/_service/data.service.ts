@@ -8,6 +8,10 @@ export class DataService {
   SourceLang = new BehaviorSubject<any>('en');
   currentMessage = this.messageSource.asObservable();
   currentSourceLang = this.SourceLang.asObservable();
+  messageSources = new BehaviorSubject<number>(0);
+
+  currentMessages = this.messageSources.asObservable();
+
   public info = new BehaviorSubject<boolean>(false);
   locale = new BehaviorSubject<string>(null);
   // method này để change source message
@@ -17,6 +21,11 @@ export class DataService {
   changeMessage(message) {
     this.messageSource.next(message);
   }
+
+  changeMessages(message) {
+    this.messageSources.next(message);
+  }
+
   changeLang(message) {
     this.SourceLang.next(message);
   }

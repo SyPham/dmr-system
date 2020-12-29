@@ -21,12 +21,15 @@
                   </div>
                   <div class="col-md-2">
                     <ejs-dropdownlist #modelNameDropdownlist [dataSource]='buildings' [fields]='fieldsBuildings' [allowFiltering]='true'
-                      [(ngModel)]="buildingID" (filtering)='onFilteringBuilding($event)' (change)='onChangeBuilding($event)'
+                      [(ngModel)]="buildingID" [value]='buildingID' (filtering)='onFilteringBuilding($event)' (change)='onChangeBuilding($event)' 
                       placeholder="Select a building">
                     </ejs-dropdownlist>
                   </div>
                   <div class="col-md-2">
                     <button class="btn btn-sm btn-default" (click)='onClickDefault()'>
+                      <i class="fa fa-times"></i>
+                    </button>
+                    <button class="btn btn-sm btn-default" (click)='buildingID = 8'>
                       <i class="fa fa-times"></i>
                     </button>
                   </div>

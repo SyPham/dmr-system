@@ -7,6 +7,7 @@ import {
   AfterViewInit,
   QueryList,
   ViewChildren,
+  OnDestroy,
 } from '@angular/core';
 import { EmitType } from '@syncfusion/ej2-base/';
 import { FilteringEventArgs } from '@syncfusion/ej2-dropdowns';
@@ -33,9 +34,7 @@ import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { IngredientModalComponent } from '../ingredient/ingredient-modal/ingredient-modal.component';
 import { Tooltip, TooltipEventArgs } from '@syncfusion/ej2-popups';
 import { DropDownListComponent } from '@syncfusion/ej2-angular-dropdowns';
-import {
-  IGlueIngredient,
-} from 'src/app/_core/_model/glue-ingredient-detail';
+import { IGlueIngredient } from 'src/app/_core/_model/glue-ingredient-detail';
 import { ArticleNoService } from 'src/app/_core/_service/articleNoService.service';
 import { IArticleNo } from 'src/app/_core/_model/Iarticle-no';
 import { AuthService } from 'src/app/_core/_service/auth.service';
@@ -47,6 +46,7 @@ import { PartService } from 'src/app/_core/_service/part.service';
 import { MaterialService } from 'src/app/_core/_service/material.service';
 import { BuildingUserService } from 'src/app/_core/_service/building.user.service';
 import { SwitchComponent } from '@syncfusion/ej2-angular-buttons';
+import { DataService } from 'src/app/_core/_service/data.service';
 
 declare const $: any;
 const LEVEL_1 = 3;
@@ -57,7 +57,7 @@ const LEVEL_1 = 3;
   styleUrls: ['./bpfc-detail.component.css'],
   providers: [ToolbarService, EditService, PageService],
 })
-export class BpfcDetailComponent implements OnInit, AfterViewInit {
+export class BpfcDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   modalReference: NgbModalRef;
   @ViewChild('switch') public switch: SwitchComponent;
   data: IGlue[];
@@ -99,7 +99,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     consumption: '',
     expiredTime: 0,
     createdBy: 0,
-    glueNameID: 0,
+    glueNameID: 0
   };
   ingredient = {
     id: 0,
@@ -116,7 +116,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     materialNO: '',
     unit: 0,
     real: 0,
-    cbd: 0
+    cbd: 0,
   };
   editPercentage = {
     glueID: 0,
@@ -331,6 +331,8 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
   articleNoIDLeo = 0;
   artProcessIDLeo = 0;
   BPFCIDLeo = 0;
+  textSearch: string = null;
+  dataSearch: any;
   constructor(
     private glueIngredientService: GlueIngredientService,
     private modalNameService: ModalNameService,
@@ -347,8 +349,14 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     private materialService: MaterialService,
     private buildingUserService: BuildingUserService,
     private artProcessService: ArtProcessService,
-    private ingredientService: IngredientService
-  ) { }
+    private ingredientService: IngredientService,
+    private dataService: DataService
+  ) {
+    this.dataSearch = this.dataService.currentMessage.subscribe((res: any) => {
+      this.textSearch = res;
+
+    });
+  }
 
   ngOnInit() {
     this.getModelNames();
@@ -411,50 +419,55 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     this.editparams = { paramss: { popupHeight: '300px' } };
   }
 
-
+  ngOnDestroy() {
+    this.dataService.changeMessages(this.textSearch);
+    this.dataSearch.unsubscribe();
+  }
   GetDetailBPFC() {
     this.BPFCID = this.route.snapshot.params.id;
-    this.bPFCEstablishService.getDetailBPFC(this.BPFCID).subscribe((res: any) => {
-      const data = res[0];
-      this.BPFCIDLeo = data.id;
-      this.modelNameLeo = data.modelName;
-      this.modelNoLeo = data.modelNo;
-      this.articleNoLeo = data.articleNo;
-      this.artProcessLeo = data.artProcess;
-      this.articleNoNewLeo = data.articleNo;
+    this.bPFCEstablishService
+      .getDetailBPFC(this.BPFCID)
+      .subscribe((res: any) => {
+        const data = res[0];
+        this.BPFCIDLeo = data.id;
+        this.modelNameLeo = data.modelName;
+        this.modelNoLeo = data.modelNo;
+        this.articleNoLeo = data.articleNo;
+        this.artProcessLeo = data.artProcess;
+        this.articleNoNewLeo = data.articleNo;
 
-      this.modelNameID = data.modelNameID;
-      this.modelNoID = data.modelNoID;
-      this.articleNoID = data.articleNoID;
-      if (data.artProcess === 'ASY') {
-        this.artProcessIDLeo = 1;
-      } else {
-        this.artProcessIDLeo = 2;
-      }
+        this.modelNameID = data.modelNameID;
+        this.modelNoID = data.modelNoID;
+        this.articleNoID = data.articleNoID;
+        if (data.artProcess === 'ASY') {
+          this.artProcessIDLeo = 1;
+        } else {
+          this.artProcessIDLeo = 2;
+        }
 
-      this.modelNameDetail = res[0].modelName;
-      this.modelNameID = res[0].modelNameID;
-      this.modelNoDetail = res[0].modelNo;
-      this.articleNoDetail = res[0].articleNo;
-      this.artProcessDetail = res[0].artProcess;
-      this.modelNameIDClone = res[0].modelNameID;
-      this.value = res[0].modelNameID;
-      this.valuemodelNo = res[0].modelNoID;
-      this.articleNoID = res[0].articleNoID;
-      this.resetLifeCycleBPFC();
-      this.BPFCID = res[0]?.id;
-      this.approvalStatus = res[0].approvalStatus;
-      this.createdStatus = res[0].finishedStatus;
-      localStorage.removeItem('details');
-      this.glue.BPFCEstablishID = this.BPFCID;
-      this.getAllGluesByBPFCID(this.BPFCID);
-      this.getAllPart();
-      this.getAllKind();
-      this.getAllMaterial();
-      this.getAllIngredient();
-      this.existGlue = true;
-      this.modified = true;
-    });
+        this.modelNameDetail = res[0].modelName;
+        this.modelNameID = res[0].modelNameID;
+        this.modelNoDetail = res[0].modelNo;
+        this.articleNoDetail = res[0].articleNo;
+        this.artProcessDetail = res[0].artProcess;
+        this.modelNameIDClone = res[0].modelNameID;
+        this.value = res[0].modelNameID;
+        this.valuemodelNo = res[0].modelNoID;
+        this.articleNoID = res[0].articleNoID;
+        this.resetLifeCycleBPFC();
+        this.BPFCID = res[0]?.id;
+        this.approvalStatus = res[0].approvalStatus;
+        this.createdStatus = res[0].finishedStatus;
+        localStorage.removeItem('details');
+        this.glue.BPFCEstablishID = this.BPFCID;
+        this.getAllGluesByBPFCID(this.BPFCID);
+        this.getAllPart();
+        this.getAllKind();
+        this.getAllMaterial();
+        this.getAllIngredient();
+        this.existGlue = true;
+        this.modified = true;
+      });
   }
   public onFiltering: EmitType<FilteringEventArgs> = (
     e: FilteringEventArgs
@@ -516,7 +529,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     //   this.gridglue.refresh();
     // }
   }
-  onCreatedGridGlue() { }
+  onCreatedGridGlue() {}
   ngAfterViewInit() {
     $('[data-toggle="tooltip"]').tooltip();
     this.getBuilding();
@@ -570,6 +583,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
       this.glue.id = args.rowData.id || 0;
       this.glue.code = args.data.code || '';
       this.glue.consumption = args.data.consumption;
+      this.glue.glueNameID = args.data.glueNameID;
       this.glue.kindID = this.kindID || null;
       this.glue.partID = this.partID || null;
       this.glue.materialID = this.materialID || null;
@@ -616,7 +630,6 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
             }
           );
         });
-
       }
     }
   }
@@ -637,7 +650,9 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
           .then((result) => {
             this.modified = true;
             if (this.gridglue.getSelectedRowIndexes().length) {
-              const glueSelected = (this.gridglue.dataSource as any[])[previousRowIndex];
+              const glueSelected = (this.gridglue.dataSource as any[])[
+                previousRowIndex
+              ];
               glueSelected.name = glueSelected.chemical.name;
               this.gridglue.refresh();
             }
@@ -701,7 +716,10 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
             break;
         }
         if (selectedPositon !== nextPositon) {
-          this.alertify.warning(`Hãy chọn chất tiếp theo là ${nextPositon}`, true);
+          this.alertify.warning(
+            `Hãy chọn chất tiếp theo là ${nextPositon}`,
+            true
+          );
           this.grid.refresh();
           this.grid2.refresh();
           args.cancel = true;
@@ -870,9 +888,9 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     this.nameGlue = glueIngredient[0]?.ingredientName || '';
     this.nameGlues =
       glueIngredient[0]?.ingredientName +
-      '^' +
-      this.glueIngredientDetail[0].allow +
-      '%' || '';
+        '^' +
+        this.glueIngredientDetail[0].allow +
+        '%' || '';
     this.A = glueIngredient[0].ingredientName;
     this.glueIngredientDetail = this.renderchemical();
     if (this.glueIngredientDetail[1] === undefined) {
@@ -1011,9 +1029,9 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
       this.nameGlue = glueIngredient[0]?.ingredientName || '';
       this.nameGlues =
         glueIngredient[0]?.ingredientName +
-        '^' +
-        this.glueIngredientDetail[0]?.allow +
-        '%' || '';
+          '^' +
+          this.glueIngredientDetail[0]?.allow +
+          '%' || '';
       this.A = glueIngredient[0]?.ingredientName || '';
       if (this.glueIngredientDetail[1] === undefined) {
         this.B = '';
@@ -1164,8 +1182,10 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
       }
       this.editPercentage.percentage = args.data.percentage;
       this.editAllow.allow = args.data.allow;
-      const percentageChanged = Number(this.percentageDefault) !== Number(this.percentageChange);
-      const allowChanged = Number(this.allowDefault) !== Number(this.allowChange);
+      const percentageChanged =
+        Number(this.percentageDefault) !== Number(this.percentageChange);
+      const allowChanged =
+        Number(this.allowDefault) !== Number(this.allowChange);
       if (percentageChanged) {
         // update lai percentage
         this.modified = false;
@@ -1319,8 +1339,8 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     modalRef.componentInstance.ingredient = this.ingredient;
     modalRef.componentInstance.title = 'Add Ingredient';
     modalRef.result.then(
-      (result) => { },
-      (reason) => { }
+      (result) => {},
+      (reason) => {}
     );
   }
 
@@ -1362,9 +1382,9 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
                 partID: null,
                 materialID: null,
                 consumption: '',
-                glueNameID: 0,
                 expiredTime: 0,
                 createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
+                glueNameID: 0
               };
               this.glue = glue;
               this.saveGlue();
@@ -1385,9 +1405,9 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
             partID: null,
             materialID: null,
             consumption: '',
-            glueNameID: 0,
             expiredTime: 0,
             createdBy: JSON.parse(localStorage.getItem('user')).User.ID,
+            glueNameID: 0
           };
           this.glue = glue;
           this.saveGlue();
@@ -1448,7 +1468,9 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     if (id === 0) {
       return '#N/A';
     }
-    const result = this.userData.filter((item: any) => item.ID === id)[0] as any;
+    const result = this.userData.filter(
+      (item: any) => item.ID === id
+    )[0] as any;
     if (result !== undefined) {
       return result.Username;
     } else {
@@ -1456,7 +1478,6 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     }
   }
   // End BPFC HISTORY
-
 
   cloneModelname() {
     this.alertify.confirm(
@@ -1532,8 +1553,8 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     this.alertify.confirm(
       'Xóa ingredient',
       'Bạn có chắc chắn muốn xóa ingredient này không "' +
-      ingredient.id +
-      '" ?',
+        ingredient.id +
+        '" ?',
       () => {
         this.ingredientService.delete(ingredient.id).subscribe(
           () => {
@@ -1663,7 +1684,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
                 materialNO: item.materialNO,
                 unit: item.unit,
                 real: item.real,
-                cbd: item.cbd
+                cbd: item.cbd,
               };
               return ingredient;
             });
@@ -1763,7 +1784,10 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
   finished() {
     const userid = JSON.parse(localStorage.getItem('user')).User.ID;
     if (this.gridglue.getSelectedRowIndexes().length === 0) {
-      this.alertify.warning('Hãy chọn vào 1 glue và tạo công thức sau đó mới bấm hoàn thành!', true);
+      this.alertify.warning(
+        'Hãy chọn vào 1 glue và tạo công thức sau đó mới bấm hoàn thành!',
+        true
+      );
     } else {
       // this.history.Action = 'Created';
       this.history.BPFCEstablishID = this.BPFCID;
@@ -1773,7 +1797,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
       this.history.UserID = userid;
       this.bPFCEstablishService
         .AddHistoryBPFC(this.history)
-        .subscribe(() => { });
+        .subscribe(() => {});
 
       const details = this.getLocalStore('details');
       const selectedrecords = this.gridglue.getSelectedRecords()[0] as IGlue; // Get the selected records.
@@ -1855,31 +1879,39 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     );
   }
   approval() {
-    const glueData = (this.gridglue.dataSource as any);
+    const glueData = this.gridglue.dataSource as any;
     let flagAllow = false;
     let flagPercentage = false;
     let flagConsumption = false;
     if (glueData) {
       for (const glue of glueData) {
         if (glue.glueIngredients.length > 0) {
-          const glueIngredients = glue.glueIngredients.filter(x => x.position !== 'A');
+          const glueIngredients = glue.glueIngredients.filter(
+            (x) => x.position !== 'A'
+          );
           for (const item of glueIngredients) {
             if (item.allow <= 0) {
               flagAllow = false;
               this.approvalStatus = !this.approvalStatus;
-              this.alertify.warning(`The allowance of checmical name ${item.ingredient.name} must be greater than 0 <br>
+              this.alertify.warning(
+                `The allowance of checmical name ${item.ingredient.name} must be greater than 0 <br>
               Mức cho phép của hóa chất ${item.ingredient.name} phải lớn hơn 0!<br>
                <label>Glue Name: </label> ${glue.name} <br>
-              `, true);
+              `,
+                true
+              );
               return;
             }
             if (item.percentage <= 0) {
               flagPercentage = false;
               this.approvalStatus = !this.approvalStatus;
-              this.alertify.warning(`The percentage of checmical name ${item.ingredient.name} must be greater than 0 <br>
+              this.alertify.warning(
+                `The percentage of checmical name ${item.ingredient.name} must be greater than 0 <br>
               Phần trăm của hóa chất ${item.ingredient.name} phải lớn hơn 0!<br>
                <label>Glue Name: </label> ${glue.name} <br>
-              `, true);
+              `,
+                true
+              );
               return;
             }
             flagAllow = true;
@@ -1889,55 +1921,70 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
         if (glue.consumption <= 0) {
           flagConsumption = false;
           this.approvalStatus = !this.approvalStatus;
-          this.alertify.warning(`The consumption of glue name ${glue.name} must be greater than 0 <br>
+          this.alertify.warning(
+            `The consumption of glue name ${glue.name} must be greater than 0 <br>
           Mức tiêu thụ của keo ${glue.name} phải lớn hơn 0! <br>
           <label>Glue Name: </label> ${glue.name} <br>
-          `, true);
+          `,
+            true
+          );
           return;
         }
         flagConsumption = true;
       }
       if (flagAllow && flagPercentage && flagConsumption) {
         const userid = JSON.parse(localStorage.getItem('user')).User.ID;
-        this.bPFCEstablishService.approval(this.BPFCID, userid).subscribe((res) => {
-          this.alertify.success('The BPFC has been approved!');
-          this.createdStatus = this.approvalStatus;
-          const value = this.modelNameDropdownlist.value;
-          const bpfc = this.modelNameDropdownlist.getDataByValue(value) as any;
-          this.modelNameDropdownlist.valueTemplate = `(${this.checkStatus(
-            this.approvalStatus,
-            this.createdStatus
-          )}) ${bpfc.name}`;
-        });
+        this.bPFCEstablishService
+          .approval(this.BPFCID, userid)
+          .subscribe((res) => {
+            this.alertify.success('The BPFC has been approved!');
+            this.createdStatus = this.approvalStatus;
+            const value = this.modelNameDropdownlist.value;
+            const bpfc = this.modelNameDropdownlist.getDataByValue(
+              value
+            ) as any;
+            this.modelNameDropdownlist.valueTemplate = `(${this.checkStatus(
+              this.approvalStatus,
+              this.createdStatus
+            )}) ${bpfc.name}`;
+          });
       }
     }
   }
   done() {
-    const glueData = (this.gridglue.dataSource as any);
+    const glueData = this.gridglue.dataSource as any;
     let flagAllow = false;
     let flagPercentage = false;
     let flagConsumption = false;
     if (glueData) {
       for (const glue of glueData) {
         if (glue.glueIngredients.length > 0) {
-          const glueIngredients = glue.glueIngredients.filter(x => x.position !== 'A');
+          const glueIngredients = glue.glueIngredients.filter(
+            (x) => x.position !== 'A'
+          );
           for (const item of glueIngredients) {
             if (item.allow <= 0) {
               flagAllow = false;
               this.createdStatus = !this.createdStatus;
-              this.alertify.warning(`The allow of checmical name ${item.ingredient.name} is greater than 0 <br>
+              this.alertify.warning(
+                `The allow of checmical name ${item.ingredient.name} is greater than 0 <br>
               Mức cho phép của hóa chất ${item.ingredient.name} phải lớn hơn 0!<br>
                <label>Glue Name: </label> ${glue.name} <br>
-              `, true);
+              `,
+                true
+              );
               return;
             }
             if (item.percentage <= 0) {
               flagPercentage = false;
               this.createdStatus = !this.createdStatus;
-              this.alertify.warning(`The percentage of checmical name ${item.ingredient.name} is greater than 0 <br>
+              this.alertify.warning(
+                `The percentage of checmical name ${item.ingredient.name} is greater than 0 <br>
               Phần trăm của hóa chất ${item.ingredient.name} phải lớn hơn 0!<br>
                <label>Glue Name: </label> ${glue.name} <br>
-              `, true);
+              `,
+                true
+              );
               return;
             }
             flagAllow = true;
@@ -1947,10 +1994,13 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
         if (glue.consumption <= 0) {
           flagConsumption = false;
           this.createdStatus = !this.createdStatus;
-          this.alertify.warning(`The consumption of glue name ${glue.name} is greater than 0 <br>
+          this.alertify.warning(
+            `The consumption of glue name ${glue.name} is greater than 0 <br>
           Mức tiêu thụ của keo ${glue.name} phải lớn hơn 0! <br>
           <label>Glue Name: </label> ${glue.name} <br>
-          `, true);
+          `,
+            true
+          );
           return;
         }
         flagConsumption = true;
@@ -1995,7 +2045,8 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
       });
   }
   getModelNoByModelNameID(modelNameID) {
-    this.modelNoService.getModelNoByModelNameID(modelNameID)
+    this.modelNoService
+      .getModelNoByModelNameID(modelNameID)
       .subscribe((res) => {
         this.modelNoData = res;
       });
@@ -2132,7 +2183,6 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
     this.modelNoSelect = false;
     this.modelArtSelect = false;
     this.modelProcessSelect = false;
-
   }
   onChangeModelNo(args) {
     if (args.isInteracted) {
@@ -2170,7 +2220,7 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
       // this.getBPFCID(bpfcInfo);
     }
   }
-  ClickProcessData(args) { }
+  ClickProcessData(args) {}
 
   /// Begin event Clone
   clearFormClone() {
@@ -2282,22 +2332,30 @@ export class BpfcDetailComponent implements OnInit, AfterViewInit {
   }
   /// End Clone
   changeAllowColor(data) {
-    if (data.position === null) { return ''; }
-    if (this.positions.includes(data.position) && data.allow === 0 || this.positions.includes(data.position) && data.allow === null) {
+    if (data.position === null) {
+      return '';
+    }
+    if (
+      (this.positions.includes(data.position) && data.allow === 0) ||
+      (this.positions.includes(data.position) && data.allow === null)
+    ) {
       return 'font-weight-bold text-white p-2 rounded-circle warning-text';
     }
   }
   changePercentageColor(data) {
-    if (data.percentage === null) { return ''; }
+    if (data.percentage === null) {
+      return '';
+    }
     if (this.positions.includes(data.position) && data.percentage === 0) {
       return 'font-weight-bold text-white p-2 rounded-circle warning-text';
     }
   }
   changeConsumptionColor(data) {
-    if (data.glueIngredients.length === 0) { return ''; }
+    if (data.glueIngredients.length === 0) {
+      return '';
+    }
     if (data.consumption === '') {
       return 'font-weight-bold text-white p-2 rounded-circle warning-text';
     }
   }
-
 }

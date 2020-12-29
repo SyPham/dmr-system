@@ -11,6 +11,8 @@ namespace DMR_API._Services.Interface
     public interface IBPFCEstablishService : IECService<BPFCEstablishDto>
     {
         Task<object> GetDetailBPFC(int bpfcID);
+        Task<object> GetDoneBPFC();
+        Task<object> GetUndoneBPFC();
         Task ImportExcel(List<BPFCEstablishDtoForImportExcel> bPFCEstablishDtos);
         Task<object> Approval(int bpfcID, int userid);
         Task<object> Done(int bpfcID, int userid);

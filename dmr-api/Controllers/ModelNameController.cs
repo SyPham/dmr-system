@@ -27,10 +27,17 @@ namespace DMR_API.Controllers
             _modelNameService = modelNameService;
             _mailExtension = mailExtension;
         }
+        // new version
         [HttpPost]
         public async Task<IActionResult> CloneBPFC(CloneDto clone)
         {
             return Ok(await _modelNameService.CloneBPFC(clone));
+        }
+        // clone
+        [HttpPost]
+        public async Task<IActionResult> Clone(CloneDto clone)
+        {
+            return Ok(await _modelNameService.CloneModelName(clone));
         }
 
         [HttpGet]
@@ -146,11 +153,7 @@ namespace DMR_API.Controllers
                 return NoContent();
             throw new Exception("Error save the model name");
         }
-        [HttpPost]
-        public async Task<IActionResult> Clone(CloneDto clone)
-        {
-            return Ok(await _modelNameService.CloneModelName(clone));
-        }
+        
         [HttpGet("{modelNameID}/{modelName}/{modelNo}/{article}/{processID}")]
         public async Task<IActionResult> CloneArticleModelname(int modelNameID, string modelName, string modelNo, string article, int processID)
         {

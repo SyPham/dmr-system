@@ -11,6 +11,8 @@ namespace DMR_API._Services.Interface
    public interface IDispatchService : IECService<Dispatch>
     {
         bool AddDispatching(Dispatch dispatch);
+        bool UpdateStartDispatchingTime(int id);
+        Task<bool> UpdateAmount(int id, double amount);
         bool AddDispatchingRange(List<Dispatch> dispatch);
     }
 }

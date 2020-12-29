@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HubConnectionState } from '@microsoft/signalr';
+import { Observable, Subject, Subscription } from 'rxjs';
 import { IBuilding } from 'src/app/_core/_model/building';
 import { IMixingInfo } from 'src/app/_core/_model/plan.js';
 import { IRole } from 'src/app/_core/_model/role.js';
@@ -12,9 +13,14 @@ import { MakeGlueService } from 'src/app/_core/_service/make-glue.service';
 import { PlanService } from 'src/app/_core/_service/plan.service.js';
 import { SettingService } from 'src/app/_core/_service/setting.service.js';
 import * as signalr from '../../../../assets/js/ec-client.js';
+
+import { debounceTime } from 'rxjs/operators';
+import { IScanner } from 'src/app/_core/_model/IToDoList.js';
+import { TodolistService } from 'src/app/_core/_service/todolist.service.js';
+
 const SUMMARY_RECIEVE_SIGNALR = 'ok';
-const UNIT_BIG_MACHINE = 'k';
-const UNIT_SMALL_MACHINE = 'g';
+const BIG_MACHINE_UNIT = 'k';
+const SMALL_MACHINE_UNIT = 'g';
 const BUILDING_LEVEL = 2;
 declare var $: any;
 const ADMIN = 1;
@@ -26,9 +32,9 @@ const SUPERVISOR = 2;
   templateUrl: './mixing.component.html',
   styleUrls: ['./mixing.component.css']
 })
-export class MixingComponent implements OnInit {
+export class MixingComponent implements OnInit, OnDestroy {
   ingredients: IIngredient[];
-  ingredientsTamp: IIngredient[];
+  ingredientsTamp: IIngredient;
   building: IBuilding;
   glueID: number;
   disabled = true;
@@ -60,6 +66,8 @@ export class MixingComponent implements OnInit {
   estimatedStartTime: any;
   estimatedFinishTime: any;
   stdcon: number;
+  subject = new Subject<IScanner>();
+  subscription: Subscription[] = [];
   constructor(
     private route: ActivatedRoute,
     private alertify: AlertifyService,
@@ -68,19 +76,134 @@ export class MixingComponent implements OnInit {
     private abnormalService: AbnormalService,
     private planService: PlanService,
     private router: Router,
-    private settingService: SettingService
-  ) { }
+    private settingService: SettingService,
+    public todolistService: TodolistService
+  ) {
 
+  }
+  ngOnDestroy(): void {
+    this.subscription.forEach(item => item.unsubscribe());
+  }
   ngOnInit() {
+    this.checkQRCode();
     const BUIDLING: IBuilding = JSON.parse(localStorage.getItem('building'));
     const ROLE: IRole = JSON.parse(localStorage.getItem('level'));
     this.role = ROLE;
     this.building = BUIDLING;
-    this.scalingKG = UNIT_BIG_MACHINE;
+    this.scalingKG = BIG_MACHINE_UNIT;
     this.startTime = new Date();
     this.getScalingSetting();
     this.onRouteChange();
   }
+  private checkQRCode() {
+    this.subscription.push(this.subject
+      .pipe(debounceTime(500))
+      .subscribe(async (arg) => {
+        const args = arg.QRCode;
+        const item = arg.ingredient;
+        this.ingredientsTamp = item;
+        this.position = item.position;
+        const input = args.split('-') || [];
+        // const commonPattern = /(\d+)-(\w+)-([\w\-\d]+)/g;
+        const dateAndBatch = /(\d+)-(\w+)-/g;
+        const qr = args.match(item.materialNO);
+        const validFormat = args.match(dateAndBatch);
+        const qrcode = args.replace(validFormat[0], '');
+        if (qr === null) {
+          this.alertify.warning(`Mã QR không hợp lệ!<br>The QR Code invalid!`);
+          this.qrCode = '';
+          this.errorScan();
+          return;
+        }
+        if (qr !== null) {
+          try {
+            // check neu batch va code giong nhau
+            if (qrcode !== qr[0]) {
+              this.alertify.warning(`Mã QR không hợp lệ!<br>Please you should look for the chemical name "${item.name}"`);
+              this.qrCode = '';
+              this.errorScan();
+              return;
+            }
+            this.qrCode = qr[0];
+            // const result = await this.scanQRCode();
+            if (this.qrCode !== item.materialNO) {
+              this.alertify.warning(`Mã QR không hợp lệ!<br>Please you should look for the chemical name "${item.name}"`);
+              this.qrCode = '';
+              this.errorScan();
+              return;
+            }
+            if (item.position === 'A') {
+              this.changeExpected('A', this.stdcon);
+              this.startTime = new Date();
+            }
+            // const checkIncoming = await this.checkIncoming(item.name, this.level.name, input[1]);
+            // if (checkIncoming === false) {
+            //   this.alertify.error(`Invalid!`);
+            //   this.qrCode = '';
+            //   this.errorScan();
+            //   return;
+            // }
+            const checkLock = await this.hasLock(
+              item.name,
+              this.building.name,
+              input[1]
+            );
+            if (checkLock === true) {
+              this.alertify.error('Hóa chất này đã bị khóa!<br>This chemical has been locked!');
+              this.qrCode = '';
+              this.errorScan();
+              return;
+            }
+
+            /// Khi quét qr-code thì chạy signal
+            this.signal();
+
+            const code = item.code;
+            const ingredient = this.findIngredientCode(code);
+            this.setBatch(ingredient, input[1]);
+            if (ingredient) {
+              this.changeInfo('success-scan', ingredient.code);
+              if (ingredient.expected === 0 && ingredient.position === 'A') {
+                this.changeFocusStatus(ingredient.code, false, true);
+                this.changeScanStatus(ingredient.code, false);
+              } else {
+                this.changeScanStatus(ingredient.code, false);
+                this.changeFocusStatus(code, false, false);
+              }
+            }
+            // chuyển vị trí quét khi scan
+            switch (this.position) {
+              case 'A':
+                this.changeScanStatusByPosition('A', false);
+                this.changeScanStatusByPosition('B', true);
+                break;
+              case 'B':
+                this.changeScanStatusByPosition('B', false);
+                this.changeScanStatusByPosition('C', true);
+                break;
+              case 'C':
+                this.changeScanStatusByPosition('C', false);
+                this.changeScanStatusByPosition('D', true);
+                break;
+              case 'D':
+                this.changeScanStatusByPosition('D', false);
+                this.changeScanStatusByPosition('E', true);
+                break;
+              case 'E':
+                this.changeScanStatusByPosition('H', true);
+                break;
+            }
+          } catch (error) {
+            console.log('tag', error);
+            this.errorScan();
+            this.alertify.error('Mã QR không hợp lệ!<br>Wrong Chemical!');
+            this.qrCode = '';
+          }
+        }
+      }
+      ));
+  }
+
   onRouteChange() {
     this.route.data.subscribe(data => {
       this.glueID = this.route.snapshot.params.glueID;
@@ -121,88 +244,11 @@ export class MixingComponent implements OnInit {
 
   // khi scan qr-code
   async onNgModelChangeScanQRCode(args, item) {
-    this.ingredientsTamp = item;
-    this.position = item.position;
-    const input = args.split('-') || [];
-    if (input[2]?.length === 8) {
-      try {
-        this.qrCode = input[2];
-        const result = await this.scanQRCode();
-        if (item.position === 'A') {
-          this.changeExpected('A', this.stdcon);
-          this.startTime = new Date();
-        }
-        if (this.qrCode !== item.materialNO) {
-          this.alertify.warning(`Please you should look for the chemical name "${item.name}"`);
-          this.qrCode = '';
-          this.errorScan();
-          return;
-        }
-        // const checkIncoming = await this.checkIncoming(item.name, this.level.name, input[1]);
-        // if (checkIncoming === false) {
-        //   this.alertify.error(`Invalid!`);
-        //   this.qrCode = '';
-        //   this.errorScan();
-        //   return;
-        // }
-
-        const checkLock = await this.hasLock(
-          item.name,
-          this.building.name,
-          input[1]
-        );
-        if (checkLock === true) {
-          this.alertify.error('This chemical has been locked!');
-          this.qrCode = '';
-          this.errorScan();
-          return;
-        }
-
-        /// Khi quét qr-code thì chạy signal
-        this.signal();
-
-        const code = result.code;
-        const ingredient = this.findIngredientCode(code);
-        this.setBatch(ingredient, input[1]);
-        if (ingredient) {
-          this.changeInfo('success-scan', ingredient.code);
-          if (ingredient.expected === 0 && ingredient.position === 'A') {
-            this.changeFocusStatus(ingredient.code, false, true);
-            this.changeScanStatus(ingredient.code, false);
-          } else {
-            this.changeScanStatus(ingredient.code, false);
-            this.changeFocusStatus(code, false, false);
-          }
-        }
-        // chuyển vị trí quét khi scan
-        switch (this.position) {
-          case 'A':
-            this.changeScanStatusByPosition('A', false);
-            this.changeScanStatusByPosition('B', true);
-            break;
-          case 'B':
-            this.changeScanStatusByPosition('B', false);
-            this.changeScanStatusByPosition('C', true);
-            break;
-          case 'C':
-            this.changeScanStatusByPosition('C', false);
-            this.changeScanStatusByPosition('D', true);
-            break;
-          case 'D':
-            this.changeScanStatusByPosition('D', false);
-            this.changeScanStatusByPosition('E', true);
-            break;
-          case 'E':
-            this.changeScanStatusByPosition('H', true);
-            break;
-        }
-      } catch (error) {
-        console.log('tag', error);
-        this.errorScan();
-        this.alertify.error('Wrong Chemical!');
-        this.qrCode = '';
-      }
-    }
+    const scanner: IScanner = {
+      QRCode: args,
+      ingredient: item
+    };
+    this.subject.next(scanner);
   }
   // api
   scanQRCode(): Promise<any> {
@@ -314,6 +360,7 @@ export class MixingComponent implements OnInit {
       if (position === 'D') {
         this.D = expected;
       }
+      if (position === 'A') { return; }
       const allow = this.calculatorIngredient(
         expected / 1000,
         this.findIngredient(position)?.allow
@@ -351,9 +398,23 @@ export class MixingComponent implements OnInit {
     for (const i in this.ingredients) {
       if (this.ingredients[i].position === position) {
         this.ingredients[i].real = actual;
-        this.ingredients[i].unit = position === 'A' ? UNIT_BIG_MACHINE : unit;
+        this.ingredients[i].unit = position === 'A' ? BIG_MACHINE_UNIT : unit;
         break; // Stop this loop, we found it!
       }
+    }
+  }
+  onBlur(data: IIngredient) {
+    for (const i in this.ingredients) {
+      if (this.ingredients[i].position === data.position) {
+        this.ingredients[i].focusReal = true;
+      } else {
+        this.ingredients[i].focusReal = false;
+      }
+    }
+    if (signalr.SCALING_CONNECTION_HUB.state === HubConnectionState.Connected) {
+      this.signal();
+    } else {
+      this.startScalingHub();
     }
   }
   checkValidPosition(ingredient, args) {
@@ -365,8 +426,8 @@ export class MixingComponent implements OnInit {
 
     if (ingredient.allow === 0) {
       let unit = ingredient.position === 'A' ? this.stdcon : ingredient.expected.replace(/[0-9|.]+/g, '').trim();
-      unit = ingredient.position === 'A' ? 'k' : unit;
-      if (unit === UNIT_BIG_MACHINE) {
+      unit = ingredient.position === 'A' ? BIG_MACHINE_UNIT : unit;
+      if (unit === BIG_MACHINE_UNIT) {
         min = parseFloat(ingredient.expected);
         max = parseFloat(ingredient.expected);
       } else {
@@ -378,7 +439,7 @@ export class MixingComponent implements OnInit {
     } else {
       const exp2 = ingredient.expected.split('-');
       const unit = exp2[0].replace(/[0-9|.]+/g, '').trim();
-      if (unit === UNIT_BIG_MACHINE) {
+      if (unit === BIG_MACHINE_UNIT) {
         min = parseFloat(exp2[0]);
         max = parseFloat(exp2[1]);
       } else {
@@ -406,7 +467,7 @@ export class MixingComponent implements OnInit {
     // Nếu Chemical là B, focus vào chemical C
     if (ingredient.position === 'B') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('B', false);
           this.changeScanStatusFocus('C', true);
@@ -422,7 +483,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('B', false);
           this.changeScanStatusFocus('C', true);
@@ -443,7 +504,7 @@ export class MixingComponent implements OnInit {
     // Nếu Chemical là C, focus vào chemical D
     if (ingredient.position === 'C') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('C', false);
           this.changeScanStatusFocus('D', true);
@@ -459,7 +520,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('C', false);
           this.changeScanStatusFocus('D', true);
@@ -480,7 +541,7 @@ export class MixingComponent implements OnInit {
     // Nếu Chemical là D, focus vào chemical E
     if (ingredient.position === 'D') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -496,7 +557,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -516,7 +577,7 @@ export class MixingComponent implements OnInit {
 
     if (ingredient.position === 'E') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -532,7 +593,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -640,30 +701,6 @@ export class MixingComponent implements OnInit {
       }
     }
   }
-  private findIngredientRealByPosition(position): number {
-    let real = 0;
-    for (const item of this.ingredients) {
-      if (item.position === position) {
-        if (item.unit === UNIT_BIG_MACHINE) {
-          real = item.real;
-        } else {
-          real = (item.real) / 1000;
-        }
-        break;
-      }
-    }
-    return real;
-  }
-  private findIngredientBatchByPosition(position) {
-    let batch = '';
-    for (const item of this.ingredients) {
-      if (item.position === position) {
-        batch = item.batch;
-        break;
-      }
-    }
-    return batch;
-  }
   private startScalingHub() {
     signalr.SCALING_CONNECTION_HUB.start().then(() => {
       signalr.SCALING_CONNECTION_HUB.on('Scaling Hub UserConnected', (conId) => {
@@ -687,14 +724,16 @@ export class MixingComponent implements OnInit {
             if (unit === this.scalingKG) {
               this.volume = parseFloat(message);
               this.unit = unit;
-              // console.log('Unit', unit);
+              console.log('Unit', unit, message, scalingMachineID);
               /// update real A sau do show real B, tinh lai expected
               switch (this.position) {
                 case 'A':
                   this.volumeA = this.volume;
                   break;
                 case 'B':
-                  if (unit === UNIT_BIG_MACHINE) {
+                  if (unit === BIG_MACHINE_UNIT) {
+                    // update realA
+                    console.log('.realA', message, this.ingredients);
                     this.volumeB = this.volume;
                     this.changeActualByPosition('A', this.volumeB, unit);
                     this.checkValidPosition(this.ingredientsTamp, this.volumeB);
@@ -745,85 +784,60 @@ export class MixingComponent implements OnInit {
     }
     return false;
   }
-  checkValidPositionForRealEvent(ingredient, args) {
+  checkValidPositionForRealEvent(ingredient, data) {
     let min;
     let max;
     let minG;
     let maxG;
-    const currentValue = parseFloat(args.target.value);
-
+    const args = parseFloat(data.target.value);
+    const currentValue = args;
     if (ingredient.allow === 0) {
-      const unit = ingredient.expected.replace(/[0-9|.]+/g, '').trim();
-      if (unit === UNIT_BIG_MACHINE) {
+      const pattern = /^[0-9.]+[kg]+\s\+\s[0-9.]+[kg]+|(^[0-9.]+[kg]+)/g;
+      const checkFormat = ingredient.expected.toString().match(pattern);
+      const unit = checkFormat != null ? ingredient.expected.replace(/[0-9|.]+/g, '').trim() : BIG_MACHINE_UNIT;
+      // unit = ingredient.position === 'A' ? BIG_MACHINE_UNIT : unit;
+      if (unit === BIG_MACHINE_UNIT) {
         min = parseFloat(ingredient.expected);
         max = parseFloat(ingredient.expected);
-        for (const key in this.ingredients) {
-          if (this.ingredients[key].id === ingredient.id) {
-            this.ingredients[key].valid = currentValue !== max;
-            this.ingredients[key].real = currentValue;
-            break;
-          }
-        }
       } else {
         minG = parseFloat(ingredient.expected);
         maxG = parseFloat(ingredient.expected);
         min = parseFloat(ingredient.expected) / 1000;
         max = parseFloat(ingredient.expected) / 1000;
-        for (const key in this.ingredients) {
-          if (this.ingredients[key].id === ingredient.id) {
-            this.ingredients[key].valid = currentValue <= minG || currentValue >= maxG;
-            this.ingredients[key].real = currentValue;
-            break;
-          }
-        }
       }
     } else {
       const exp2 = ingredient.expected.split('-');
       const unit = exp2[0].replace(/[0-9|.]+/g, '').trim();
-      if (unit === UNIT_BIG_MACHINE) {
+      if (unit === BIG_MACHINE_UNIT) {
         min = parseFloat(exp2[0]);
         max = parseFloat(exp2[1]);
-        for (const key in this.ingredients) {
-          if (this.ingredients[key].id === ingredient.id) {
-            this.ingredients[key].valid = currentValue !== max;
-            this.ingredients[key].real = currentValue;
-            break;
-          }
-        }
       } else {
         minG = parseFloat(exp2[0]);
         maxG = parseFloat(exp2[1]);
         min = parseFloat(exp2[0]) / 1000;
         max = parseFloat(exp2[1]) / 1000;
-        for (const key in this.ingredients) {
-          if (this.ingredients[key].id === ingredient.id) {
-            this.ingredients[key].valid = currentValue <= minG || currentValue >= maxG;
-            this.ingredients[key].real = currentValue;
-            break;
-          }
-        }
       }
     }
+
     // Nếu Chemical là A, focus vào chemical B
     if (ingredient.position === 'A') {
-      const positionArray = ['B', 'C', 'D', 'E'];
+      const positionArray = ['A', 'B', 'C', 'D', 'E'];
       for (const position of positionArray) {
-        this.changeExpectedRange(args, position);
+        ingredient.real = position === 'A' ? currentValue : ingredient.real;
+        this.changeExpectedRange(ingredient.real, position);
       }
       this.changeScanStatusFocus('A', false);
       this.changeScanStatusFocus('B', true);
       this.changeFocusStatus(ingredient.code, false, false);
       if (this.ingredients.length === 1) {
         this.disabled = false;
-      } else {
-        this.onSignalr();
       }
     }
 
     // Nếu Chemical là B, focus vào chemical C
     if (ingredient.position === 'B') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('B', false);
           this.changeScanStatusFocus('C', true);
@@ -831,8 +845,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length === 2) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -841,7 +853,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('B', false);
           this.changeScanStatusFocus('C', true);
@@ -849,8 +861,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length === 2) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -864,7 +874,7 @@ export class MixingComponent implements OnInit {
     // Nếu Chemical là C, focus vào chemical D
     if (ingredient.position === 'C') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('C', false);
           this.changeScanStatusFocus('D', true);
@@ -872,8 +882,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length === 3) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -882,7 +890,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('C', false);
           this.changeScanStatusFocus('D', true);
@@ -890,8 +898,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length === 3) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -905,7 +911,7 @@ export class MixingComponent implements OnInit {
     // Nếu Chemical là D, focus vào chemical E
     if (ingredient.position === 'D') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -913,8 +919,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length >= 4) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -923,7 +927,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -931,8 +935,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length >= 4) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -945,7 +947,7 @@ export class MixingComponent implements OnInit {
 
     if (ingredient.position === 'E') {
       if (max > 3) {
-        this.scalingKG = UNIT_BIG_MACHINE;
+        this.scalingKG = BIG_MACHINE_UNIT;
         if (currentValue <= max && currentValue >= min) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -953,8 +955,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length >= 4) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -963,7 +963,7 @@ export class MixingComponent implements OnInit {
           // this.alertify.warning(`Invalid!`, true);
         }
       } else {
-        this.scalingKG = UNIT_SMALL_MACHINE;
+        this.scalingKG = SMALL_MACHINE_UNIT;
         if (currentValue <= maxG && currentValue >= minG) {
           this.changeScanStatusFocus('D', false);
           this.changeScanStatusFocus('E', true);
@@ -971,8 +971,6 @@ export class MixingComponent implements OnInit {
           this.changeFocusStatus(ingredient.code, false, false);
           if (this.ingredients.length >= 4) {
             this.disabled = false;
-          } else {
-            this.onSignalr();
           }
         } else {
           this.disabled = true;
@@ -982,8 +980,7 @@ export class MixingComponent implements OnInit {
         }
       }
     }
-    // console.log('change real', this.ingredients);
-    // this.changeReal(ingredient.code, args);
+    this.changeReal(ingredient.code, args);
   }
   realClass(item) {
     const validClass = item.valid === true ? ' warning-focus' : '';
@@ -1085,13 +1082,13 @@ export class MixingComponent implements OnInit {
       return;
     }
     this.endTime = new Date();
-    const details = this.ingredients.map( item => {
+    const details = this.ingredients.map(item => {
       return {
-          amount: item.position !== 'A' ? item.real / 1000 : item.real,
-          ingredientID: item.id,
-          batch: item.batch,
-          mixingInfoID: 0,
-          position: item.position
+        amount: item.position !== 'A' ? item.real / 1000 : item.real,
+        ingredientID: item.id,
+        batch: item.batch,
+        mixingInfoID: 0,
+        position: item.position
       };
     });
     const mixing = {
@@ -1113,11 +1110,12 @@ export class MixingComponent implements OnInit {
         // this.UpdateConsumption(item.code, item.batch, item.real);
         // const obj = {
         //   qrCode: ingredient.code,
-        //   batch: ingredient.batch,
+      //   batch: ingredient.batch,
         //   consump: ingredient.real,
         //   buildingName,
         // };
         // this.UpdateConsumptionWithBuilding(obj);
+        this.todolistService.setValue(false);
         this.router.navigate(['/ec/execution/todolist-2']);
         this.alertify.success('The Glue has been finished successfully');
       });

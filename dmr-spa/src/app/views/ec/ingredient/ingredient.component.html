@@ -128,7 +128,7 @@
             <ng-template #template let-data>{{data.daysToExpiration}} days</ng-template>
           </e-column>
           <e-column field='expiredTime' headerText='Expiry Period' textAlign='Center' width='130'>
-            <ng-template #template let-data>{{data.expiredTime}} minutes</ng-template>
+            <ng-template #template let-data>{{data.expiredTime}} hours</ng-template>
           </e-column>
           <e-column field='unit' headerText='Amount' textAlign='Center' width='100'>
             <ng-template #template let-data>{{data.unit}} kg</ng-template>
@@ -139,8 +139,8 @@
           <e-column field='replacementFrequency' headerText='RF (hr.)' textAlign='Center'  width='180'>
             <ng-template #template let-data>{{data.replacementFrequency > 1 ? data.replacementFrequency + " hours" : data.replacementFrequency + " hour" }}</ng-template>
           </e-column>
-          <e-column field='prepareTime' headerText='PT (mins.)' textAlign='Center' width='180'>
-            <ng-template #template let-data>{{data.prepareTime > 1 ? data.prepareTime + " minutes" : data.prepareTime + " minute"}}</ng-template>
+          <e-column field='prepareTime' headerText='PT (hr.)' textAlign='Center' width='180'>
+            <ng-template #template let-data>{{data.prepareTime > 1 ? data.prepareTime + " hours" : data.prepareTime + " hour"}}</ng-template>
           </e-column>
           <e-column field='createdDate' type='date' format='MM-dd-yyyy' headerText='Created Date' width='160' textAlign='Center'>
           </e-column>

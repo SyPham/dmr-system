@@ -41,7 +41,7 @@ export class StationService {
     return this.http.post(`${this.baseUrl}Station/AddRange`, model);
   }
   update(model: IStation) {
-    return this.http.put(`${this.baseUrl}Station/update}`, model);
+    return this.http.put(`${this.baseUrl}Station/update`, model);
   }
   updateRange(model: IStation[]) {
     return this.http.post(`${this.baseUrl}Station/updateRange`, model);

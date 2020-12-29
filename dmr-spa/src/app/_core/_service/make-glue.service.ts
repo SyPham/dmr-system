@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { IGlue } from '../_model/glue';
 import { IMakeGlue } from '../_model/make-glue';
+import { IMixingInfo } from '../_model/IMixingInfo';
 
 
 const httpOptions = {
@@ -45,15 +46,17 @@ export class MakeGlueService {
   getAllModalNo(id: number) {
     return this.http.get<IMakeGlue[]>(this.baseUrl + 'ModelNo/GetModelNoByModelNameID/' + id, {});
   }
+  getMixingInfoByID(id: number) {
+    return this.http.get<IMixingInfo>(this.baseUrl + 'ModelNo/GetByID/' + id, {});
+  }
   Guidance(guidance) {
     return this.http.post(this.baseUrl + 'MakeGlue/Guidance', guidance);
   }
   add(mixingInfo) {
     return this.http.post(this.baseUrl + 'MakeGlue/Add', mixingInfo);
   }
-  getMixingInfoByGlueID(glueName: string) {
-    return this.http.post(this.baseUrl + 'MakeGlue/GetMixingInfoByGlueID', { glueName} );
-
+  getMixingInfoByGlueID(glueName: string, buildingID: number) {
+    return this.http.post(this.baseUrl + 'MakeGlue/GetMixingInfoByGlueID', { glueName, buildingID} );
   }
   deliveredHistory() {
     return this.http.get(this.baseUrl + 'MakeGlue/DeliveredHistory', {});

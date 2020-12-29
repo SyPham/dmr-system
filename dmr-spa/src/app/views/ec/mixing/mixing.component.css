@@ -12,7 +12,7 @@
   }
   .fix-css {
     font-weight: 700!important;
-    font-size: 16px!important;
+    /* font-size: 16px!important; */
     font-family: "Source Sans Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"!important;
 
   }
@@ -54,6 +54,9 @@ input.warning-focus {
 input {
   /* pointer-events: none; */
   text-align: center;
+  font-size: 36px!important;
+
+
 }
 @keyframes warning-frames {
   from {background-color: #fade40;}

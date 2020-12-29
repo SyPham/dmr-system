@@ -119,7 +119,16 @@ namespace DMR_API.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DeleteBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeleteTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("FinishedStatus")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDelete")
                         .HasColumnType("bit");
 
                     b.Property<int>("ModelNameID")
@@ -367,8 +376,8 @@ namespace DMR_API.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int>("Allow")
-                        .HasColumnType("int");
+                    b.Property<double>("Allow")
+                        .HasColumnType("float");
 
                     b.Property<string>("CreatedDate")
                         .HasColumnType("nvarchar(max)");
@@ -379,8 +388,8 @@ namespace DMR_API.Migrations
                     b.Property<int>("IngredientID")
                         .HasColumnType("int");
 
-                    b.Property<int>("Percentage")
-                        .HasColumnType("int");
+                    b.Property<double>("Percentage")
+                        .HasColumnType("float");
 
                     b.Property<string>("Position")
                         .HasColumnType("nvarchar(max)");
@@ -428,11 +437,11 @@ namespace DMR_API.Migrations
                     b.Property<string>("CreatedDate")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("DaysToExpiration")
-                        .HasColumnType("int");
+                    b.Property<double>("DaysToExpiration")
+                        .HasColumnType("float");
 
-                    b.Property<int>("ExpiredTime")
-                        .HasColumnType("int");
+                    b.Property<double>("ExpiredTime")
+                        .HasColumnType("float");
 
                     b.Property<int?>("GlueTypeID")
                         .HasColumnType("int");
@@ -452,23 +461,23 @@ namespace DMR_API.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("PrepareTime")
-                        .HasColumnType("int");
+                    b.Property<double>("PrepareTime")
+                        .HasColumnType("float");
 
                     b.Property<double>("Real")
                         .HasColumnType("float");
 
-                    b.Property<int>("ReplacementFrequency")
-                        .HasColumnType("int");
+                    b.Property<double>("ReplacementFrequency")
+                        .HasColumnType("float");
 
                     b.Property<int>("SupplierID")
                         .HasColumnType("int");
 
-                    b.Property<string>("Unit")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<double>("Unit")
+                        .HasColumnType("float");
 
-                    b.Property<string>("VOC")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<double>("VOC")
+                        .HasColumnType("float");
 
                     b.Property<bool>("isShow")
                         .HasColumnType("bit");
@@ -1357,11 +1366,26 @@ namespace DMR_API.Migrations
                     b.Property<double>("Amount")
                         .HasColumnType("float");
 
+                    b.Property<int>("CreateBy")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("FinishDispatchingTime")
+                    b.Property<int>("DeleteBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeleteTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeliveryTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FinishDispatchingTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDelete")
+                        .HasColumnType("bit");
 
                     b.Property<int>("LineID")
                         .HasColumnType("int");
@@ -1372,8 +1396,11 @@ namespace DMR_API.Migrations
                     b.Property<double>("StandardAmount")
                         .HasColumnType("float");
 
-                    b.Property<DateTime>("StartDispatchingTime")
+                    b.Property<DateTime?>("StartDispatchingTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("StationID")
+                        .HasColumnType("int");
 
                     b.Property<string>("Unit")
                         .HasColumnType("nvarchar(max)");

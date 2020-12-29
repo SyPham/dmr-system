@@ -3,6 +3,7 @@ using DMR_API.Models;
 using AutoMapper;
 using System;
 using System.Linq;
+using dmr_api.Models;
 
 namespace DMR_API.Helpers.AutoMapper
 {
@@ -12,6 +13,8 @@ namespace DMR_API.Helpers.AutoMapper
         {
             var ct = DateTime.Now;
 
+            
+            CreateMap<DispatchTodolistDto, Dispatch>();
             CreateMap<UserForDetailDto, User>();
             CreateMap<GlueDto, Glue>();
             CreateMap<GlueCreateDto, Glue>();
@@ -34,7 +37,7 @@ namespace DMR_API.Helpers.AutoMapper
             CreateMap<PlanDto, Plan>()
             .ForMember(d => d.StartWorkingTime, o => o.MapFrom(x => new DateTime(ct.Year, ct.Month, ct.Day, x.StartTime.Hour, x.StartTime.Minute, 0)))
             .ForMember(d => d.FinishWorkingTime, o => o.MapFrom(x => new DateTime(ct.Year, ct.Month, ct.Day, x.EndTime.Hour, x.EndTime.Minute, 0)));
-            CreateMap<StationDto, Station>();
+            CreateMap<StationDto, Station>().ForMember(d=> d.CreateTime, o=> o.MapFrom(x=> DateTime.Now.ToLocalTime()));
 
             CreateMap<MapModelDto, MapModel>();
             CreateMap<ModelNoDto, ModelNo>();
@@ -65,6 +68,8 @@ namespace DMR_API.Helpers.AutoMapper
             CreateMap<StirDTO, Stir>();
             CreateMap<Plan, PlanForCloneDto>();
             CreateMap<ScaleMachine, ScaleMachineDto>();
+
+
 
             //CreateMap<AuditTypeDto, MES_Audit_Type_M>();
         }

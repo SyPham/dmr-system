@@ -8,22 +8,20 @@
             <label>Model Name: </label>
           </div>
           <div class="col-md-8 mt-2">
-            <input type="text" name="" disabled id="input" class="form-control" [value]="modelNameDetail"
-               title="">
+            <input type="text" name="" disabled  class="form-control" [value]="modelNameDetail" title="">
           </div>
 
-          <div class="col-md-1 mt-2">
+          <!-- <div class="col-md-1 mt-2">
             <button ejs-button (click)='openModal(cloneModal)' cssClass="e-info" class="float-right ml-1"><i
                 class="fa fa-clone"></i></button>
-          </div>
+          </div> -->
         </div>
         <div class="row">
           <div class="col-md-3 mt-2">
             <label>Model NO: </label>
           </div>
           <div class="col-md-8 mt-2">
-            <input type="text" name="" disabled id="input" class="form-control" [value]="modelNoDetail"
-               title="">
+            <input type="text" name="" disabled  class="form-control" [value]="modelNoDetail" title="">
           </div>
 
         </div>
@@ -32,9 +30,7 @@
             <label>Article NO: </label>
           </div>
           <div class="col-md-8 mt-2">
-            <input type="text" name="" disabled id="input" class="form-control" [value]="articleNoDetail"
-               title="">
-
+            <input type="text" name="" disabled  class="form-control" [value]="articleNoDetail" title="">
           </div>
           <div class="col-md-1 mt-2">
           </div>
@@ -80,8 +76,7 @@
                   {{'CONSUMPTION' | translate}}
                 </ng-template>
                 <ng-template #template let-data>
-                  <span
-                    [class]="changeConsumptionColor(data)">{{data.consumption === '' ? '0' : data.consumption}}</span>
+                  <span [class]="changeConsumptionColor(data)">{{data.consumption === '' ? '0' : data.consumption}}</span>
                 </ng-template>
               </e-column>
               <e-column field='expiredTime' headerText='Expired Time' isPrimaryKey="true" textAlign='Center'
@@ -168,8 +163,7 @@
             <ul>
               <li style="list-style: none;" *ngFor="let item of renderchemical(); let i=index">
                 <a>
-                  {{item.position}}. {{item.ingredientName}} <span
-                    class="font-weight-bold text-danger">({{item.percentage}}%)</span>
+                  {{item.position}}. {{item.ingredientName}} <span class="font-weight-bold text-danger">({{item.percentage}}%)</span>
                 </a>
               </li>
             </ul>
@@ -412,7 +406,7 @@
         <div class="form-group">
           <label for="Name">Model Name</label>
           <span style="color:red">(*)</span>
-          <input type="text" name="" disabled id="input" class="form-control" [value]="modelNameLeo" 
+          <input type="text" name="" disabled  class="form-control" [value]="modelNameLeo"
             title="">
         </div>
       </div>
@@ -420,7 +414,7 @@
         <div class="form-group">
           <label for="Name">Model NO</label>
           <span style="color:red">(*)</span>
-          <input type="text" name="" disabled id="input" class="form-control" [value]="modelNoLeo" 
+          <input type="text" name="" disabled class="form-control" [value]="modelNoLeo"
             title="">
         </div>
       </div>
@@ -428,7 +422,7 @@
         <div class="form-group">
           <label for="Name">Article NO</label>
           <span style="color:red">(*)</span>
-          <input type="text" name="" id="input" class="form-control" [(ngModel)]="articleNoNewLeo" [value]="articleNoLeo"
+          <input type="text" name="" class="form-control" [(ngModel)]="articleNoNewLeo" [value]="articleNoLeo"
              title="">
         </div>
       </div>
@@ -436,7 +430,7 @@
         <div class="form-group">
           <label for="Name">Process</label>
           <span style="color:red">(*)</span>
-          <input type="text" name="" disabled id="input" class="form-control" [value]="artProcessLeo" 
+          <input type="text" name="" disabled  class="form-control" [value]="artProcessLeo"
             title="">
         </div>
       </div>

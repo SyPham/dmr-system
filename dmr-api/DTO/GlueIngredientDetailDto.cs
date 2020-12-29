@@ -13,9 +13,9 @@ namespace DMR_API.DTO
         public string GlueName { get; set; }
         public string IngredientName { get; set; }
         public string Position { get; set; }
-        public int Percentage { get; set; }
-        public int Allow { get; set; }
-        public int ExpiredTime { get; set; }
+        public double Percentage { get; set; }
+        public double Allow { get; set; }
+        public double ExpiredTime { get; set; }
         public string CreatedDate { get; set; }
     }
 }

@@ -9,17 +9,24 @@
                                 <div class="col-md-1">
                                     <div class="font-weight-bold">{{'FILTER_LABEL' | translate}}:</div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <ejs-datepicker [value]='startDate' (change)='startDateOnchange($event)' [(ngModel)]='startDate'></ejs-datepicker>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <ejs-datepicker [value]='endDate' (change)='endDateOnchange($event)' [(ngModel)]='endDate'></ejs-datepicker>
+                                </div>
+                                <div class="col-md-2" *ngIf="IsAdmin">
+                                    <ejs-dropdownlist [dataSource]='buildings' [fields]='fieldsBuildings' [allowFiltering]='true'
+                                        [(ngModel)]="buildingID" (filtering)='onFilteringBuilding($event)' (change)='onChangeBuilding($event)'
+                                        (select)='onSelectBuilding($event)' placeholder="Select a building">
+                                    </ejs-dropdownlist>
                                 </div>
                                 <div class="col-md-2">
                                     <button class="btn btn-sm btn-default" (click)='onClickDefault()'>
                                         <i class="fa fa-times"></i>
                                     </button>
                                 </div>
+                               
                             </div>
                         </div>
                 </div>
@@ -74,6 +81,7 @@
                                 (filtering)='onFiltering($event)'
                                 popupHeight='300px'
                                 popupWidth='450px'
+                                [placeholder]="'Select a model' | translate"
                                 [fields]='fieldsBPFC'
                                 [allowFiltering]='true'
                                 (select)='onChangeBPFCEdit($event)'
@@ -92,7 +100,7 @@
                             {{'WORKING_HOUR_LABEL' | translate}}
                         </ng-template>
                         </e-column> -->
-                        <e-column field='startTime' type='date' headerText='Start Working Time' width='150' textAlign='Center'>
+                        <e-column field='startTime' type='date' headerText='Start Working Time' width='120' textAlign='Center'>
                             <ng-template #headerTemplate let-data>
                                 {{'Start Time' | translate}}
                             </ng-template>
@@ -100,11 +108,11 @@
                                 {{data.startWorkingTime | date: 'HH:mm'}}
                             </ng-template>
                             <ng-template #editTemplate let-data>
-                                <kendo-timepicker style="width: 120px;" (valueChange)="onChangeStartTime($event)" [(ngModel)]="modalPlan.startWorkingTime" [format]="'HH:mm'"></kendo-timepicker>
+                                <kendo-timepicker style="width: 100px;" (valueChange)="onChangeStartTime($event)" [(ngModel)]="modalPlan.startWorkingTime" [format]="'HH:mm'"></kendo-timepicker>
                             </ng-template>
                         </e-column>
                         
-                        <e-column field='endTime' type='date' headerText='Finish Working Time' width='150' textAlign='Center'>
+                        <e-column field='endTime' type='date' headerText='Finish Working Time' width='120' textAlign='Center'>
                             <ng-template #headerTemplate let-data>
                                 {{'End Time' | translate}}
                             </ng-template>
@@ -112,11 +120,11 @@
                                 {{data.finishWorkingTime | date: 'HH:mm'}}
                             </ng-template>
                             <ng-template #editTemplate let-data>
-                                <kendo-timepicker style="width: 120px;" (valueChange)="onChangeEndTime($event)" [(ngModel)]="modalPlan.finishWorkingTime" [format]="'HH:mm'"></kendo-timepicker>
+                                <kendo-timepicker style="width: 100px;" (valueChange)="onChangeEndTime($event)" [(ngModel)]="modalPlan.finishWorkingTime" [format]="'HH:mm'"></kendo-timepicker>
                             </ng-template>
                         </e-column>
 
-                        <e-column field='hourlyOutput' headerText='Hourly Output' width='150' textAlign='Center' >
+                        <e-column field='hourlyOutput' [edit]='numericParams' format='####' [validationRules]='hourlyOutputRules'  headerText='Hourly Output' width='150' textAlign='Center' >
                         <ng-template #headerTemplate let-data>
                             {{'HOURLY_OUTPUT_LABEL' | translate}}
                         </ng-template>
@@ -128,9 +136,12 @@
                             <ng-template #editTemplate let-data>
                                 <ejs-datepicker
                                 [value]='data.dueDate'
+                                [allowEdit]='false'
+                                [placeholder]="'Select a date' | translate"
                                 (change)='onChangeDueDateEdit($event)'
                                 format='MM-dd-yyyy'></ejs-datepicker>
                             </ng-template>
+                            
                         </e-column>
                            <e-column field='isGenerate' headerText='Status' width='110' textAlign='Center' >
                             <ng-template #headerTemplate let-data>

@@ -73,9 +73,10 @@ namespace DMR_API.Controllers
         [HttpPut]
         public async Task<IActionResult> Update(StirDTO update)
         {
-            if (await _stirService.Update(update))
-                return NoContent();
-            return BadRequest($"Updating model name {update.ID} failed on save");
+            var res = await _stirService.UpdateStir(update);
+            if (res != null)
+                return Ok(res);
+            return BadRequest($"Updating stir {update.ID} failed on save");
         }
 
         [HttpDelete("{id}")]
@@ -105,7 +106,7 @@ namespace DMR_API.Controllers
                 return NoContent();
             }
 
-            throw new Exception("Updating the stiring failed on save");
+            return BadRequest("Updating the stiring failed on save");
         }
 
     }

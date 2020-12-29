@@ -25,6 +25,18 @@ namespace DMR_API.Controllers
         {
             _bPFCEstablishService = bPFCEstablishService;
         }
+        // done
+        [HttpGet]
+        public async Task<IActionResult> GetDoneBPFC()
+        {
+            return Ok(await _bPFCEstablishService.GetDoneBPFC());
+        }
+        // undone
+        [HttpGet]
+        public async Task<IActionResult> GetUndoneBPFC()
+        {
+            return Ok(await _bPFCEstablishService.GetUndoneBPFC());
+        }
 
         // GET: api/<BPFCEstablishController>
         [HttpGet]
@@ -207,8 +219,16 @@ namespace DMR_API.Controllers
             if (await _bPFCEstablishService.UpdateSeason(entity))
                 return NoContent();
 
-            return BadRequest($"Updating brand {entity.ID} failed on save");
+            return BadRequest($"Updating BPFC {entity.ID} failed on save");
         }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
 
+            if (await _bPFCEstablishService.Delete(id))
+                return NoContent();
+
+            return BadRequest($"Delete BPFC {id} failed on save");
+        }
     }
 }

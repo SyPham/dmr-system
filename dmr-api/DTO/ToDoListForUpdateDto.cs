@@ -1,4 +1,5 @@
-﻿using System;
+﻿using dmr_api.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,5 +17,6 @@ namespace DMR_API.DTO
 
         public DateTime EstimatedStartTime { get; set; }
         public DateTime EstimatedFinishTime { get; set; }
+        public List<Dispatch> Dispatches { get; set; }
     }
 }

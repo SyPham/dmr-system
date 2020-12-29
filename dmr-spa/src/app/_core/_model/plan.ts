@@ -45,6 +45,8 @@ export interface IDispatch {
     scanStatus: boolean;
     isLock: boolean;
     isNew: boolean;
+    deliveryTime: Date;
+    createdTime: Date;
 }
 export interface IDispatchForCreate {
     id: number;
@@ -62,6 +64,7 @@ export interface DispatchParams {
     lines: string[];
     glue: string;
     estimatedTime: Date;
+    mixingInfoID: number;
     estimatedStartTime: Date;
     estimatedFinishTime: Date;
 }

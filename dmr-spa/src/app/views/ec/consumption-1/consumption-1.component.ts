@@ -91,8 +91,8 @@ export class Consumption1Component implements OnInit {
     this.level = JSON.parse(localStorage.getItem('level')).level;
     this.pageSettings = { pageCount: 20, pageSizes: ['All', 100], pageSize: 100 };
     this.toolbarOptions = ['ExcelExport', 'Search'];
-    this.buildingID = 0;
     this.getBuilding();
+    this.buildingID = JSON.parse(localStorage.getItem('building')).id;
     this.consumptionByLineCase1();
   }
   headerCellInfo(args) {
@@ -129,6 +129,16 @@ export class Consumption1Component implements OnInit {
     e.updateData(this.buildings as any, query);
   }
   onChangeBuilding(args) {
+    if (args.isInteracted) {
+      alert('Changes happened by Interaction');
+    } else {
+      alert('Changes happened by programmatic');
+    }
+    this.buildingID = args.itemData.id;
+    localStorage.setItem('buildingID', args.itemData.id);
+    this.consumptionByLineCase1();
+  }
+  onSelectBuilding(args) {
     this.buildingID = args.itemData.id;
     localStorage.setItem('buildingID', args.itemData.id);
     this.consumptionByLineCase1();

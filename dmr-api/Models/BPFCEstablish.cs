@@ -28,6 +28,11 @@ namespace DMR_API.Models
         public DateTime? ModifiedDate { get; set; }
         public DateTime? UpdateTime { get; set; }
         public DateTime? BuildingDate { get; set; }
+
+        public bool IsDelete { get; set; }
+        public DateTime? DeleteTime { get; set; }
+        public int DeleteBy { get; set; }
+
         public ArtProcess ArtProcess { get; set; }
         public ModelName ModelName { get; set; }
         public ModelNo ModelNo { get; set; }

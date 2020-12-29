@@ -52,6 +52,7 @@ namespace DMR_API.Controllers
             var item = await _makeGlueService.GetGlueWithIngredientByGlueCode(code);
             return Ok(item);
         }
+        
         [HttpGet("GetGlueWithIngredientByGlueName/{glueName}")]
         public async Task<IActionResult> GetGlueWithIngredientByGlueName(string glueName)
         {
@@ -75,17 +76,21 @@ namespace DMR_API.Controllers
         [HttpPost("Add")]
         public IActionResult Add(MixingInfoForAddDto update)
         {
-            var status = _mixingInfoService.AddMixingInfo(update);
-           if (status) return NoContent();
+            var item = _mixingInfoService.AddMixingInfo(update);
+           if (item != null) return Ok(item);
            return BadRequest("Fail!");
         }
 
         [HttpPost("GetMixingInfoByGlueID")]
         public async Task<IActionResult> GetMixingInfoByGlueName([FromBody]HistoryParams historyParams)
         {
-            return Ok(await _mixingInfoService.GetMixingInfoByGlueName(historyParams.GlueName));
+            return Ok(await _mixingInfoService.GetMixingInfoByGlueName(historyParams.GlueName, historyParams.BuildingID));
         }
-      
+        [HttpPost("GetByID/{ID}")]
+        public IActionResult GetByID(int ID)
+        {
+            return Ok( _mixingInfoService.GetByID(ID));
+        }
         [HttpGet("DeliveredHistory")]
         public IActionResult DeliveredHistory()
         {

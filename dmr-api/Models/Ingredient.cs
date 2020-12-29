@@ -13,25 +13,27 @@ namespace DMR_API.Models
         public string Code { get; set; }
         public string Name { get; set; }
         public string CreatedDate { get; set; }
-        public DateTime ManufacturingDate { get; set; }
         public string MaterialNO { get; set; }
-        public string Unit { get; set; }
-        public int SupplierID { get; set; }
-        public Supplier Supplier { get; set; }
-        public string VOC { get; set; }
+      
         public int CreatedBy { get; set; }
-        public int ExpiredTime { get; set; }
-        public int DaysToExpiration { get; set; }
         public bool isShow { get; set; }
-        public int ModifiedBy { get; set; }
         public DateTime ModifiedDate { get; set; }
+        public DateTime ManufacturingDate { get; set; }
 
+        public double Unit { get; set; }
+        public double VOC { get; set; }
+        public double ExpiredTime { get; set; }
+        public double DaysToExpiration { get; set; }
         public double Real { get; set; }
         public double CBD { get; set; }
-        public int ReplacementFrequency { get; set; }
-        public int PrepareTime { get; set; }
+        public double ReplacementFrequency { get; set; }
+
+        public int ModifiedBy { get; set; }
+        public double PrepareTime { get; set; }
         public int? GlueTypeID { get; set; }
         public GlueType GlueType { get; set; }
+        public int SupplierID { get; set; }
+        public Supplier Supplier { get; set; }
 
 
     }

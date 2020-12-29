@@ -28,7 +28,8 @@
                   <e-column type='checkbox' isPrimaryKey='true' width='60'></e-column>
                   <e-column field='code' headerText='QR Code' width='200' textAlign='Center' >
                     <ng-template #template let-data>
-                      <ejs-qrcodegenerator style="display: block;" width="177px" height="177px" [displayText]='displayTextMethod'  #barcode mode="SVG" [value]="data.code"></ejs-qrcodegenerator>
+                      <ejs-qrcodegenerator style="display: block;" width="100px" height="130px" [displayText]='displayTextMethod' #barcode
+                        mode="SVG" [value]="data.code"></ejs-qrcodegenerator>
                     </ng-template>
                   </e-column>
                   <e-column field='glue' headerText='Glue Name' width='200' textAlign='Center' >

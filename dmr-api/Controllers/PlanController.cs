@@ -92,16 +92,24 @@ namespace DMR_API.Controllers
             var lists = await _planService.GetLines(buildingID);
             return Ok(lists);
         }
-
+        
         [HttpPost]
         public async Task<IActionResult> Create(PlanDto create)
         {
-            var startTime = create.DueDate.Date.Add(new TimeSpan(create.StartTime.Hour, create.StartTime.Minute, 0));
-            var endTime = create.DueDate.Date.Add(new TimeSpan(create.EndTime.Hour, create.EndTime.Minute, 0));
+            var startTime = create.DueDate.Date.Add(new TimeSpan(create.StartTime.Hour, create.StartTime.Minute, 0)).ToRemoveSecond();
+            var endTime = create.DueDate.Date.Add(new TimeSpan(create.EndTime.Hour, create.EndTime.Minute, 0)).ToRemoveSecond();
 
+            DateTime timeNow = DateTime.Now.ToLocalTime().ToRemoveSecond();
             create.StartWorkingTime = startTime;
             create.FinishWorkingTime = endTime;
+
             var dateNow = DateTime.Now.Date;
+            if (startTime >= endTime)
+                return BadRequest("The start time must be less than or equal to the end time!<br> Thời gian bắt đầu phải nhỏ hơn hoặc bằng thời gian kết thúc! ");
+
+            if (startTime < timeNow)
+                return BadRequest("The start time must be greater than or equal to the current time!<br> Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại! ");
+
             if (create.DueDate.Date < dateNow) 
                 return BadRequest("The duedate must be greater than or equal to the current date!<br> Ngày hết hạn phải lớn hơn hoặc bằng ngày hiện tại! ");
 
@@ -123,6 +131,16 @@ namespace DMR_API.Controllers
         [HttpPut]
         public async Task<IActionResult> Update(PlanDto update)
         {
+            var startTime = update.DueDate.Date.Add(new TimeSpan(update.StartTime.Hour, update.StartTime.Minute, 0)).ToRemoveSecond();
+            var endTime = update.DueDate.Date.Add(new TimeSpan(update.EndTime.Hour, update.EndTime.Minute, 0)).ToRemoveSecond();
+
+            DateTime timeNow = DateTime.Now.ToLocalTime().ToRemoveSecond();
+            update.StartWorkingTime = startTime;
+            update.FinishWorkingTime = endTime;
+
+            if (startTime >= endTime)
+                return BadRequest("The start time must be less than or equal to the end time!<br> Thời gian bắt đầu phải nhỏ hơn hoặc bằng thời gian kết thúc! ");
+
             var model = await _planService.Update(update);
             if (model)
             {

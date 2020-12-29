@@ -21,7 +21,8 @@ import { StationComponent } from './station/station.component';
 import { StationService } from 'src/app/_core/_service/station.service';
 declare var $;
 const ADMIN = 1;
-const SUPERVISER = 2;
+const BUILDING_LEVEL = 2;
+const SUPERVISOR = 2;
 @Component({
   selector: 'app-plan',
   templateUrl: './plan.component.html',
@@ -85,6 +86,7 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   public fieldsGlue: object = { text: 'name', value: 'name' };
   public fieldsLine: object = { text: 'name', value: 'name' };
   public fieldsBPFC: object = { text: 'name', value: 'name' };
+  fieldsBuildings: object = { text: 'name', value: 'id' };
   startWorkingTimeParams = { params: { value: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 7, 30, 0) } };
   // tslint:disable-next-line:max-line-length
   finishWorkingTimeParams = { params: { value: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 16, 30, 0) } };
@@ -99,6 +101,11 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   setFocus: any;
   subscription: Subscription[] = [];
   selectOptions: object;
+  hourlyOutputRules: object;
+  numericParams: object;
+  buildings: IBuilding[];
+  IsAdmin: boolean;
+  buildingID: number;
   constructor(
     private alertify: AlertifyService,
     public modalService: NgbModal,
@@ -114,6 +121,10 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.numericParams = { params: { value: 120 }, format: '####' };
+    this.hourlyOutputRules = {
+      required: true
+    };
     this.date = new Date();
     this.endDate = new Date();
     this.startDate = new Date();
@@ -124,7 +135,6 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
     this.building = BUIDLING;
     this.watch();
     this.gridConfig();
-    this.getAll();
     this.getAllBPFC();
     this.checkRole();
     this.clearForm();
@@ -152,18 +162,58 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
     this.subscription.push(watchAction);
   }
   checkRole(): void {
-    const ROLES = [ADMIN, SUPERVISER];
-    if (ROLES.includes(this.role.id)) {
-      this.buildingService.getBuildings().subscribe(async (buildingData) => {
-        const lines = buildingData.filter(item => item.level === 3);
-        this.buildingName = lines;
-      });
+    // const ROLES = [ADMIN, SUPERVISOR];
+    // if (ROLES.includes(this.role.id)) {
+    //   this.buildingService.getBuildings().subscribe( buildingData => {
+    //     const lines = buildingData.filter(item => item.level === 3);
+    //     this.buildingName = lines;
+    //   });
+    // } else {
+    //   this.getAllLine(this.buildingID);
+    // }
+    const roles = [ADMIN, SUPERVISOR];
+    if (roles.includes(this.role.id)) {
+      this.IsAdmin = true;
+      const buildingId = +localStorage.getItem('buildingID');
+      if (buildingId === 0) {
+        this.alertify.message('Please select a building!', true);
+        this.getBuilding(() => { });
+      } else {
+        this.getBuilding(() => {
+          this.buildingID = buildingId;
+          this.getAll();
+          this.getAllLine(this.buildingID);
+        });
+      }
     } else {
-      this.getAllLine(this.building.id);
+      this.getBuilding(() => {
+        this.buildingID = this.building.id;
+        this.getAll();
+        this.getAllLine(this.buildingID);
+      });
     }
   }
   ngOnDestroy() {
     this.subscription.forEach(subscription => subscription.unsubscribe());
+  }
+  onFilteringBuilding: EmitType<FilteringEventArgs> = (
+    e: FilteringEventArgs
+  ) => {
+    let query: Query = new Query();
+    // frame the query based on search string with filter type.
+    query =
+      e.text !== '' ? query.where('name', 'contains', e.text, true) : query;
+    // pass the filter data source, filter query to updateData method.
+    e.updateData(this.buildings as any, query);
+  }
+  onChangeBuilding(args) {
+    this.buildingID = args.itemData.id;
+  }
+  onSelectBuilding(args: any): void {
+    this.buildingID = args.itemData.id;
+    this.buildingName = args.itemData.name;
+    localStorage.setItem('buildingID', args.itemData.id);
+    this.getAll();
   }
   gridConfig(): void {
     this.selectOptions = { checkboxOnly: true };
@@ -219,6 +269,12 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   onDoubleClick(args: any): void {
     this.setFocus = args.column; // Get the column from Double click event
   }
+  getBuilding(callback): void {
+    this.buildingService.getBuildings().subscribe(async (buildingData) => {
+      this.buildings = buildingData.filter(item => item.level === BUILDING_LEVEL);
+      callback();
+    });
+  }
   getAllLine(buildingID) {
     this.planService.getLines(buildingID).subscribe((res: any) => {
       this.buildingName = res;
@@ -228,7 +284,7 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
     this.buildingNameEdit = args.itemData.id;
   }
   onChangeDueDateEdit(args) {
-    this.dueDate = (args.value as Date).toDateString();
+    this.dueDate = (args.value as Date)?.toDateString();
   }
 
   onChangeDueDateClone(args) {
@@ -263,21 +319,31 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
     // }
   }
   onChangeStartTime(value: Date) {
-    this.startTime = { hour: value.getHours(), minute: value.getMinutes() };
+    // this.startTime = { hour: value.getHours(), minute: value.getMinutes() };
+    // this.modalPlan.startTime = { hour: value.getHours(), minute: value.getMinutes() };
+
   }
   onChangeEndTime(value: Date) {
-    this.endTime = { hour: value.getHours(), minute: value.getMinutes() };
-
+    // this.endTime = { hour: value.getHours(), minute: value.getMinutes() };
+    // this.modalPlan.endTime = { hour: value.getHours(), minute: value.getMinutes() };
   }
   actionBegin(args) {
     console.log(this.data);
     if (args.requestType === 'beginEdit') {
       this.clearForm();
       const data = args.rowData;
-      this.modalPlan.startTime = this.startTime;
-      this.modalPlan.endTime = this.endTime;
       this.modalPlan.finishWorkingTime = data.finishWorkingTime;
       this.modalPlan.startWorkingTime = data.startWorkingTime;
+      this.modalPlan.startTime =
+      {
+        hour: this.modalPlan.startWorkingTime.getHours(),
+        minute: this.modalPlan.startWorkingTime.getMinutes()
+      };
+      this.modalPlan.endTime =
+      {
+        hour: this.modalPlan.finishWorkingTime.getHours(),
+        minute: this.modalPlan.finishWorkingTime.getMinutes()
+      };
     }
     if (args.requestType === 'cancel') {
       this.clearForm();
@@ -293,25 +359,45 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
         this.modalPlan.BPFCEstablishID = args.data.bpfcEstablishID;
         this.modalPlan.BPFCName = args.data.bpfcName;
         this.modalPlan.hourlyOutput = args.data.hourlyOutput;
-        this.modalPlan.startTime = this.startTime;
-        this.modalPlan.endTime = this.endTime;
-        this.modalPlan.finishWorkingTime = args.data.finishWorkingTime;
-        this.modalPlan.startWorkingTime = args.data.startWorkingTime;
+        this.modalPlan.startTime =
+        {
+          hour: this.modalPlan.startWorkingTime.getHours(),
+          minute: this.modalPlan.startWorkingTime.getMinutes() };
+        this.modalPlan.endTime =
+        { hour: this.modalPlan.finishWorkingTime.getHours(),
+          minute: this.modalPlan.finishWorkingTime.getMinutes() };
+        // this.modalPlan.finishWorkingTime = args.data.finishWorkingTime;
+        // this.modalPlan.startWorkingTime = args.data.startWorkingTime;
+
         this.planService.update(this.modalPlan).subscribe(res => {
           this.alertify.success('Cập nhật thành công! <br>Updated succeeded!');
           this.clearForm();
           this.getAll();
+        }, error => {
+          this.alertify.error(error, true);
+          this.grid.refresh();
+          this.getAll();
+          this.clearForm();
         });
       }
       if (args.action === 'add') {
+        args.data.hourlyOutput = 120;
         this.modalPlan.buildingID = this.buildingNameEdit;
         this.modalPlan.dueDate = this.dueDate;
         this.modalPlan.workingHour = args.data.workingHour || 0;
         this.modalPlan.BPFCEstablishID = this.bpfcEdit;
         this.modalPlan.BPFCName = args.data.bpfcName;
         this.modalPlan.hourlyOutput = args.data.hourlyOutput || 0;
-        this.modalPlan.startTime = this.startTime;
-        this.modalPlan.endTime = this.endTime;
+        this.modalPlan.startTime =
+        {
+          hour: this.modalPlan.startWorkingTime.getHours(),
+          minute: this.modalPlan.startWorkingTime.getMinutes()
+        };
+        this.modalPlan.endTime =
+        {
+          hour: this.modalPlan.finishWorkingTime.getHours(),
+          minute: this.modalPlan.finishWorkingTime.getMinutes()
+        };
         this.planService.create(this.modalPlan).subscribe(res => {
           if (res) {
             this.alertify.success('Tạo thành công!<br>Created succeeded!');
@@ -400,7 +486,7 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getAll() {
-    this.planService.search(this.building.id, this.startDate.toDateString(), this.endDate.toDateString()).subscribe((res: any) => {
+    this.planService.search(this.buildingID, this.startDate.toDateString(), this.endDate.toDateString()).subscribe((res: any) => {
       this.data = res.map(item => {
         return {
           id: item.id,
@@ -518,7 +604,7 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   search(startDate, endDate) {
-    this.planService.search(this.building.id, startDate.toDateString(), endDate.toDateString()).subscribe((res: any) => {
+    this.planService.search(this.buildingID, startDate.toDateString(), endDate.toDateString()).subscribe((res: any) => {
       this.data = res.map(item => {
         return {
           id: item.id,

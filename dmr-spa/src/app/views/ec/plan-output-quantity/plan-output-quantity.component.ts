@@ -13,7 +13,15 @@ import { IRole } from 'src/app/_core/_model/role';
 import { AuthService } from 'src/app/_core/_service/auth.service';
 import { DataService } from 'src/app/_core/_service/data.service';
 import { Subscription } from 'rxjs';
+import { FilteringEventArgs } from '@syncfusion/ej2-angular-dropdowns';
+import { Query } from '@syncfusion/ej2-data/';
+import { EmitType } from '@syncfusion/ej2-base';
+import { BuildingService } from 'src/app/_core/_service/building.service';
 const WORKER = 4;
+declare var $;
+const ADMIN = 1;
+const BUILDING_LEVEL = 2;
+const SUPERVISOR = 2;
 @Component({
   selector: 'app-plan-output-quantity',
   templateUrl: './plan-output-quantity.component.html',
@@ -68,6 +76,8 @@ export class PlanOutputQuantityComponent implements OnInit {
   public fieldsGlue: object = { text: 'name', value: 'name' };
   public fieldsLine: object = { text: 'name', value: 'name' };
   public fieldsBPFC: object = { text: 'name', value: 'name' };
+  fieldsBuildings: object = { text: 'name', value: 'id' };
+
   public buildingName: object[];
   public modelName: object[];
   buildingNameEdit: any;
@@ -79,6 +89,9 @@ export class PlanOutputQuantityComponent implements OnInit {
   setFocus: any;
   locale: string;
   subscription: Subscription[] = [];
+  buildingID: number;
+  buildings: IBuilding[];
+  IsAdmin: boolean;
   constructor(
     private alertify: AlertifyService,
     public modalService: NgbModal,
@@ -86,6 +99,7 @@ export class PlanOutputQuantityComponent implements OnInit {
     private bPFCEstablishService: BPFCEstablishService,
     public authService: AuthService,
     public datePipe: DatePipe,
+    private buildingService: BuildingService,
     private dataService: DataService,
     private spinner: NgxSpinnerService
   ) { }
@@ -99,7 +113,7 @@ export class PlanOutputQuantityComponent implements OnInit {
     this.role = ROLE;
     this.building = BUIDLING;
     this.gridConfig();
-    this.getAll();
+    this.checkRole();
     this.getAllBPFC();
     this.getAllLine(this.building.id);
     this.ClearForm();
@@ -122,6 +136,54 @@ export class PlanOutputQuantityComponent implements OnInit {
     });
   }
   created() { }
+  onChangeBuilding(args) {
+    this.buildingID = args.itemData.id;
+  }
+  onFilteringBuilding: EmitType<FilteringEventArgs> = (
+    e: FilteringEventArgs
+  ) => {
+    let query: Query = new Query();
+    // frame the query based on search string with filter type.
+    query =
+      e.text !== '' ? query.where('name', 'contains', e.text, true) : query;
+    // pass the filter data source, filter query to updateData method.
+    e.updateData(this.buildings as any, query);
+  }
+  getBuilding(callback): void {
+    this.buildingService.getBuildings().subscribe( buildingData => {
+      this.buildings = buildingData.filter(item => item.level === BUILDING_LEVEL);
+      callback();
+    });
+  }
+  onSelectBuilding(args: any): void {
+    this.buildingID = args.itemData.id;
+    this.buildingName = args.itemData.name;
+    localStorage.setItem('buildingID', args.itemData.id);
+    this.getAll();
+  }
+  checkRole(): void {
+    const roles = [ADMIN, SUPERVISOR];
+    if (roles.includes(this.role.id)) {
+      this.IsAdmin = true;
+      const buildingId = +localStorage.getItem('buildingID');
+      if (buildingId === 0) {
+        this.alertify.message('Please select a building!', true);
+        this.getBuilding(() => { });
+      } else {
+        this.getBuilding(() => {
+          this.buildingID = buildingId;
+          this.getAll();
+          this.getAllLine(this.buildingID);
+        });
+      }
+    } else {
+      this.getBuilding(() => {
+        this.buildingID = this.building.id;
+        this.getAll();
+        this.getAllLine(this.buildingID);
+      });
+    }
+  }
   getReport(obj: { startDate: Date, endDate: Date }) {
     this.spinner.show();
     this.planService.getReport(obj).subscribe((data: any) => {
@@ -239,7 +301,7 @@ export class PlanOutputQuantityComponent implements OnInit {
   }
 
   getAll() {
-    this.planService.search(this.building.id, this.startDate.toDateString(), this.endDate.toDateString()).subscribe((res: any) => {
+    this.planService.search(this.buildingID, this.startDate.toDateString(), this.endDate.toDateString()).subscribe((res: any) => {
       this.data = res.map(item => {
         return {
           id: item.id,

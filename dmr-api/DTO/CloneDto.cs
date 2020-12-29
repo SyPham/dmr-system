@@ -14,6 +14,7 @@ namespace DMR_API.DTO
         public int ArtProcessID { get; set; }
         public int CloneBy { get; set; }
         public int BPFCID { get; set; }
+        public int ApprovalBy { get; set; }
 
     }
 }

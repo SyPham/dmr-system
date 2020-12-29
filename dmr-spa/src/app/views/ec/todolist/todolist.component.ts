@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { AfterViewInit, Component, HostListener, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { GridComponent, PageSettingsModel } from '@syncfusion/ej2-angular-grids';
 import { Subscription } from 'rxjs';
@@ -20,8 +20,8 @@ import { DataService } from 'src/app/_core/_service/data.service';
 import { TodolistService } from 'src/app/_core/_service/todolist.service';
 import { IToDoList, IToDoListForCancel } from 'src/app/_core/_model/IToDoList';
 import { ClickEventArgs, ToolbarComponent } from '@syncfusion/ej2-angular-navigations';
-import { ActivatedRoute } from '@angular/router';
-
+import { ActivatedRoute, Router } from '@angular/router';
+import { Button } from '@syncfusion/ej2-angular-buttons';
 declare var $: any;
 const ADMIN = 1;
 const SUPERVISOR = 2;
@@ -39,6 +39,7 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
 
   @ViewChild('gridTodo') gridTodo: GridComponent;
   focusDone: boolean;
+  @ViewChild('fullScreen') divRef;
   sortSettings: object;
   pageSettings: PageSettingsModel;
   toolbarOptions: object;
@@ -57,6 +58,23 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   buildings: IBuilding[];
   buildingName: any;
   glueName: any;
+  todoTotal = 0;
+  doneTotal = 0;
+  hasFullScreen: boolean;
+  total = 0;
+  percentageOfDone = 0;
+  public mediaBtn: any;
+  @HostListener('fullscreenchange', ['$event']) fullscreenchange(e) {
+    if (document.fullscreenElement) {
+      this.mediaBtn.iconCss = 'fas fa-compress-arrows-alt';
+      this.mediaBtn.content = 'CloseScreen';
+      console.log(`Element: ${document.fullscreenElement.id} entered fullscreen mode.`);
+    } else {
+      this.mediaBtn.iconCss = 'fa fa-expand-arrows-alt';
+      this.mediaBtn.content = 'FullScreen';
+      console.log('Leaving full-screen mode.');
+    }
+  }
   constructor(
     private planService: PlanService,
     private buildingService: BuildingService,
@@ -64,6 +82,7 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
     public modalService: NgbModal,
     public dataService: DataService,
     private route: ActivatedRoute,
+    private router: Router,
     public todolistService: TodolistService
   ) { }
   ngOnDestroy() {
@@ -72,6 +91,7 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   ngAfterViewInit() {
   }
   ngOnInit() {
+    this.hasFullScreen = false;
     this.focusDone = false;
     if (signalr.CONNECTION_HUB.state === HubConnectionState.Connected) {
       signalr.CONNECTION_HUB.on(
@@ -94,12 +114,9 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
     this.gridConfig();
     this.checkRole();
     this.subscription.push(this.todolistService.getValue().subscribe(status => {
-      if (status === true) {
+      if (status !== null ) {
+        this.buildingID = this.building.id;
         this.todo();
-        return;
-      } else if (status === false) {
-        this.done();
-        return;
       }
     }));
   }
@@ -182,18 +199,26 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
   todo() {
-    this.todolistService.todo(this.buildingID).subscribe((res: IToDoList[]) => {
-      this.data = res;
+    this.todolistService.todo(this.buildingID).subscribe(res => {
+      this.data = res.data;
+      this.todoTotal = res.todoTotal;
+      this.doneTotal = res.doneTotal;
+      this.total = res.total;
+      this.percentageOfDone = res.percentageOfDone;
     });
   }
   done() {
-    this.todolistService.done(this.buildingID).subscribe((res: IToDoList[]) => {
-      this.doneData = res;
+    this.todolistService.done(this.buildingID).subscribe(res => {
+      this.doneData = res.data;
+      this.todoTotal = res.todoTotal;
+      this.doneTotal = res.doneTotal;
+      this.percentageOfDone = res.percentageOfDone;
+      this.total = res.total;
     });
   }
   gridConfig(): void {
     this.pageSettings = { pageCount: 20, pageSizes: true, pageSize: 10 };
-    this.sortSettings = { columns: [{ field: 'dueDate', direction: 'Ascending' }] };
+    this.sortSettings = {};
     this.editSettings = { showDeleteConfirmDialog: false, allowEditing: true, allowAdding: true, allowDeleting: true, mode: 'Normal' };
     this.toolbarOptions = ['Search'];
   }
@@ -203,16 +228,47 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   dataBound() {
   }
   createdTodo() {
-    if (this.toolbarTodo && this.focusDone === false) {
-      const target: HTMLElement = (this.toolbarTodo.element as HTMLElement).querySelector('#todo');
-      target?.focus();
-    }
+    this.mediaBtn = new Button(
+      { cssClass: `e-tbar-btn e-tbtn-txt e-control e-btn e-lib`,
+        iconCss: 'fa fa-expand-arrows-alt',
+        isToggle: true
+      });
+    this.mediaBtn.appendTo('#screen');
+    this.mediaBtn.element.onclick = (): void => {
+      if (this.mediaBtn.content === 'CloseScreen') {
+        this.mediaBtn.iconCss = 'fa fa-expand-arrows-alt';
+        this.mediaBtn.content = 'FullScreen';
+        this.closeFullscreen();
+      } else {
+        this.openFullscreen();
+        this.mediaBtn.iconCss = 'fas fa-compress-arrows-alt';
+        this.mediaBtn.content = 'CloseScreen';
+      }
+    };
+    const target: HTMLElement = (this.toolbarTodo.element as HTMLElement).querySelector('#todo');
+    target?.classList.add('done');
   }
   createdDone() {
-    if (this.toolbarDone && this.focusDone === true) {
-      const target: HTMLElement = (this.toolbarDone.element as HTMLElement).querySelector('#done');
-      target?.focus();
-    }
+    this.mediaBtn = new Button(
+      {
+        cssClass: `e-tbar-btn e-tbtn-txt e-control e-btn e-lib`,
+        iconCss: 'fa fa-expand-arrows-alt',
+        isToggle: true
+      });
+    this.mediaBtn.appendTo('#screen');
+    this.mediaBtn.element.onclick = (): void => {
+      if (this.mediaBtn.content === 'CloseScreen') {
+        this.mediaBtn.iconCss = 'fa fa-expand-arrows-alt';
+        this.mediaBtn.content = 'FullScreen';
+        this.closeFullscreen();
+      } else {
+        this.openFullscreen();
+        this.mediaBtn.iconCss = 'fas fa-compress-arrows-alt';
+        this.mediaBtn.content = 'CloseScreen';
+      }
+    };
+    const target: HTMLElement = (this.toolbarDone.element as HTMLElement).querySelector('#done');
+    target?.classList.add('done');
   }
   searchDone(args) {
     if (this.focusDone === true) {
@@ -293,28 +349,42 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // modal
+  goToStir(data: IToDoList) {
+    if (data.finishMixingTime === null) {
+      this.alertify.warning('Hãy thực hiện bước trộn keo trước!', true);
+      return;
+    }
+    this.router.navigate(['/ec/execution/todolist-2/stir/' + data.mixingInfoID + '/' + data.glueName]);
+  }
   openDispatchModal(value: IToDoList) {
+    if (value.printTime === null && value.glueName.includes(' + ')) {
+      this.alertify.warning('Hãy thực hiện bước in keo trước!', true);
+      return;
+    }
+    if (value.mixingInfoID === 0 && !value.glueName.includes(' + '))
+    { this.alertify.warning('Hãy thực hiện bước in keo trước!<br> Please perform glue printing first!', true); return; }
     const modalRef = this.modalService.open(DispatchComponent, { size: 'xl', backdrop: 'static', keyboard : false });
     modalRef.componentInstance.value = value;
     modalRef.result.then((result) => {
     }, (reason) => {
-      this.isShowTodolistDone = false;
-      this.todo();
-      this.gridTodo.refresh();
+        this.todolistService.setValue(true);
     });
   }
   openPrintModal(value: IToDoList) {
-    this.todolistService.findPrintGlue(value.mixingInfoID).subscribe((data: any) => {
-      if (data?.id === 0) {
+    if (value.finishStirTime === null && value.glueName.includes(' + ')) {
+      this.alertify.warning('Hãy thực hiện bước khuấy keo trước!', true);
+      return;
+    }
+    this.todolistService.findPrintGlue(value.mixingInfoID).subscribe(data => {
+      if (data?.id === 0 && value.glueName.includes(' + ')) {
         this.alertify.error('Please mixing this glue first!', true);
         return;
       }
-      const modalRef = this.modalService.open(PrintGlueComponent, { size: 'xl', backdrop: 'static', keyboard: false  });
+      const modalRef = this.modalService.open(PrintGlueComponent, { size: 'md', backdrop: 'static', keyboard: false  });
       modalRef.componentInstance.data = data;
+      modalRef.componentInstance.value = value;
       modalRef.result.then((result) => {
       }, (reason) => {
-        this.isShowTodolistDone = true;
-        this.done();
       });
     });
   }
@@ -324,5 +394,32 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
       classList = 'disabled cursor-pointer';
     }
     return classList;
+  }
+  // config screen
+  openFullscreen() {
+    // Use this.divRef.nativeElement here to request fullscreen
+    const elem = this.divRef.nativeElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    }
+    this.hasFullScreen = true;
+  }
+  closeFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if ((document as any).mozCancelFullScreen) {
+      (document as any).mozCancelFullScreen();
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen();
+    } else if ((document as any).msExitFullscreen) {
+      (window.top.document as any).msExitFullscreen();
+    }
+    this.hasFullScreen = false;
   }
 }

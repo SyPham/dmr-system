@@ -9,9 +9,9 @@ namespace DMR_API._Services.Interface
 {
     public interface IToDoListService
     {
-        Task<List<ToDoListDto>> Done(int buildingID);
+        Task<ToDoListForReturnDto> Done(int buildingID);
         Task<bool> GenerateToDoList(List<int> plans);
-        Task<List<ToDoListDto>> ToDo(int buildingID);
+        Task<ToDoListForReturnDto> ToDo(int buildingID);
         Task<bool> AddRange(List<ToDoList> toDoList);
         Task<MixingInfo> Mix(MixingInfoForCreateDto mixForToDoListDto);
         void UpdateDispatchTimeRange(ToDoListForUpdateDto model);

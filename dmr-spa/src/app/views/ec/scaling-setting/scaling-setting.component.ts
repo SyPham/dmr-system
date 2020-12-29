@@ -1,13 +1,13 @@
-import { Component, OnInit, ViewChild } from "@angular/core";
-import { GridComponent } from "@syncfusion/ej2-angular-grids";
-import { BuildingService } from "src/app/_core/_service/building.service";
-import { SettingService } from "src/app/_core/_service/setting.service";
-import { AlertifyService } from "src/app/_core/_service/alertify.service";
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { GridComponent } from '@syncfusion/ej2-angular-grids';
+import { BuildingService } from 'src/app/_core/_service/building.service';
+import { SettingService } from 'src/app/_core/_service/setting.service';
+import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 
 @Component({
-  selector: "app-scaling-setting",
-  templateUrl: "./scaling-setting.component.html",
-  styleUrls: ["./scaling-setting.component.css"],
+  selector: 'app-scaling-setting',
+  templateUrl: './scaling-setting.component.html',
+  styleUrls: ['./scaling-setting.component.css'],
 })
 export class ScalingSettingComponent implements OnInit {
   data: any;
@@ -18,14 +18,16 @@ export class ScalingSettingComponent implements OnInit {
     allowEditing: true,
     allowAdding: true,
     allowDeleting: true,
-    mode: "Normal",
+    mode: 'Normal',
   };
-  @ViewChild("gridBuilding") public gridBuilding: GridComponent;
-  @ViewChild("gridSetting") public gridSetting: GridComponent;
+  @ViewChild('gridBuilding') public gridBuilding: GridComponent;
+  @ViewChild('gridSetting') public gridSetting: GridComponent;
   toolbarOptions: string[];
   buildings: object;
   settings: object;
   buildingID: any;
+  qrcode: string;
+  toolbar: string[];
   constructor(
     private buildingService: BuildingService,
     private alertify: AlertifyService,
@@ -33,8 +35,8 @@ export class ScalingSettingComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.filterSettings = { type: "Excel" };
-    this.toolbarOptions = ["Excel Export", "Search"];
+    this.filterSettings = { type: 'Excel' };
+    this.toolbar = ['Excel Export', 'Search'];
     this.loadData();
   }
   /// api
@@ -63,7 +65,7 @@ export class ScalingSettingComponent implements OnInit {
     try {
       this.buildings = await this.getBuildingForSetting();
     } catch (error) {
-      this.alertify.error(error + "");
+      this.alertify.error(error + '');
     }
   }
 
@@ -77,10 +79,10 @@ export class ScalingSettingComponent implements OnInit {
     };
     try {
       await this.editSetting(model);
-      this.alertify.success("Success");
-      this.getSettingByBuilding(this.buildingID);
+      this.alertify.success('Success');
+      this.settings = await this.getSettingByBuilding(this.buildingID);
     } catch (error) {
-      this.alertify.error(error + "");
+      this.alertify.error(error + '');
     }
   }
 
@@ -94,39 +96,39 @@ export class ScalingSettingComponent implements OnInit {
     };
     try {
       await this.createSetting(model);
-      this.alertify.success("Success");
-      this.getSettingByBuilding(this.buildingID);
+      this.alertify.success('Success');
+      this.settings = await this.getSettingByBuilding(this.buildingID);
     } catch (error) {
-      this.alertify.error(error + "");
+      this.alertify.error(error + '');
     }
   }
 
   async delete(id) {
     try {
       await this.deleteSetting(id);
-      this.alertify.success("Success");
-      this.getSettingByBuilding(this.buildingID);
+      this.alertify.success('Success');
+      this.settings = await this.getSettingByBuilding(this.buildingID);
     } catch (error) {
-      this.alertify.error(error + "");
+      this.alertify.error(error + '');
     }
   }
   /// event
   actionCompleteSetting(e) {
-    if (e.requestType === "add") {
-      (e.form.elements.namedItem("#") as HTMLInputElement).disabled = true;
+    if (e.requestType === 'add') {
+      (e.form.elements.namedItem('#') as HTMLInputElement).disabled = true;
     }
   }
 
   async actionBeginSetting(args) {
-    if (args.requestType === "save") {
-      if (args.action === "add") {
+    if (args.requestType === 'save') {
+      if (args.action === 'add') {
         await this.add(args.data);
       }
-      if (args.action === "edit") {
+      if (args.action === 'edit') {
         await this.edit(args.data);
       }
     }
-    if (args.requestType === "delete") {
+    if (args.requestType === 'delete') {
       await this.delete(args.data[0].id);
     }
   }
@@ -134,12 +136,12 @@ export class ScalingSettingComponent implements OnInit {
   async rowSelectedBuilding(args: any) {
     if (args.isInteracted) {
       this.toolbarOptions = [
-        "Add",
-        "Edit",
-        "Delete",
-        "Cancel",
-        "Excel Export",
-        "Search",
+        'Add',
+        'Edit',
+        'Delete',
+        'Cancel',
+        'Excel Export',
+        'Search',
       ];
       this.buildingID = args.data.id;
       this.settings = await this.getSettingByBuilding(this.buildingID);
@@ -153,7 +155,7 @@ export class ScalingSettingComponent implements OnInit {
         this.gridSetting.excelExport();
         break;
       /* tslint:enable */
-      case "PDF Export":
+      case 'PDF Export':
         break;
     }
   }
@@ -165,7 +167,7 @@ export class ScalingSettingComponent implements OnInit {
         this.gridBuilding.excelExport();
         break;
       /* tslint:enable */
-      case "PDF Export":
+      case 'PDF Export':
         break;
     }
   }

@@ -20,7 +20,7 @@
         <input type="text" [(ngModel)]="ingredient.voc" (blur)="onBlur($event)" class="form-control">
       </div>
       <div class="form-group">
-        <label for="">Expiry Period (mins.)</label>
+        <label for="">Expiry Period (hr.)</label>
         <input type="text" [(ngModel)]="ingredient.expiredTime" class="form-control">
       </div>
       <div class="form-group">
@@ -41,17 +41,17 @@
         <input type="text" [(ngModel)]="ingredient.materialNO" (blur)="onBlur($event)" class="form-control">
       </div>
       <div class="form-group">
-        <label for="">Amount</label>
+        <label for="">Amount(kg)</label>
         <input type="text" [(ngModel)]="ingredient.unit" (blur)="onBlur($event)" class="form-control">
       </div>
 
       <div class="form-group">
-        <label for="">Days to Expiry</label>
+        <label for="">Days to Expiry(day)</label>
         <input type="text" [(ngModel)]="ingredient.daysToExpiration" class="form-control">
       </div>
 
       <div class="form-group">
-        <label for="">Prepare Time(mins.)</label>
+        <label for="">Prepare Time(hr.)</label>
         <input type="text" [(ngModel)]="ingredient.prepareTime" class="form-control">
       </div>
      

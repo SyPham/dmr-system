@@ -99,11 +99,10 @@ namespace DMR_API.DTO
     public class DispatchParams {
         public string Glue { get; set; }
         public int ID { get; set; }
+        public int MixingInfoID { get; set; }
         public DateTime EstimatedTime { get; set; }
-
         public DateTime EstimatedStartTime { get; set; }
         public DateTime EstimatedFinishTime { get; set; }
-
 
         public DateTime StartDispatchingTime { get; set; }
         public DateTime FinishDispatchingTime { get; set; }
@@ -136,14 +135,21 @@ namespace DMR_API.DTO
     public class DispatchTodolistDto
     {
         public int ID { get; set; }
+        public int StationID { get; set; }
+        public int DeleteBy { get; set; }
+        public int CreateBy { get; set; }
         public double StandardAmount { get; set; }
         public double MixedConsumption { get; set; }
         public string Line { get; set; }
         public string Glue { get; set; }
         public int LineID { get; set; }
+        public bool IsDelete { get; set; }
         public int MixingInfoID { get; set; }
         public DateTime EstimatedTime { get; set; }
         public double Real { get; set; }
+        public DateTime CreatedTime { get; set; }
+        public DateTime? DeliveryTime { get; set; }
+
 
     }
 }

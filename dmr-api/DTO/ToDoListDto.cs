@@ -8,10 +8,10 @@ namespace DMR_API.DTO
     public class ToDoListDto
     {
         public int ID { get; set; }
-        public int PlanID { get; set; } 
+        public int PlanID { get; set; }
         public int MixingInfoID { get; set; }
-        public int GlueID { get; set; } 
-        public int BuildingID { get; set; } 
+        public int GlueID { get; set; }
+        public int BuildingID { get; set; }
         public int LineID { get; set; }
         public int BPFCID { get; set; }
         public int GlueNameID { get; set; }
@@ -41,5 +41,21 @@ namespace DMR_API.DTO
         public DateTime EstimatedStartTime { get; set; }
         public DateTime EstimatedFinishTime { get; set; }
     }
-   
+    public class ToDoListForReturnDto
+    {
+        public ToDoListForReturnDto(List<ToDoListDto> data, int doneTotal, int todoTotal, int total)
+        {
+            Data = data;
+            DoneTotal = doneTotal;
+            Total = total;
+            TodoTotal = todoTotal;
+            var val = Math.Round(((double)doneTotal / total) * 100, 0);
+            PercentageOfDone =  Double.IsNaN(val) ? 0 : val;
+        }
+        public List<ToDoListDto> Data { get; set; }
+        public double Total { get; set; }
+        public double DoneTotal { get; set; }
+        public double TodoTotal { get; set; }
+        public double PercentageOfDone { get; set; }
+    }
 }

@@ -203,14 +203,16 @@
     "Actual Consumption": "Actual Consumption",
     "Standard Consumption": "Standard Consumption",
     "Deliver": "Deliver",
+    "Deliver Time": "Delivery Time",
      "Actual Duration": "Actual Duration(Second)",
     "Standard Duration": "Standard Duration(Second)",
     "Standard RPM": "Standard RPM",
     "minutes": "minutes",
-    "Start Time": "Start Time",
-    "End Time": "End Time",
-    "Duration": "Duration"
-
-
-
+    "Start Time": "Start",
+    "End Time": "End",
+    "Duration": "Duration",
+    "% of Done": "% of Done",
+    "Amount": "Amount",
+    "Select a date": "Select a date",
+    "Select a model": "Select a BPFC"
 }

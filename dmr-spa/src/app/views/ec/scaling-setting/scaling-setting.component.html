@@ -6,7 +6,7 @@
     <div class="row">
       <div class="col-md-4">
         <ejs-grid [dataSource]='buildings' #gridBuilding gridLines='Both' [allowSorting]='true'
-          [allowExcelExport]='true' allowFiltering='true' [filterSettings]='filterSettings' [toolbar]='toolbarOptions'
+          [allowExcelExport]='true' allowFiltering='true' [filterSettings]='filterSettings' [toolbar]='toolbar'
           allowResizing='true' showColumnMenu='true' (rowSelected)='rowSelectedBuilding($event)'
           (toolbarClick)='toolbarClickBuilding($event)'>
           <e-columns>
@@ -36,6 +36,8 @@
 
             <e-column field='unit' textAlign='Center' headerText='Unit' width='100'></e-column>
             <e-column field='machineID' textAlign='Center' headerText='MachineID' width='100'></e-column>
+           
+
           </e-columns>
         </ejs-grid>
       </div>
@@ -43,3 +45,4 @@
   </div>
   <div class="card-footer"></div>
 </div>
+

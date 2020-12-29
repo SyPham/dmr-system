@@ -3,6 +3,7 @@ using DMR_API.DTO;
 using DMR_API.Models;
 using AutoMapper;
 using System.Linq;
+using dmr_api.Models;
 
 namespace DMR_API.Helpers.AutoMapper
 {
@@ -12,6 +13,7 @@ namespace DMR_API.Helpers.AutoMapper
 
         public EfToDtoMappingProfile()
         {
+            CreateMap<Dispatch, DispatchTodolistDto>();
 
             CreateMap<User, UserForDetailDto>();
             CreateMap<Glue, GlueDto>().ForMember(d => d.CreatedDate, o => o.MapFrom(s => s.CreatedDate.ToParseStringDateTime()));

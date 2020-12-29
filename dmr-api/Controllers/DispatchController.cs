@@ -44,11 +44,26 @@ namespace DMR_API.Controllers
             var res = await _dispatchService.Add(dispatch);
             return Ok(res);
         }
+        [HttpPut("{id}/{amount}")]
+        public async Task<IActionResult> UpdateAmount(int id, double amount)
+        {
+            var res = await _dispatchService.UpdateAmount(id, amount);
+            return Ok(res);
+        }
         [HttpDelete("{ID}")]
         public async Task<IActionResult> Delete(int ID)
         {
             var res = await _dispatchService.Delete(ID);
             return Ok(res);
         }
+        [HttpPut("{ID}")]
+        public IActionResult UpdateStartDispatchingTime(int ID)
+        {
+            var status =  _dispatchService.UpdateStartDispatchingTime(ID);
+            if (status)
+                return NoContent();
+            else return BadRequest("Không lưu được thời gian bắt đầu chia keo!");
+        }
+        
     }
 }

@@ -17,6 +17,14 @@ export class BPFCEstablishService {
   materialSource = new BehaviorSubject<number>(0);
   currentIngredient = this.materialSource.asObservable();
   constructor(private http: HttpClient) { }
+  // Thêm bởi Hữu Quỳnh
+  getDoneBPFC() {
+    return this.http.get(this.baseUrl + 'BPFCEstablish/getDoneBPFC', {});
+  }
+  getUndoneBPFC() {
+    return this.http.get(this.baseUrl + 'BPFCEstablish/getUndoneBPFC', {});
+  }
+  //
   getAll() {
     return this.http.get(this.baseUrl + 'BPFCEstablish/GetAll', {});
   }
@@ -98,5 +106,8 @@ export class BPFCEstablishService {
   }
   UpdateHistoryBPFC(entity) {
     return this.http.put(this.baseUrl + 'BPFCEstablish/UpdateBPFCHistory', entity);
+  }
+  delete(id: number) {
+    return this.http.delete(this.baseUrl + `BPFCEstablish/Delete/${id}`, {});
   }
 }

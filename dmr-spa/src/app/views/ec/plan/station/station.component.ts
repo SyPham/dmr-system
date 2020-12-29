@@ -32,9 +32,10 @@ export class StationComponent implements OnInit {
   actionBegin(args) {
     if (args.action === 'edit' && args.requestType === 'save') {
       const item = args.data as IStation;
-      const data =  this.grid.dataSource as IStation[];
-      data[args.rowIndex].amount = item.amount;
-      this.grid.refresh();
+      // const data =  this.grid.dataSource as IStation[];
+      // data[args.rowIndex].amount = item.amount;
+      // this.grid.refresh();
+      this.update(item);
     }
     if (args.action === 'add' && args.requestType === 'save') {
     }
@@ -52,15 +53,16 @@ export class StationComponent implements OnInit {
 
   // api
   confirm() {
-    const createData = this.data.filter(item => item.id === 0);
-    const updateData = this.data.filter(item => item.id > 0);
-    if (createData.length > 0) {
-      this.createRange(createData);
-    }
-    if (updateData.length > 0) {
-      this.updateRange(updateData);
-    }
-
+    // const createData = this.data.filter(item => item.id === 0);
+    // const updateData = this.data.filter(item => item.id > 0);
+    // if (createData.length > 0) {
+    //   this.createRange(createData);
+    // }
+    // if (updateData.length > 0) {
+    //   this.updateRange(updateData);
+    // }
+    this.activeModal.dismiss();
+    this.alertify.success('Updated successed!');
   }
   getAllByPlanID() {
     this.stationSevice.getAllByPlanID(this.plan.id || 0).subscribe(data => {
@@ -71,6 +73,11 @@ export class StationComponent implements OnInit {
     this.stationSevice.createRange(data).subscribe(res => {
       this.alertify.success('Created successed!');
       this.activeModal.dismiss();
+      this.stationSevice.setValue(true);
+    });
+  }
+  update(data: IStation) {
+    this.stationSevice.update(data).subscribe(res => {
       this.stationSevice.setValue(true);
     });
   }

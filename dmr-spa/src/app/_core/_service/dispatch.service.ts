@@ -19,8 +19,17 @@ export class DispatchService {
   add(obj: IDispatchForCreate) {
     return this.http.post(this.baseUrl + 'Dispatch/Add', obj);
   }
+  update(obj: IDispatchForCreate) {
+    return this.http.post(this.baseUrl + 'Dispatch/Update', obj);
+  }
+  updateAmount(id: number, amount: number) {
+    return this.http.put(this.baseUrl + `Dispatch/updateAmount/${id}/${amount}`, {});
+  }
   addDispatch(obj: IDispatchForCreate[]) {
     return this.http.post(this.baseUrl + 'Dispatch/Dispatch', obj);
+  }
+  updateStartDispatchingTime(id: number) {
+    return this.http.put(this.baseUrl + `Dispatch/UpdateStartDispatchingTime/${id}`, {});
   }
 }
 

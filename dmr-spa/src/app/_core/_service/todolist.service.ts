@@ -4,8 +4,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { IToDoList, IToDoListForCancel } from '../_model/IToDoList';
+import { IToDoList, IToDoListForCancel, IToDoListForReturn } from '../_model/IToDoList';
 import { DispatchParams, IDispatch } from '../_model/plan';
+import { IMixingInfo } from '../_model/IMixingInfo';
 const httpOptions = {
   headers: new HttpHeaders({
     'Content-Type': 'application/json',
@@ -34,16 +35,16 @@ export class TodolistService {
     return this.http.post(`${this.baseUrl}ToDoList/cancelRange`, todo);
   }
   done(building: number) {
-    return this.http.get<IToDoList[]>(this.baseUrl + 'ToDoList/Done/' + building, {});
+    return this.http.get<IToDoListForReturn>(this.baseUrl + 'ToDoList/Done/' + building, {});
   }
   todo(building: number) {
-    return this.http.get<IToDoList[]>(this.baseUrl + 'ToDoList/ToDo/' + building, {});
+    return this.http.get<IToDoListForReturn>(this.baseUrl + 'ToDoList/ToDo/' + building, {});
   }
   printGlue(mixingInfoID: number) {
     return this.http.get(this.baseUrl + 'ToDoList/printGlue/' + mixingInfoID, {});
   }
   findPrintGlue(mixingInfoID: number) {
-    return this.http.get(this.baseUrl + 'ToDoList/FindPrintGlue/' + mixingInfoID, {});
+    return this.http.get<IMixingInfo>(this.baseUrl + 'ToDoList/FindPrintGlue/' + mixingInfoID, {});
   }
   dispatch(obj: DispatchParams) {
     return this.http.post<IDispatch[]>(this.baseUrl + 'ToDoList/Dispatch', obj);

@@ -14,6 +14,9 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
+using dmr_api.Models;
+using DMR_API._Repositories;
+using Microsoft.AspNetCore.Http;
 
 namespace DMR_API._Services.Services
 {
@@ -23,6 +26,9 @@ namespace DMR_API._Services.Services
         private readonly IMixingService _repoMixing;
         private readonly IGlueRepository _repoGlue;
         private readonly IRawDataRepository _repoRawData;
+        private readonly IToDoListRepository _repoToDoList;
+        private readonly IHttpContextAccessor _accessor;
+        private readonly IDispatchRepository _repoDispatch;
         private readonly IStirRepository _repoStir;
         private readonly IMongoRepository<DMR_API.Data.MongoModels.RawData> _rowDataRepository;
         private readonly ISettingRepository _repoSetting;
@@ -35,6 +41,9 @@ namespace DMR_API._Services.Services
             IMixingInfoRepository repoMixingInfor,
             IMixingService repoMixing,
             IRawDataRepository repoRawData,
+            IToDoListRepository repoToDoList,
+            IHttpContextAccessor accessor,
+            IDispatchRepository repoDispatch,
             IMongoRepository<DMR_API.Data.MongoModels.RawData> rowDataRepository,
             ISettingRepository repoSetting,
             IToDoListService toDoListService,
@@ -51,6 +60,9 @@ namespace DMR_API._Services.Services
             _repoStir = repoStir;
             _rowDataRepository = rowDataRepository;
             _repoRawData = repoRawData;
+            _repoToDoList = repoToDoList;
+            _accessor = accessor;
+            _repoDispatch = repoDispatch;
             _configMapper = configMapper;
             _repoSetting = repoSetting;
             _toDoListService = toDoListService;
@@ -81,7 +93,7 @@ namespace DMR_API._Services.Services
                     item.Code = code;
                     item.CreatedTime = DateTime.Now;
                     var glue = _repoGlue.FindAll().FirstOrDefault(x => x.isShow == true && x.ID == mixing.GlueID);
-                    item.ExpiredTime = DateTime.Now.AddMinutes(glue.ExpiredTime);
+                    item.ExpiredTime = DateTime.Now.AddHours(glue.ExpiredTime);
                     _repoMixingInfor.Add(item);
                     //await _repoMixingInfor.SaveAll();
                     _repoMixingInfor.Save();
@@ -110,9 +122,10 @@ namespace DMR_API._Services.Services
 
         }
 
-        public async Task<List<MixingInfoDto>> GetMixingInfoByGlueName(string glueName)
+        public async Task<List<MixingInfoDto>> GetMixingInfoByGlueName(string glueName, int buildingID)
         {
             return await _repoMixingInfor.FindAll()
+             .Where(x=> x.ID == buildingID)
             .Include(x => x.Glue)
             .ThenInclude(x => x.GlueIngredients)
             .ThenInclude(x => x.Ingredient)
@@ -299,13 +312,15 @@ namespace DMR_API._Services.Services
             return model;
         }
 
-        public bool AddMixingInfo(MixingInfoForAddDto mixing)
+        public MixingInfo AddMixingInfo(MixingInfoForAddDto mixing)
         {
           
             using (TransactionScope scope = new TransactionScope())
             {
                 try
                 {
+                    string token = _accessor.HttpContext.Request.Headers["Authorization"];
+                    var userID = JWTExtensions.GetDecodeTokenByProperty(token, "nameid").ToInt();
                     var mixingInfo = new MixingInfo
                     {
                         GlueID = mixing.GlueID,
@@ -316,7 +331,13 @@ namespace DMR_API._Services.Services
                         EstimatedStartTime = mixing.EstimatedStartTime
 
                     };
-
+                    var glue = _repoGlue.FindAll(x => x.ID == mixing.GlueID)
+                        .Include(x => x.GlueIngredients)
+                        .ThenInclude(x => x.Ingredient)
+                        .SelectMany(x => x.GlueIngredients).ToList();
+                    var checmicalA = glue.FirstOrDefault().Ingredient.ExpiredTime;
+                    mixingInfo.CreatedTime = DateTime.Now;
+                    mixingInfo.ExpiredTime = DateTime.Now.AddHours(checmicalA);
                     string code = CodeUtility.RandomString(8);
                     while (true)
                     {
@@ -333,7 +354,6 @@ namespace DMR_API._Services.Services
                     mixingInfo.Code = code;
                     _repoMixingInfor.Add(mixingInfo);
                     _repoMixingInfor.Save();
-
                     var details = _mapper.Map<List<MixingInfoDetail>>(mixing.Details.ToList());
                     details.ForEach(x => x.MixingInfoID = mixingInfo.ID);
                     _repoMixingInfoDetail.AddRange(details);
@@ -350,15 +370,95 @@ namespace DMR_API._Services.Services
                         Amount = details.Sum(x => x.Amount)
                     };
                     _toDoListService.UpdateMixingTimeRange(todo);
+
+
+                    var todolistModel = _repoToDoList.FindAll(x =>
+                        x.EstimatedFinishTime == mixing.EstimatedFinishTime
+                        && x.EstimatedStartTime == mixing.EstimatedStartTime
+                        && x.GlueName == mixing.GlueName)
+                             .Include(x => x.Plan)
+                                 .ThenInclude(x => x.Stations)
+                                 .ThenInclude(x => x.Glue)
+                         .Select(x => new
+                         {
+                             x.EstimatedFinishTime,
+                             x.EstimatedStartTime,
+                             x.StandardConsumption,
+                             x.LineID,
+                             x.GlueID,
+                             x.GlueNameID,
+                             x.MixingInfoID,
+                             x.GlueName,
+                             x.LineName,
+                             x.MixedConsumption,
+                             x.Plan.Stations
+                         }).ToList();
+                  
+                    var todolist = todolistModel.GroupBy(x => new { x.GlueNameID, x.EstimatedFinishTime, x.EstimatedStartTime }).ToList();
+
+                    foreach (var todolistGroup in todolist)
+                    {
+                        var dispatchModel = new List<DispatchTodolistDto>();
+                        foreach (var data in todolistGroup)
+                        {
+                            var count = data.Stations.Count;
+                            var stationModel = data.Stations.FirstOrDefault(x => x.Glue.GlueNameID == data.GlueNameID);
+                            if (count > 0)
+                            {
+                                int stationAmount = stationModel is null ? 0 : stationModel.Amount;
+                                for (int i = 1; i <= stationAmount; i++)
+                                {
+                                    dispatchModel.Add(new DispatchTodolistDto
+                                    {
+                                        ID = 0,
+                                        Glue = data.GlueName,
+                                        Line = data.LineName,
+                                        LineID = data.LineID,
+                                        MixingInfoID = data.MixingInfoID,
+                                        CreatedTime = DateTime.Now.ToLocalTime(),
+                                        CreateBy = userID,
+                                        StationID = stationModel.ID,
+                                    });
+                                }
+                                if (stationAmount == 0)
+                                {
+                                    dispatchModel.Add(new DispatchTodolistDto
+                                    {
+                                        ID = 0,
+                                        Glue = data.GlueName,
+                                        Line = data.LineName,
+                                        LineID = data.LineID,
+                                        MixingInfoID = data.MixingInfoID,
+                                        CreatedTime = DateTime.Now.ToLocalTime(),
+                                        StationID = stationModel.ID,
+                                        CreateBy = userID,
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                scope.Dispose();
+                                return null;
+                            }
+                        }
+                        var dispatch = _mapper.Map<List<Dispatch>>(dispatchModel);
+                        _repoDispatch.AddRange(dispatch);
+                        _repoDispatch.Save();
+                    }
                     scope.Complete();
-                    return true;
+                    return mixingInfo;
                 }
                 catch
                 {
                     scope.Dispose();
-                    return false;
+                    return null;
                 }
             }
+        }
+
+        public MixingInfo GetByID(int ID)
+        {
+           return _repoMixingInfor.FindAll(x=> x.ID == ID).Include(x=>x.MixingInfoDetails).FirstOrDefault();
         }
     }
 }

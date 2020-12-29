@@ -1,30 +1,62 @@
-import { Component, OnInit, ViewChild, TemplateRef, ViewChildren, QueryList } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  TemplateRef,
+  ViewChildren,
+  QueryList,
+  OnDestroy,
+  Input,
+} from '@angular/core';
 import { ModalNameService } from 'src/app/_core/_service/modal-name.service';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { GridComponent, ExcelExportProperties, Column } from '@syncfusion/ej2-angular-grids';
+import {
+  GridComponent,
+  ExcelExportProperties,
+  Column,
+  SearchSettingsModel,
+} from '@syncfusion/ej2-angular-grids';
 import { BuildingUserService } from 'src/app/_core/_service/building.user.service';
 import { environment } from '../../../../environments/environment';
 import { BPFCEstablishService } from 'src/app/_core/_service/bpfc-establish.service';
 import { DatePipe } from '@angular/common';
 import { UserService } from 'src/app/_core/_service/user.service';
 import { Router } from '@angular/router';
-
+import { NgxSpinnerService } from 'ngx-spinner';
+import { EmitType } from '@syncfusion/ej2-base/';
+import { FilteringEventArgs } from '@syncfusion/ej2-dropdowns';
+import { Query } from '@syncfusion/ej2-data/';
+import { ArticleNoService } from 'src/app/_core/_service/articleNoService.service';
+import { DataService } from 'src/app/_core/_service/data.service';
+import { Subscription, SubscriptionLike } from 'rxjs';
+import { Button } from '@syncfusion/ej2-angular-buttons';
+import { IRole } from 'src/app/_core/_model/role';
+const HttpUploadOptions = {
+  headers: new HttpHeaders({ Accept: 'application/json' }),
+};
+const ROLE_ADMIN = 1;
 @Component({
   // tslint:disable-next-line:component-selector
   selector: 'app-BPFCSchedule',
   templateUrl: './BPFCSchedule.component.html',
   styleUrls: ['./BPFCSchedule.component.css'],
-  providers: [DatePipe]
+  providers: [DatePipe],
 })
-export class BPFCScheduleComponent implements OnInit {
+export class BPFCScheduleComponent implements OnInit, OnDestroy {
   @ViewChildren('tooltip') tooltip: QueryList<any>;
 
-  pageSettings = { pageCount: 20, pageSizes: [50, 100, 150, 200, 'All'], pageSize: 50 };
+  pageSettings = {
+    pageCount: 20,
+    pageSizes: [50, 100, 150, 200, 'All'],
+    pageSize: 50,
+  };
   data: any[];
   editSettings: object;
   toolbar: object;
   file: any;
+
   @ViewChild('grid')
   public gridObj: GridComponent;
   modalReference: NgbModalRef;
@@ -32,17 +64,48 @@ export class BPFCScheduleComponent implements OnInit {
   importModal: TemplateRef<any>;
   excelDownloadUrl: string;
   users: any[];
-  filterSettings: { type: string; };
+  filterSettings: { type: string };
   modelName: string = null;
   modelNo: string = null;
   articleNo: string = null;
   articleNoNew: string = null;
+  articleNoDefault: string = null;
   artProcess: string = null;
+  value: string = null;
   modelNameID = 0;
   modelNoID = 0;
   articleNoID = 0;
   artProcessID = 0;
   BPFCID = 0;
+  articleNosData: any;
+  modelNOsDataClone: any;
+  baseUrl = environment.apiUrlEC;
+  filetest: any;
+  textSearch: string = null;
+  textSearchs: string = null;
+  dataText: any;
+  public fieldsBPFCs: object = { text: 'name', value: 'id' };
+  public searchOptions: SearchSettingsModel;
+  subscriptions: Subscription = new Subscription();
+  checkCode = false;
+  percentageOfDone: Button;
+  doneBtn: Button;
+  undoneBtn: Button;
+  allBtn: Button;
+  percentageOfDoneData: any;
+  undoneText: string;
+  doneText: string;
+  isDone: boolean;
+  styleBtn = {
+    background: '#6c757d',
+    boxShadow: '0 0 0 3px rgba(130, 138, 145, 0.5)',
+    border: '1px solid #6c757d',
+    margin: '0',
+    borderColor: '#6c757d',
+    borderRadius: '4px',
+    color: '#fff',
+  };
+  role: IRole;
   constructor(
     private modalNameService: ModalNameService,
     private alertify: AlertifyService,
@@ -50,29 +113,182 @@ export class BPFCScheduleComponent implements OnInit {
     private bPFCEstablishService: BPFCEstablishService,
     public modalService: NgbModal,
     private router: Router,
-    private datePipe: DatePipe
-  ) { }
+    private datePipe: DatePipe,
+    private spinner: NgxSpinnerService,
+    private articleNoService: ArticleNoService,
+    private dataService: DataService,
+    private http: HttpClient
+  ) {
+
+  }
 
   ngOnInit() {
+    const ROLE: IRole = JSON.parse(localStorage.getItem('level'));
+    this.role = ROLE;
     this.excelDownloadUrl = `${environment.apiUrlEC}ModelName/ExcelExport`;
-    this.toolbar = ['Excel Import', 'ExcelExport', 'Search'];
+    this.toolbar = [
+      'Excel Import',
+      'ExcelExport',
+      'Search',
+      {
+        text: 'Undone',
+        tooltipText: 'Undone',
+        prefixIcon: 'fa fa-remove',
+        id: 'Undone',
+      },
+      {
+        text: 'Done',
+        tooltipText: 'Done',
+        prefixIcon: 'fa fa-check',
+        id: 'Done',
+      },
+      {
+        text: 'All',
+        tooltipText: 'All',
+        prefixIcon: 'fa fa-list',
+        id: 'All',
+      },
+      {
+        text: '% of done',
+        tooltipText: '% of done',
+        prefixIcon: '',
+        id: 'percentageOfDone',
+      },
+    ];
     this.filterSettings = { type: 'Excel' };
-    this.editSettings = { allowEditing: true, allowAdding: true, allowDeleting: true, newRowPosition: 'Normal' };
-    this.getAllUsers();
+    this.editSettings = {
+      allowEditing: true,
+      allowAdding: true,
+      allowDeleting: true,
+      newRowPosition: 'Normal',
+    };
+    this.dataText = this.dataService.currentMessages.subscribe((res: any) => {
+      this.textSearch = res ;
+      if (res !== 0) {
+        this.searchOptions = {
+          fields: [
+            'modelName',
+            'modelNo',
+            'articleNo',
+            'approvedBy',
+            'artProcess',
+          ],
+          operator: 'contains',
+          key: res || '',
+          ignoreCase: true,
+        };
+      }
+    });
+    // this.getAllUsers();
+    // this.getSearchText();
   }
+  ngOnDestroy() {
+    this.dataText.unsubscribe();
+  }
+  detail(data) {
+    this.dataService.changeMessage(this.textSearch);
+    return this.router.navigate([
+      `/ec/establish/bpfc-schedule/detail/${data.id}`,
+    ]);
+  }
+  onChangeArticleNo(args) {
+    if (args.isInteracted) {
+      this.articleNoID = args.itemData.id;
+    }
+  }
+
+  createdSearch(args) {
+    this.getAllUsers();
+    const gridElement = this.gridObj.element;
+    const span = document.createElement('span');
+    span.className = 'e-clear-icon';
+    span.id = gridElement.id + 'clear';
+    span.onclick = this.cancelBtnClick.bind(this);
+    gridElement
+      .querySelector('.e-toolbar-item .e-input-group')
+      .appendChild(span);
+    this.percentageOfDone = new Button(
+      {
+        cssClass: `e-tbar-btn e-tbtn-txt e-control e-lib`,
+        iconCss: '',
+      });
+    this.percentageOfDone.appendTo('#percentageOfDone');
+
+  }
+
+  public cancelBtnClick(args) {
+    this.gridObj.searchSettings.key = '';
+    (this.gridObj.element.querySelector(
+      '.e-input-group.e-search .e-input'
+    ) as any).value = '';
+  }
+
+  getSearchText() {
+    // this.textSearch = this.textSearch ;
+    // this.dataText = this.dataService.currentMessage.subscribe((res: any) => {
+    //   if (res !== 0) {
+    //     this.searchOptions = {
+    //       fields: [
+    //         "modelName",
+    //         "modelNo",
+    //         "articleNo",
+    //         "approvedBy",
+    //         "artProcess",
+    //       ],
+    //       operator: "contains",
+    //       key: res || "",
+    //       ignoreCase: true,
+    //     };
+    //   }
+    // });
+  }
+
+  public onFilteringArticleNO: EmitType<FilteringEventArgs> = (
+    e: FilteringEventArgs
+  ) => {
+    let query: Query = new Query();
+    // frame the query based on search string with filter type.
+    query =
+      e.text !== '' ? query.where('name', 'contains', e.text, true) : query;
+    // pass the filter data source, filter query to updateData method.
+    e.updateData(this.articleNosData, query);
+  }
+
+  public onFilteringModelNOClone: EmitType<FilteringEventArgs> = (
+    e: FilteringEventArgs
+  ) => {
+    let query: Query = new Query();
+    // frame the query based on search string with filter type.
+    query =
+      e.text !== '' ? query.where('name', 'contains', e.text, true) : query;
+    // pass the filter data source, filter query to updateData method.
+    e.updateData(this.modelNOsDataClone, query);
+  }
+
+  getArticleNoByModelNoID(modelNoID, articleNo) {
+    this.articleNoService
+      .getArticleNoByModelNoID(modelNoID)
+      .subscribe((res: any) => {
+        this.articleNosData = res.filter(item => item.name !== articleNo);
+      });
+  }
+
+  openPopupDropdownlist() {}
+
   onBeforeRender(args, data, i) {
     const t = this.tooltip.filter((item, index) => index === +i)[0];
     t.content = 'Loading...';
     t.dataBind();
-    this.bPFCEstablishService
-      .getGlueByBPFCID(data.id)
-      .subscribe((res: any) => {
-        t.content = res.join('<br>');
-        t.dataBind();
-      });
+    this.bPFCEstablishService.getGlueByBPFCID(data.id).subscribe((res: any) => {
+      t.content = res.join('<br>');
+      t.dataBind();
+    });
   }
 
-  onClickClone() {
+  onClickCloneNewVersion() {
+    if (this.value !== null) {
+      this.articleNoNew = this.articleNoDefault + this.value;
+    }
     const clone = {
       modelNameID: this.modelNameID,
       modelNOID: this.modelNoID,
@@ -82,51 +298,117 @@ export class BPFCScheduleComponent implements OnInit {
       name: this.articleNoNew,
       cloneBy: JSON.parse(localStorage.getItem('user')).User.ID,
     };
-
-    this.clone(clone);
+    this.cloneNewVersion(clone);
   }
-  clone(clone) {
-    if (this.articleNoNew !== this.articleNo) {
-      this.modalNameService.cloneBPFC(clone).subscribe((res: any) => {
-        if (res.status === true) {
-          this.alertify.success('Đã sao chép thành công!');
-          this.modalService.dismissAll();
-          this.getAllUsers();
-        } else {
-          this.alertify.error('The BPFC exists!');
-        }
-      });
+
+  cloneNewVersion(clone) {
+    this.findArticleNo(this.articleNoNew);
+    if (this.value !== null) {
+      if (this.checkCode) {
+        this.modalNameService.cloneBPFC(clone).subscribe((res: any) => {
+          if (res.status === true) {
+            this.alertify.success('Đã sao chép thành công! <br> Copy succeeded!');
+            this.modalService.dismissAll();
+            this.getAllUsers();
+            this.value = null;
+          } else {
+            this.alertify.error('The BPFC exists!');
+            this.value = null;
+          }
+        });
+      } else {
+        this.alertify.error('The BPFC exists!');
+        this.value = null;
+      }
     } else {
-      this.alertify.error('The BPFC exists!');
+      this.alertify.error('Version can not be Empty!');
+      this.value = null;
     }
   }
+
+  findArticleNo(code) {
+    for (const item of this.data) {
+      if (item.articleNo === code) {
+        this.checkCode = false;
+        break;
+      } else {
+        this.checkCode = true;
+      }
+    }
+  }
+
+  onClickClone() {
+    const clone = {
+      modelNameID: this.modelNameID,
+      modelNOID: this.modelNoID,
+      articleNOID: this.articleNoID,
+      artProcessID: Number(this.artProcessID),
+      bpfcID: this.BPFCID,
+      cloneBy: JSON.parse(localStorage.getItem('user')).User.ID,
+    };
+    this.clone(clone);
+  }
+
+  clone(clone) {
+    this.modalNameService.clone(clone).subscribe((res: any) => {
+      if (res.status === true) {
+        this.alertify.success('Đã sao chép thành công! <br> Copy succeeded!');
+        this.modalService.dismissAll();
+      } else {
+        this.alertify.error('The BPFC exists!');
+      }
+    });
+  }
+
   openModal(ref, data) {
-    this.modalReference = this.modalService.open(ref);
+    this.modalReference = this.modalService.open(ref, { size: 'md', backdrop: 'static', keyboard: false });
     this.BPFCID = data.id;
     this.modelName = data.modelName;
     this.modelNo = data.modelNo;
     this.articleNo = data.articleNo;
     this.artProcess = data.artProcess;
-    this.articleNoNew = data.articleNo;
-
+    this.articleNoNew = data.articleNo.split('-')[0] + '-T';
+    this.articleNoDefault = data.articleNo.split('-')[0] + '-T';
     this.modelNameID = data.modelNameID;
     this.modelNoID = data.modelNoID;
-    this.articleNoID = data.articleNoID;
+    this.articleNoID = 0;
+
     if (data.artProcess === 'ASY') {
       this.artProcessID = 1;
     } else {
       this.artProcessID = 2;
     }
   }
-  detail(data) {
-    return this.router.navigate([`/ec/establish/bpfc-schedule/detail/${data.id}`]);
+
+  openModalClone(ref, data) {
+    this.modalReference = this.modalService.open(ref, { size: 'md', backdrop: 'static', keyboard: false });
+    this.BPFCID = data.id;
+    this.modelName = data.modelName;
+    this.modelNo = data.modelNo;
+    this.artProcess = data.artProcess;
+    this.articleNo = data.articleNo;
+    this.modelNameID = data.modelNameID;
+    this.modelNoID = data.modelNoID;
+    this.articleNoID = 0;
+    // this.artProcessID = data.artProcessID;
+    this.getArticleNoByModelNoID(this.modelNoID, data.articleNo);
+    if (data.artProcess === 'ASY') {
+      this.artProcessID = 1;
+    } else {
+      this.artProcessID = 2;
+    }
   }
+
+
+
   actionBegin(args) {
-    console.log(args.requestType + ' ' + args.type); // custom Action
+    if (args.requestType === 'searching') {
+      this.textSearch = args.searchString;
+    }
     if (args.requestType === 'save') {
       const entity = {
         id: args.data.id,
-        season: args.data.season
+        season: args.data.season,
       };
       this.bPFCEstablishService.updateSeason(entity).subscribe(() => {
         this.alertify.success('Update Season Success');
@@ -134,31 +416,48 @@ export class BPFCScheduleComponent implements OnInit {
       });
     }
   }
+
   dataBound() {
-   this.gridObj.autoFitColumns();
+    //  this.gridObj.autoFitColumns();
   }
+
   toolbarClick(args) {
     switch (args.item.text) {
       case 'Excel Import':
         this.showModal(this.importModal);
         break;
+      case 'Done':
+        this.gridObj.searchSettings.key = '';
+        this.getDone();
+        break;
+      case 'Undone':
+        this.gridObj.searchSettings.key = '';
+        this.getUndone();
+        break;
+      case 'All':
+        this.gridObj.searchSettings.key = '';
+        this.getAll();
+        break;
       case 'Excel Export':
-        const data = this.data.map(item => {
+        const data = this.data.map((item) => {
           return {
             approvedBy: item.approvedBy,
             approvalStatus: item.approvalStatus,
             createdBy: item.createdBy,
             articleNo: item.articleNo,
-            createdDate: this.datePipe.transform(item.createdDate, 'd MMM, yyyy HH:mm'),
+            createdDate: this.datePipe.transform(
+              item.createdDate,
+              'd MMM, yyyy HH:mm'
+            ),
             artProcess: item.artProcess,
             finishedStatus: item.finishedStatus === true ? 'Yes' : 'No',
             modelName: item.modelName,
             modelNo: item.modelNo,
-            season: item.season
+            season: item.season,
           };
         });
         const exportProperties = {
-          dataSource: data
+          dataSource: data,
         };
         this.gridObj.excelExport(exportProperties);
         break;
@@ -170,51 +469,241 @@ export class BPFCScheduleComponent implements OnInit {
   }
 
   uploadFile() {
-    const createdBy = JSON.parse(localStorage.getItem('user')).User.ID;
-    this.bPFCEstablishService.import(this.file, createdBy)
-    .subscribe((res: any) => {
-      this.getAll();
-      this.modalReference.close();
-      this.alertify.success('The excel has been imported into system!');
-    });
-  }
+    // const obj =  [
+    //   {
+    //     Audit_Item_ZW: "1",
+    //     File: this.file,
+    //   },
+    //   {
+    //     Audit_Item_ZW: "2",
+    //     File: this.file,
+    //   },
+    //   {
+    //     Audit_Item_ZW: "3",
+    //     File: this.file,
+    //   },
+    // ]
+    // const formData = new FormData()
+    // for(let item of obj) {
+    //   formData.append('UploadedFile', item.File);
+    //   formData.append('Audit_Item_ZW', item.Audit_Item_ZW);
+    // }
+    // this.bPFCEstablishService.Test(formData).subscribe((res: any) => {})
 
+    const createdBy = JSON.parse(localStorage.getItem('user')).User.ID;
+    this.bPFCEstablishService
+      .import(this.file, createdBy)
+      .subscribe((res: any) => {
+        this.getAll();
+        this.modalReference.close();
+        this.alertify.success('The excel has been imported into system!');
+      });
+  }
 
   getAllUsers() {
     this.userService.getAllUserInfo().subscribe((res: any) => {
       this.users = res;
-      this.getAll();
+      this.getUndone();
     });
   }
-
-  getAll() {
-    this.bPFCEstablishService.getAll().subscribe( (res: any) => {
-      this.data = res.map( (item: any) => {
-        return {
-          id: item.id,
-          modelNameID: item.modelNameID,
-          modelNoID: item.modelNoID,
-          articleNoID: item.articleNoID,
-          artProcessID: item.artProcessID,
-          modelName: item.modelName,
-          modelNo: item.modelNo,
-          createdDate: new Date(item.createdDate),
-          articleNo: item.articleNo,
-          approvalStatus: item.approvalStatus,
-          finishedStatus: item.finishedStatus,
-          approvedBy: this.users.filter(a => a.id === item.approvalBy)[0]?.username,
-          createdBy: item.createdBy,
-          artProcess: item.artProcess,
-          season: item.season
-        };
-      });
+  delete(id: number) {
+    this.alertify.confirm('Delete BPFC', 'Are you sure you want to delete this BPFC "' + id + '" ?', () => {
+      this.bPFCEstablishService.delete(id).subscribe((res: any) => {
+        this.alertify.success('Success');
+        this.getUndone();
+      }, err => { this.alertify.warning(err); });
     });
+  }
+  editTextOfBtn() {
+    this.undoneBtn = new Button(
+      {
+        cssClass: `e-tbar-btn e-tbtn-txt e-control e-btn e-lib`,
+        iconCss: 'fa fa-remove',
+        content: this.undoneText
+      });
+
+    this.allBtn = new Button(
+      {
+        cssClass: `e-tbar-btn e-tbtn-txt e-control e-btn e-lib`,
+        iconCss: 'fa fa-list',
+        content: 'All'
+      });
+
+    this.doneBtn = new Button(
+      {
+        cssClass: `e-tbar-btn e-tbtn-txt e-control e-btn e-lib`,
+        iconCss: 'fa fa-check',
+        content: this.doneText
+      });
+    this.doneBtn.appendTo('#Done');
+    this.allBtn.appendTo('#All');
+    this.undoneBtn.appendTo('#Undone');
+    if (this.isDone === true) {
+      this.setAttrBtn(this.doneBtn);
+      // reset color
+      this.resetAttrBtn(this.undoneBtn);
+      this.resetAttrBtn(this.allBtn);
+    } else if (this.isDone === false)  {
+
+      this.setAttrBtn(this.undoneBtn);
+      // reset color
+      this.resetAttrBtn(this.doneBtn);
+      this.resetAttrBtn(this.allBtn);
+    } else {
+
+      this.setAttrBtn(this.allBtn);
+      // reset color
+      this.resetAttrBtn(this.doneBtn);
+      this.resetAttrBtn(this.undoneBtn);
+    }
+  }
+  getAll() {
+    this.spinner.show();
+    setTimeout(() => {
+      this.bPFCEstablishService.getAll().subscribe((res: any) => {
+        this.data = res.map((item: any) => {
+          return {
+            id: item.id,
+            modelNameID: item.modelNameID,
+            modelNoID: item.modelNoID,
+            articleNoID: item.articleNoID,
+            artProcessID: item.artProcessID,
+            modelName: item.modelName,
+            modelNo: item.modelNo,
+            createdDate: new Date(item.createdDate),
+            articleNo: item.articleNo,
+            approvalStatus: item.approvalStatus,
+            finishedStatus: item.finishedStatus,
+            approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
+              ?.username,
+            createdBy: item.createdBy,
+            artProcess: item.artProcess,
+            season: item.season,
+          };
+        });
+        this.spinner.hide();
+        this.isDone = null;
+        this.editTextOfBtn();
+      });
+    }, 1000);
+  }
+
+  getDone() {
+    this.spinner.show();
+    setTimeout(() => {
+      this.bPFCEstablishService.getDoneBPFC().subscribe((res: any) => {
+        this.data = res.data.map((item: any) => {
+          return {
+            id: item.id,
+            modelNameID: item.modelNameID,
+            modelNoID: item.modelNoID,
+            articleNoID: item.articleNoID,
+            artProcessID: item.artProcessID,
+            modelName: item.modelName,
+            modelNo: item.modelNo,
+            createdDate: new Date(item.createdDate),
+            articleNo: item.articleNo,
+            approvalStatus: item.approvalStatus,
+            finishedStatus: item.finishedStatus,
+            approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
+              ?.username,
+            createdBy: item.createdBy,
+            artProcess: item.artProcess,
+            season: item.season,
+          };
+        });
+        this.percentageOfDoneData = res.percentageOfDone;
+        this.percentageOfDone.element.innerHTML = this.percentageOfDoneData;
+        this.doneText = `Done (${res.doneTotal})`;
+        this.undoneText = `Undone (${res.undoneTotal})`;
+        this.isDone = true;
+        this.editTextOfBtn();
+        this.spinner.hide();
+      });
+    }, 1000);
+  }
+
+  getUndone() {
+    this.spinner.show();
+    setTimeout(() => {
+      this.bPFCEstablishService.getUndoneBPFC().subscribe((res: any) => {
+        this.data = res.data.map((item: any) => {
+          return {
+            id: item.id,
+            modelNameID: item.modelNameID,
+            modelNoID: item.modelNoID,
+            articleNoID: item.articleNoID,
+            artProcessID: item.artProcessID,
+            modelName: item.modelName,
+            modelNo: item.modelNo,
+            createdDate: new Date(item.createdDate),
+            articleNo: item.articleNo,
+            approvalStatus: item.approvalStatus,
+            finishedStatus: item.finishedStatus,
+            approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
+              ?.username,
+            createdBy: item.createdBy,
+            artProcess: item.artProcess,
+            season: item.season,
+          };
+        });
+        this.percentageOfDoneData = res.percentageOfDone;
+        this.percentageOfDone.element.innerHTML = this.percentageOfDoneData;
+        this.doneText = `Done (${res.doneTotal})`;
+        this.undoneText = `Undone (${res.undoneTotal})`;
+        this.isDone = false;
+        this.editTextOfBtn();
+        this.spinner.hide();
+      });
+    }, 1000);
   }
 
   showModal(importModal) {
     this.modalReference = this.modalService.open(importModal, { size: 'xl' });
   }
+
   NO(index) {
-    return (this.gridObj.pageSettings.currentPage - 1) * this.gridObj.pageSettings.pageSize + Number(index) + 1;
+    return (
+      (this.gridObj.pageSettings.currentPage - 1) *
+        this.gridObj.pageSettings.pageSize +
+      Number(index) +
+      1
+    );
+  }
+  // helper function
+
+  setAttrBtn(btn: Button, styleBtn = {
+    background: '#6c757d',
+    boxShadow: '0 0 0 3px rgba(130, 138, 145, 0.5)',
+    border: '1px solid #6c757d',
+    margin: '0',
+    borderColor: '#6c757d',
+    borderRadius: '4px',
+    color: '#fff',
+  }) {
+    btn.element.style.background = styleBtn.background;
+    btn.element.style.boxShadow = styleBtn.boxShadow;
+    btn.element.style.border = styleBtn.border;
+    btn.element.style.margin = styleBtn.margin;
+    btn.element.style.borderColor = styleBtn.borderColor;
+    btn.element.style.borderRadius = styleBtn.borderRadius;
+    btn.element.style.color = styleBtn.color;
+  }
+  resetAttrBtn(btn: Button, styleBtn = {
+    background: '#f8f9fa',
+    boxShadow: 'none',
+    border: 'none',
+    margin: '0',
+    borderColor: '#f8f9fa',
+    borderRadius: 'none',
+    color: '#495057',
+  }) {
+    btn.element.style.background = styleBtn.background;
+    btn.element.style.boxShadow = styleBtn.boxShadow;
+    btn.element.style.border = styleBtn.border;
+    btn.element.style.margin = styleBtn.margin;
+    btn.element.style.borderColor = styleBtn.borderColor;
+    btn.element.style.borderRadius = styleBtn.borderRadius;
+    btn.element.style.color = styleBtn.color;
   }
 }

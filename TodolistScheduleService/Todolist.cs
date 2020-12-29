@@ -238,7 +238,7 @@ namespace TodolistScheduleService
                         itemTodolist.BuildingID = item.BuildingID ?? 0;
                         var supplier = string.Empty;
                         var checmicalA = item.Ingredients.ToList().FirstOrDefault(x => x.Position == "A");
-                        int prepareTime = 0;
+                        double prepareTime = 0;
                         if (checmicalA != null)
                         {
                             supplier = checmicalA.Supplier;
@@ -252,7 +252,7 @@ namespace TodolistScheduleService
                         itemTodolist.EstimatedTime = estimatedTime;
                         var estimatedTimes = new List<DateTime>();
                         estimatedTimes.Add(estimatedTime);
-                        int cycle = 8 / checmicalA.ReplacementFrequency;
+                        double cycle = 8 / checmicalA.ReplacementFrequency;
                         for (int i = 1; i <= cycle; i++)
                         {
                             var estimatedTimeTemp = estimatedTimes.Last().AddHours(checmicalA.ReplacementFrequency);

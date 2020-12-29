@@ -47,6 +47,8 @@ namespace DMR_API._Services.Services
         private readonly IHubContext<ECHub> _hubContext;
         private readonly IJWTService _jwtService;
         private readonly IToDoListService _toDoListService;
+        private readonly IStationService _stationService;
+        private readonly IStationRepository _repoStation;
         private readonly IToDoListRepository _repoToDoList;
         private readonly IMapper _mapper;
         private readonly MapperConfiguration _configMapper;
@@ -64,6 +66,8 @@ namespace DMR_API._Services.Services
             IModelNameRepository repoModelName,
             IBuildingGlueRepository repoBuildingGlue,
             IToDoListService toDoListService,
+            IStationService stationService,
+            IStationRepository repoStation,
             IToDoListRepository repoToDoList,
             IHubContext<ECHub> hubContext,
             IJWTService jwtService,
@@ -87,6 +91,8 @@ namespace DMR_API._Services.Services
             _repoBuildingGlue = repoBuildingGlue;
             _repoDispatch = repoDispatch;
             _toDoListService = toDoListService;
+            _stationService = stationService;
+            _repoStation = repoStation;
             _repoToDoList = repoToDoList;
         }
 
@@ -125,11 +131,14 @@ namespace DMR_API._Services.Services
                         .ThenInclude(x => x.Ingredient)
                     .Include(x => x.BPFCEstablish)
                         .ThenInclude(x => x.ModelName)
-                        .ThenInclude(x => x.ModelNos)
-                        .ThenInclude(x => x.ArticleNos)
-                        .ThenInclude(x => x.ArtProcesses)
+                    .Include(x => x.BPFCEstablish)
+                        .ThenInclude(x => x.ModelNo)
+                    .Include(x => x.BPFCEstablish)
+                        .ThenInclude(x => x.ArticleNo)
+                     .Include(x => x.BPFCEstablish)
+                        .ThenInclude(x => x.ArtProcess)
                         .ThenInclude(x => x.Process)
-                    .Where(x => x.DueDate.Date >= from && x.DueDate.Date <= to)
+                    .Where(x => x.DueDate.Date >= from && x.DueDate.Date <= to && !x.BPFCEstablish.IsDelete)
                     .Select(x => new
                     {
                         x.BPFCEstablish.Glues,
@@ -156,13 +165,13 @@ namespace DMR_API._Services.Services
                             {
                                 mixingID = buildingGlue.MixingInfoID;
                             }
-                            var mixingInfo = _repoMixingInfo.FindAll(x=> x.ID == mixingID).Include(x=> x.MixingInfoDetails).FirstOrDefault();
+                            var mixingInfo = _repoMixingInfo.FindAll(x => x.ID == mixingID).Include(x => x.MixingInfoDetails).FirstOrDefault();
                             var batch = "";
                             var mixDate = new DateTime();
                             if (mixingInfo != null)
                             {
                                 var mixingInfoDetail = mixingInfo.MixingInfoDetails.FirstOrDefault(x => x.IngredientID == item.IngredientID && x.Position == item.Position);
-                               
+
                                 batch = mixingInfoDetail is null ? "" : mixingInfoDetail.Batch;
                                 mixDate = mixingInfo.CreatedTime;
                             }
@@ -193,25 +202,30 @@ namespace DMR_API._Services.Services
 
         public async Task<bool> Add(PlanDto model)
         {
-            var checkExist = await _repoPlan.FindAll().AnyAsync(x => x.BuildingID == model.BuildingID && x.BPFCEstablishID == model.BPFCEstablishID && x.DueDate.Date == model.DueDate.Date);
-            if (checkExist) return false;
-            var plan = _mapper.Map<Plan>(model);
-            DateTime dt = DateTime.Now;
-            dt = dt.AddSeconds(-dt.Second);
-            dt = dt.AddTicks(-(dt.Ticks % 10000000));
-            plan.CreatedDate = dt;
-            plan.BPFCEstablishID = model.BPFCEstablishID;
-            //var startTime = model.DueDate.Add(new TimeSpan(plan.StartWorkingTime.Hour, plan.StartWorkingTime.Minute, 0));
-            //var endTime = model.DueDate.Add(new TimeSpan(plan.FinishWorkingTime.Hour, plan.FinishWorkingTime.Minute, 0));
-
-            //plan.StartWorkingTime = startTime;
-            //plan.FinishWorkingTime = endTime;
-
-            _repoPlan.Add(plan);
-            var result = await _repoPlan.SaveAll();
-            if (result == true) await _hubContext.Clients.All.SendAsync("summaryRecieve", "ok");
-            return result;
-
+            using var transaction = new TransactionScopeAsync().Create();
+            {
+                try
+                {
+                    var checkExist = await _repoPlan.FindAll().AnyAsync(x => x.BuildingID == model.BuildingID && x.BPFCEstablishID == model.BPFCEstablishID && x.DueDate.Date == model.DueDate.Date);
+                    if (checkExist) return false;
+                    var plan = _mapper.Map<Plan>(model);
+                    DateTime dt = DateTime.Now.ToLocalTime().ToRemoveSecond();
+                    plan.CreatedDate = dt;
+                    plan.BPFCEstablishID = model.BPFCEstablishID;
+                    _repoPlan.Add(plan);
+                    await _repoPlan.SaveAll();
+                    var stationModel = await _stationService.GetAllByPlanID(plan.ID);
+                    await _stationService.AddRange(stationModel);
+                    transaction.Complete();
+                    await _hubContext.Clients.All.SendAsync("summaryRecieve", "ok");
+                    return true;
+                }
+                catch
+                {
+                    transaction.Dispose();
+                    return false;
+                }
+            }
         }
         //Lấy danh sách Plan và phân trang
         public async Task<PagedList<PlanDto>> GetWithPaginations(PaginationParams param)
@@ -244,10 +258,19 @@ namespace DMR_API._Services.Services
             plan.CreatedDate = DateTime.Now;
             _repoPlan.Update(plan);
             var result = await _repoPlan.SaveAll();
-            if (model.FinishWorkingTime <= oldPlan.FinishWorkingTime)
+            if (model.FinishWorkingTime.ToRemoveSecond() != oldPlan.FinishWorkingTime.ToRemoveSecond())
             {
-                var todo = await _repoToDoList.FindAll(x => x.EstimatedStartTime >= model.FinishWorkingTime && x.PlanID == oldPlan.ID).ToListAsync();
-                todo.ForEach(item => item.IsDelete = true);
+                var todoDelete = await _repoToDoList.FindAll(x => x.EstimatedStartTime >= model.FinishWorkingTime && x.PlanID == oldPlan.ID).ToListAsync();
+                todoDelete.ForEach(item =>
+                {
+                    item.IsDelete = true;
+                });
+                var todoShow = await _repoToDoList.FindAll(x => x.EstimatedStartTime <= model.FinishWorkingTime && x.PlanID == oldPlan.ID).ToListAsync();
+                todoShow.ForEach(item =>
+                {
+                    item.IsDelete = false;
+                });
+                var todo = todoShow.Concat(todoDelete).DistinctBy(x => x.ID).ToList();
                 _repoToDoList.UpdateRange(todo);
                 await _repoToDoList.SaveAll();
             }
@@ -265,14 +288,15 @@ namespace DMR_API._Services.Services
                 .Include(x => x.BPFCEstablish)
                 .ThenInclude(x => x.Glues)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ModelName)
+                    .ThenInclude(x => x.ModelName)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ModelNo)
+                    .ThenInclude(x => x.ModelNo)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ArticleNo)
-                .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ArtProcess)
-                .ThenInclude(x => x.Process)
+                     .ThenInclude(x => x.ArticleNo)
+                 .Include(x => x.BPFCEstablish)
+                     .ThenInclude(x => x.ArtProcess)
+                     .ThenInclude(x => x.Process)
+                .Where(x => !x.BPFCEstablish.IsDelete)
                 .ProjectTo<PlanDto>(_configMapper)
                 .OrderByDescending(x => x.ID)
                 .ToListAsync();
@@ -362,7 +386,7 @@ namespace DMR_API._Services.Services
                 .ThenInclude(x => x.Ingredient)
                 .ThenInclude(x => x.Supplier)
                 .Include(x => x.Building)
-                .Where(x => lines.Contains(x.BuildingID) && x.DueDate.Date == currentDate).Select(x => new
+                .Where(x => !x.BPFCEstablish.IsDelete && lines.Contains(x.BuildingID) && x.DueDate.Date == currentDate).Select(x => new
                 {
                     x.BPFCEstablishID,
                     x.BPFCEstablish,
@@ -374,7 +398,7 @@ namespace DMR_API._Services.Services
                 }).ToListAsync();
 
                 var gluesList = plans.SelectMany(x => x.Glues).Where(x => x.isShow).Select(x => x.Name);
-                var mixingInfoModel = await _repoMixingInfo.FindAll().Include(x=>x.MixingInfoDetails)
+                var mixingInfoModel = await _repoMixingInfo.FindAll().Include(x => x.MixingInfoDetails)
                     .Where(x => gluesList.Contains(x.GlueName) && x.BuildingID == building && x.CreatedTime.Date == currentDate).ToListAsync();
                 var buildingGlueModel = await _repoBuildingGlue.FindAll()
                                        .Where(x => gluesList.Contains(x.GlueName) && lines.Contains(x.BuildingID) && x.CreatedDate.Date == currentDate).ToListAsync();
@@ -472,7 +496,7 @@ namespace DMR_API._Services.Services
                         deliver = 0;
                         foreach (var mixingInfo in mixingInfos)
                         {
-                            realTotal += mixingInfo.MixingInfoDetails.Sum(x=>x.Amount);
+                            realTotal += mixingInfo.MixingInfoDetails.Sum(x => x.Amount);
                         }
 
                         if (delivered.Count() > 0)
@@ -709,16 +733,16 @@ namespace DMR_API._Services.Services
                 .Include(x => x.Building)
                 .Include(x => x.ToDoList)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ModelName)
+                    .ThenInclude(x => x.ModelName)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ModelNo)
+                    .ThenInclude(x => x.ModelNo)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ArticleNo)
+                    .ThenInclude(x => x.ArticleNo)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ArtProcess)
-                .ThenInclude(x => x.Process)
+                    .ThenInclude(x => x.ArtProcess)
+                    .ThenInclude(x => x.Process)
                 .ProjectTo<PlanDto>(_configMapper)
-                .OrderByDescending(x => x.ID)
+                .OrderByDescending(x => x.CreatedDate)
                 .ToListAsync();
         }
 
@@ -727,15 +751,18 @@ namespace DMR_API._Services.Services
             var name = tooltip.Glue.Trim().ToSafetyString();
             var results = new List<string>();
             var plans = await _repoPlan.FindAll()
-                 .Include(x => x.BPFCEstablish)
-                     .ThenInclude(x => x.ModelName)
-                     .ThenInclude(x => x.ModelNos)
-                     .ThenInclude(x => x.ArticleNos)
-                     .ThenInclude(x => x.ArtProcesses)
-                     .ThenInclude(x => x.Process)
-                 .Include(x => x.BPFCEstablish)
-                     .ThenInclude(x => x.Glues)
-                 .Where(x => x.DueDate.Date == DateTime.Now.Date).ToListAsync();
+                                .Include(x => x.BPFCEstablish)
+                                    .ThenInclude(x => x.ModelName)
+                                .Include(x => x.BPFCEstablish)
+                                    .ThenInclude(x => x.ModelNo)
+                                .Include(x => x.BPFCEstablish)
+                                    .ThenInclude(x => x.ArticleNo)
+                                .Include(x => x.BPFCEstablish)
+                                    .ThenInclude(x => x.ArtProcess)
+                                    .ThenInclude(x => x.Process)
+                                .Include(x => x.BPFCEstablish)
+                                    .ThenInclude(x => x.Glues)
+                                .Where(x => x.DueDate.Date == DateTime.Now.Date && !x.BPFCEstablish.IsDelete).ToListAsync();
             foreach (var plan in plans)
             {
                 foreach (var glue in plan.BPFCEstablish.Glues.Where(x => x.isShow == true && x.Name.Trim().Equals(name)))
@@ -781,13 +808,13 @@ namespace DMR_API._Services.Services
                 .Where(x => x.DueDate.Date >= startDate.Date && x.DueDate.Date <= endDate.Date)
                 .Include(x => x.Building)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ModelName)
-                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.ModelNo)
+                    .ThenInclude(x => x.ModelName)
                 .Include(x => x.BPFCEstablish)
-                .ThenInclude(x => x.Glues)
-                .ThenInclude(x => x.GlueIngredients)
-                .ThenInclude(x => x.Ingredient)
+                    .ThenInclude(x => x.ModelNo)
+                .Include(x => x.BPFCEstablish)
+                    .ThenInclude(x => x.Glues)
+                    .ThenInclude(x => x.GlueIngredients)
+                    .ThenInclude(x => x.Ingredient)
                 .Select(x => new
                 {
                     Glues = x.BPFCEstablish.Glues.Where(x => x.isShow),
@@ -802,16 +829,21 @@ namespace DMR_API._Services.Services
                 }).OrderBy(x => x.DueDate.Date)
                 .ToListAsync();
 
-            var buildingGlues = await _repoBuildingGlue.FindAll()
-                .Where(x => x.CreatedDate.Date >= startDate.Date && x.CreatedDate.Date <= endDate.Date)
-                .ToListAsync();
-            var buildingGlueModel = from a in buildingGlues
-                                    join b in _repoGlue.FindAll().Include(x => x.GlueIngredients).ToList() on a.GlueName equals b.Name
+            //var buildingGlues = await _repoBuildingGlue.FindAll()
+            //    .Where(x => x.CreatedDate.Date >= startDate.Date && x.CreatedDate.Date <= endDate.Date)
+            //    .ToListAsync();
+            var dispatchList = await _repoDispatch.FindAll()
+                .Include(x => x.MixingInfo)
+                .ThenInclude(x => x.Glue)
+               .Where(x => x.CreatedTime.Date >= startDate.Date && x.CreatedTime.Date <= endDate.Date)
+               .ToListAsync();
+            var buildingGlueModel = from a in dispatchList
+                                    join b in _repoGlue.FindAll().Include(x => x.GlueIngredients).ToList() on a.MixingInfo.Glue.GlueNameID equals b.GlueNameID
                                     select new
                                     {
-                                        a.Qty,
-                                        a.BuildingID,
-                                        a.CreatedDate,
+                                        Qty = a.Amount,
+                                        BuildingID = a.LineID,
+                                        CreatedDate = a.CreatedTime,
                                         b.BPFCEstablishID,
                                         IngredientIDList = b.GlueIngredients.Select(x => x.IngredientID)
                                     };
@@ -1485,7 +1517,7 @@ namespace DMR_API._Services.Services
                     return 0;
             }
         }
-        private int FindPercentageByPosition(List<GlueIngredient> glueIngredients, string position)
+        private double FindPercentageByPosition(List<GlueIngredient> glueIngredients, string position)
         {
             var glueIngredient = glueIngredients.FirstOrDefault(x => x.Position == position);
 
@@ -1600,19 +1632,24 @@ namespace DMR_API._Services.Services
             {
                 lines = await _repoBuilding.FindAll(x => x.ParentID == buildingID).Select(x => x.ID).ToListAsync();
             }
-            var buildingGlueModel = await _repoBuildingGlue.FindAll(x => x.CreatedDate.Date >= startDate && x.CreatedDate.Date <= endDate && lines.Contains(x.BuildingID)).Include(x => x.MixingInfo).ToListAsync();
+            //var buildingGlueModel = await _repoBuildingGlue.FindAll(x => x.CreatedDate.Date >= startDate && x.CreatedDate.Date <= endDate && lines.Contains(x.BuildingID)).Include(x => x.MixingInfo).ToListAsync();
+            var dispatchModel = await _repoDispatch.FindAll(x => x.CreatedTime.Date >= startDate && x.CreatedTime.Date <= endDate && lines.Contains(x.LineID)).Include(x => x.MixingInfo).ToListAsync();
             var model = await _repoPlan.FindAll()
                  .Include(x => x.BPFCEstablish)
                  .ThenInclude(x => x.Glues)
-                  .Include(x => x.BPFCEstablish)
+                 .Include(x => x.BPFCEstablish)
                  .ThenInclude(x => x.Plans)
                  .ThenInclude(x => x.Building)
                  .Include(x => x.BPFCEstablish)
                  .ThenInclude(x => x.ModelName)
-                 .ThenInclude(x => x.ModelNos)
-                 .ThenInclude(x => x.ArticleNos)
-                 .ThenInclude(x => x.ArtProcesses)
+                 .Include(x => x.BPFCEstablish)
+                 .ThenInclude(x => x.ModelNo)
+                 .Include(x => x.BPFCEstablish)
+                 .ThenInclude(x => x.ArticleNo)
+                 .Include(x => x.BPFCEstablish)
+                 .ThenInclude(x => x.ArtProcess)
                  .ThenInclude(x => x.Process)
+                 .Where(x => !x.BPFCEstablish.IsDelete)
                  .Select(x => new
                  {
                      x.BPFCEstablishID,
@@ -1634,8 +1671,8 @@ namespace DMR_API._Services.Services
                 foreach (var glue in item.Glues.Where(x => x.isShow))
                 {
                     var std = glue.Consumption.ToFloat();
-                    var buildingGlue = buildingGlueModel.FirstOrDefault(x => x.GlueName.Equals(glue.Name) && x.CreatedDate.Date == item.Date && item.BuildingID == x.BuildingID);
-                    var totalConsumption = buildingGlue == null ? 0 : buildingGlue.Qty.ToFloat();
+                    var buildingGlue = dispatchModel.FirstOrDefault(x => x.MixingInfo.Glue.GlueNameID.Equals(glue.GlueNameID) && x.CreatedTime.Date == item.Date && item.BuildingID == x.LineID);
+                    var totalConsumption = buildingGlue == null ? 0 : buildingGlue.Amount.ToFloat();
                     var realConsumption = totalConsumption > 0 && item.Quantity > 0 ? Math.Round(totalConsumption * 1000 / item.Quantity, 2).ToFloat() : 0;
                     var diff = std > 0 && realConsumption > 0 ? Math.Round(realConsumption - std, 2).ToFloat() : 0;
                     var percentage = std > 0 ? Math.Round((diff / std) * 100).ToFloat() : 0;
@@ -1680,7 +1717,7 @@ namespace DMR_API._Services.Services
             var startLunchTime = new TimeSpan(12, 30, 0);
             var endLunchTime = new TimeSpan(13, 30, 0);
 
-            var model = from b in _repoBPFC.GetAll()
+            var model = from b in _repoBPFC.FindAll(x => !x.IsDelete)
                         join p in _repoPlan.GetAll()
                                             .Include(x => x.Building)
                                             .Where(x => x.DueDate == currentDate)
@@ -1735,7 +1772,7 @@ namespace DMR_API._Services.Services
                         double standardConsumption = 0;
                         var supplier = string.Empty;
                         var checmicalA = item.Ingredients.ToList().FirstOrDefault(x => x.Position == "A");
-                        int prepareTime = 0;
+                        double prepareTime = 0;
                         if (checmicalA != null)
                         {
                             supplier = checmicalA.Supplier;
@@ -1750,7 +1787,7 @@ namespace DMR_API._Services.Services
                         itemTodolist.Status = mixingInfo.Status;
                         itemTodolist.EstimatedFinishTime = mixingInfo.EstimatedFinishTime;
                         itemTodolist.EstimatedStartTime = mixingInfo.EstimatedStartTime;
-                        itemTodolist.EstimatedTime = currentDate.AddHours(7).AddMinutes(30) - TimeSpan.FromMinutes(prepareTime);
+                        itemTodolist.EstimatedTime = currentDate.AddHours(7).AddMinutes(30) - TimeSpan.FromHours(prepareTime);
                         foreach (var line in glue)
                         {
                             var kgPair = line.Consumption.ToDouble() / 1000;
@@ -1766,7 +1803,7 @@ namespace DMR_API._Services.Services
         }
         double CalculateGlueTotal(MixingInfo mixingInfo)
         {
-            return mixingInfo.MixingInfoDetails.Select(x=> x.Amount).Sum();
+            return mixingInfo.MixingInfoDetails.Select(x => x.Amount).Sum();
         }
 
         public async Task<object> Dispatch(DispatchParams todolistDto)
@@ -1775,8 +1812,6 @@ namespace DMR_API._Services.Services
             var lines = await _repoBuilding.FindAll(x => todolistDto.Lines.Contains(x.Name)).Select(x => x.ID).ToListAsync();
             var dispatches = await _repoDispatch
                 .FindAll(x => x.CreatedTime.Date == DateTime.Now.Date && lines.Contains(x.LineID))
-                .Include(x => x.MixingInfo)
-                .ThenInclude(x => x.MixingInfoDetails)
                 .ToListAsync();
             var mixingInfo = await _repoMixingInfo
             .FindAll(x => x.EstimatedStartTime == todolistDto.EstimatedStartTime && x.EstimatedFinishTime == todolistDto.EstimatedFinishTime && x.GlueName.Equals(todolistDto.Glue))
@@ -1793,6 +1828,7 @@ namespace DMR_API._Services.Services
                     .ThenInclude(x => x.Glues)
                     .ThenInclude(x => x.GlueIngredients)
                     .ThenInclude(x => x.Ingredient)
+                .Where(x => !x.BPFCEstablish.IsDelete)
                 .Where(x => x.BPFCEstablishID == glue.BPFCEstablishID || todolistDto.Lines.Contains(x.Building.Name))
                 .ToList();
             if (plans.Count == 0) return new List<DispatchTodolistDto>();
@@ -1858,7 +1894,6 @@ namespace DMR_API._Services.Services
                               LineID = a.LineID,
                               MixingInfoID = a.MixingInfoID,
                               Real = b == null ? 0 : b.Amount * 1000,
-                              MixedConsumption = b == null ? 0 : Math.Round(b.MixingInfo.MixingInfoDetails.Sum(a=> a.Amount)),
                               StandardAmount = b == null ? 0 : b.StandardAmount
                           });
             return result.OrderBy(x => x.Line).ToList();
@@ -1866,7 +1901,7 @@ namespace DMR_API._Services.Services
         public async Task<MixingInfo> FindMixingInfo(string glue, DateTime estimatedTime)
         {
             var mixingInfo = await _repoMixingInfo
-            .FindAll(x => x.EstimatedTime == estimatedTime && x.GlueName == glue).Include(x=> x.MixingInfoDetails).FirstOrDefaultAsync();
+            .FindAll(x => x.EstimatedTime == estimatedTime && x.GlueName == glue).Include(x => x.MixingInfoDetails).FirstOrDefaultAsync();
             return mixingInfo;
         }
         public async Task<string> FindDeliver(string glue, DateTime estimatedTime)
@@ -1910,7 +1945,7 @@ namespace DMR_API._Services.Services
             var lines = new List<int>();
             lines = buildingModel.Where(x => x.ParentID != null && buildingIDList.Contains(x.ParentID.Value)).Select(x => x.ID).ToList();
 
-            var model = from b in _repoBPFC.GetAll()
+            var model = from b in _repoBPFC.FindAll(x => !x.IsDelete)
                         join p in _repoPlan.GetAll()
                                             .Include(x => x.Building)
                                             .Where(x => x.DueDate.Date == currentDate && lines.Contains(x.BuildingID))
@@ -1987,7 +2022,7 @@ namespace DMR_API._Services.Services
                         itemTodolist.GlueID = item.GlueID;
                         var supplier = string.Empty;
                         var checmicalA = item.Ingredients.ToList().FirstOrDefault(x => x.Position == "A");
-                        int prepareTime = 0;
+                        double prepareTime = 0;
                         if (checmicalA != null)
                         {
                             supplier = checmicalA.Supplier;
@@ -1997,11 +2032,11 @@ namespace DMR_API._Services.Services
                         itemTodolist.MixingInfoTodolistDtos = item.MixingInfos;
                         itemTodolist.DeliveredActual = "-";
                         itemTodolist.Status = false;
-                        var estimatedTime = currentDate.Add(new TimeSpan(7, 30, 00)) - TimeSpan.FromMinutes(prepareTime);
+                        var estimatedTime = currentDate.Add(new TimeSpan(7, 30, 00)) - TimeSpan.FromHours(prepareTime);
                         itemTodolist.EstimatedTime = estimatedTime;
                         var estimatedTimes = new List<DateTime>();
                         estimatedTimes.Add(estimatedTime);
-                        int cycle = 8 / checmicalA.ReplacementFrequency;
+                        int cycle = 8 / (int)(checmicalA.ReplacementFrequency * 60);
                         for (int i = 1; i <= cycle; i++)
                         {
                             var estimatedTimeTemp = estimatedTimes.Last().AddHours(checmicalA.ReplacementFrequency);
@@ -2119,14 +2154,14 @@ namespace DMR_API._Services.Services
 
         public async Task<bool> CheckExistTimeRange(int lineID, DateTime statTime, DateTime endTime, DateTime dueDate)
         {
-          var item = await _repoPlan.FindAll(x => 
-                               x.BuildingID == lineID
-                            && x.DueDate.Date == dueDate.Date
-                            ).FirstOrDefaultAsync();
+            var item = await _repoPlan.FindAll(x =>
+                                 x.BuildingID == lineID
+                              && x.DueDate.Date == dueDate.Date
+                              ).FirstOrDefaultAsync();
             if (item == null) return false;
             // Neu ton tai thi return ve true
             //oldtatTime 9:30 - 14:00 ==> newstatTime 12:00 - 16: 30
-            if (statTime >= item.FinishWorkingTime )
+            if (statTime >= item.FinishWorkingTime)
             {
                 return false;
             }

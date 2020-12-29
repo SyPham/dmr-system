@@ -40,6 +40,7 @@ namespace DMR_API._Services.Services
 
         public async Task<bool> Add(Dispatch model)
         {
+            model.CreatedTime = DateTime.Now.ToLocalTime();
             _repoDispatch.Add(model);
             return await _repoDispatch.SaveAll();
         }
@@ -76,6 +77,13 @@ namespace DMR_API._Services.Services
             }
 
         }
+        public async Task<bool> Update(Dispatch model)
+        {
+
+            var dispatch = _mapper.Map<Dispatch>(model);
+            _repoDispatch.Update(dispatch);
+            return await _repoDispatch.SaveAll();
+        }
         public async Task<bool> Delete(object id)
         {
             var dispatch = _repoDispatch.FindById(id);
@@ -83,12 +91,7 @@ namespace DMR_API._Services.Services
             return await _repoDispatch.SaveAll();
         }
 
-        public async Task<bool> Update(Dispatch model)
-        {
-            var dispatch = _mapper.Map<Dispatch>(model);
-            _repoDispatch.Update(dispatch);
-            return await _repoDispatch.SaveAll();
-        }
+
         public async Task<List<Dispatch>> GetAllAsync()
         {
             return await _repoDispatch.FindAll().OrderBy(x => x.ID).ToListAsync();
@@ -114,51 +117,74 @@ namespace DMR_API._Services.Services
         {
 
             if (dispatch.Count == 0) return false;
+            if (dispatch.All(x => x.ID == 0) == true) return false;
+            var dispatchList = _repoDispatch.FindAll(x => dispatch.Select(a => a.ID).Contains(x.ID)).ToList();
+            var firstDispatch = dispatchList.OrderBy(x => x.ID).FirstOrDefault();
+            var lastDispatch = dispatchList.OrderBy(x => x.ID).LastOrDefault();
             var mixing = _repoMixingInfo.FindById(dispatch.FirstOrDefault().MixingInfoID);
             if (mixing == null) return false;
 
             var flags = new List<bool>();
-            foreach (var model in dispatch)
+
+            using (TransactionScope scope = new TransactionScope())
             {
-                using (TransactionScope scope = new TransactionScope())
+                try
                 {
-                    try
+                    lastDispatch.FinishDispatchingTime = DateTime.Now.ToLocalTime();
+                    _repoDispatch.Update(lastDispatch);
+                    _repoDispatch.Save();
+                    var item = new ToDoListForUpdateDto()
                     {
-                        if (model.ID == 0)
-                        {
-                            _repoDispatch.Add(model);
-                            _repoDispatch.Save();
-                        } else
-                        {
-                            _repoDispatch.Update(model);
-                            _repoDispatch.Save();
-                        }
-                        var item = new ToDoListForUpdateDto()
-                        {
-                            GlueName = mixing.GlueName,
-                            StartTime = model.StartDispatchingTime,
-                            FinishTime = model.FinishDispatchingTime,
-                            EstimatedFinishTime = mixing.EstimatedFinishTime,
-                            EstimatedStartTime = mixing.EstimatedStartTime,
-                            MixingInfoID = model.MixingInfoID,
-                            Amount = model.Amount,
-                            LineID = model.LineID
-                        };
-                        _toDoListService.UpdateDispatchTimeRange(item);
-                        scope.Complete();
-                        flags.Add(true);
-                    }
-                    catch
-                    {
-                        scope.Dispose();
-                        flags.Add(false);
-                    }
+                        GlueName = mixing.GlueName,
+                        StartTime = firstDispatch.StartDispatchingTime,
+                        FinishTime = lastDispatch.FinishDispatchingTime,
+                        EstimatedFinishTime = mixing.EstimatedFinishTime,
+                        EstimatedStartTime = mixing.EstimatedStartTime,
+                        MixingInfoID = firstDispatch.MixingInfoID,
+                        Amount = firstDispatch.Amount,
+                        LineID = firstDispatch.LineID,
+                        Dispatches = dispatchList
+                    };
+                    _toDoListService.UpdateDispatchTimeRange(item);
+                    scope.Complete();
+                    flags.Add(true);
                 }
-
+                catch
+                {
+                    scope.Dispose();
+                    flags.Add(false);
+                }
             }
-
             return flags.All(x => x == true);
+        }
 
+        public async Task<bool> UpdateAmount(int id, double amount)
+        {
+            var item = _repoDispatch.FindById(id);
+            if (item is null) return false;
+            item.Amount = amount;
+            item.DeliveryTime = DateTime.Now.ToLocalTime();
+            //item.StartDispatchingTime = item.StartDispatchingTime is null ? DateTime.Now.ToLocalTime() : item.StartDispatchingTime;
+            _repoDispatch.Update(item);
+            return await _repoDispatch.SaveAll();
+        }
+
+        public bool UpdateStartDispatchingTime(int id)
+        {
+            var item = _repoDispatch.FindById(id);
+            if (item is null) return false;
+            if (item.StartDispatchingTime is null)
+                item.StartDispatchingTime = DateTime.Now.ToLocalTime();
+            try
+            {
+                _repoDispatch.Update(item);
+                _repoDispatch.Save();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

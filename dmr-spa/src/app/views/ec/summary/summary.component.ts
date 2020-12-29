@@ -33,6 +33,9 @@ import { IIngredient } from 'src/app/_core/_model/summary';
 import { AuthService } from 'src/app/_core/_service/auth.service';
 import { IRole } from 'src/app/_core/_model/role';
 import { HubConnectionState } from '@microsoft/signalr';
+import { IScanner } from 'src/app/_core/_model/IToDoList';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 const SUMMARY_RECIEVE_SIGNALR = 'ok';
 const UNIT_BIG_MACHINE = 'k';
 const UNIT_SMALL_MACHINE = 'g';
@@ -123,11 +126,13 @@ export class SummaryComponent implements OnInit, AfterViewInit {
   scalingKG: string;
   dataSignal: any;
   unit: string;
-  ingredientsTamp: [];
+  ingredientsTamp: any;
   public fieldsBuildings: object = { text: 'name', value: 'id' };
   buildings: IBuilding[];
   buildingName: any;
   scalingSetting: any;
+  subject = new Subject<IScanner>();
+  subscription: Subscription[] = [];
   @HostListener('window:keyup.alt.enter', ['$event']) enter(e: KeyboardEvent) {
     if (!this.disabled) {
       this.Finish();
@@ -179,6 +184,7 @@ export class SummaryComponent implements OnInit, AfterViewInit {
     this.qrCode = '';
     this.existGlue = true;
     this.hasWarning = false;
+    this.checkQRCode();
     this.checkRole();
     if (signalr.SCALING_CONNECTION_HUB.state === HubConnectionState.Connected) {
       signalr.SCALING_CONNECTION_HUB.on('summaryRecieve', (status) => {
@@ -576,8 +582,118 @@ export class SummaryComponent implements OnInit, AfterViewInit {
       }
     }
   }
+  checkQRCode() {
+    this.subscription.push(this.subject
+      .pipe(debounceTime(500))
+      .subscribe(async (arg) => {
+        const args = arg.QRCode;
+        const item = arg.ingredient;
+        this.ingredientsTamp = item;
+        this.position = item.position;
+        const input = args.split('-') || [];
+        // const commonPattern = /(\d+)-(\w+)-([\w\-\d]+)/g;
+        const dateAndBatch = /(\d+)-(\w+)-/g;
+        const qr = args.match(item.materialNO);
+        const validFormat = args.match(dateAndBatch);
+        const qrcode = args.replace(validFormat[0], '');
+        if (qr === null) {
+          this.alertify.warning(`Mã QR không hợp lệ!<br>The QR Code invalid!`);
+          this.qrCode = '';
+          this.errorScan();
+          return;
+        }
+        if (qr !== null) {
+          try {
+            // check neu batch va code giong nhau
+            if (qrcode !== qr[0]) {
+              this.alertify.warning(`Mã QR không hợp lệ! <br>Please you should look for the chemical name "${item.name}"`);
+              this.qrCode = '';
+              this.errorScan();
+              return;
+            }
+            this.qrCode = qr[0];
+            // const result = await this.scanQRCode();
+            if (this.qrCode !== item.materialNO) {
+              this.alertify.warning(`Mã QR không hợp lệ! <br>Please you should look for the chemical name "${item.name}"`);
+              this.qrCode = '';
+              this.errorScan();
+              return;
+            }
+            // const checkIncoming = await this.checkIncoming(item.name, this.level.name, input[1]);
+            // if (checkIncoming === false) {
+            //   this.alertify.error(`Invalid!`);
+            //   this.qrCode = '';
+            //   this.errorScan();
+            //   return;
+            // }
+
+            const checkLock = await this.hasLock(
+              item.name,
+              this.building.name,
+              input[1]
+            );
+            if (checkLock === true) {
+              this.alertify.error('Hóa chất này đã bị khóa! <br>This chemical has been locked!');
+              this.qrCode = '';
+              this.errorScan();
+              return;
+            }
+
+            /// Khi quét qr-code thì chạy signal
+            this.signal();
+
+            const code = item.code;
+            const ingredient = this.findIngredientCode(code);
+            this.setBatch(ingredient, input[1]);
+            if (ingredient) {
+              this.changeInfo('success-scan', ingredient.code);
+              if (ingredient.expected === 0 && ingredient.position === 'A') {
+                this.changeFocusStatus(ingredient.code, false, true);
+                this.changeScanStatus(ingredient.code, false);
+              } else {
+                this.changeScanStatus(ingredient.code, false);
+                this.changeFocusStatus(code, false, false);
+              }
+            }
+            // chuyển vị trí quét khi scan
+            switch (this.position) {
+              // case 'A':
+              //   this.changeScanStatusByPosition('A', false);
+              //   this.changeScanStatusByPosition('B', true);
+              //   break;
+              case 'B':
+                this.changeScanStatusByPosition('C', true);
+                break;
+              case 'C':
+                this.changeScanStatusByPosition('C', false);
+                this.changeScanStatusByPosition('D', true);
+                break;
+              case 'D':
+                this.changeScanStatusByPosition('E', true);
+                break;
+              case 'E':
+                this.changeScanStatusByPosition('H', true);
+                break;
+            }
+          } catch (error) {
+            this.errorScan();
+            this.alertify.error('Mã QR không hợp lệ!<br>Wrong Chemical!');
+            this.qrCode = '';
+          }
+        }
+      }
+      ));
+  }
   // khi scan qr-code
   async onNgModelChangeScanQRCode(args, item) {
+    const scanner: IScanner = {
+      QRCode: args,
+      ingredient: item
+    };
+    this.subject.next(scanner);
+  }
+  // khi scan qr-code
+  async onNgModelChangeScanQRCode2(args, item) {
     this.ingredientsTamp = item;
     this.position = item.position;
     const input = args.split('-') || [];

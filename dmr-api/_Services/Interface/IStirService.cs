@@ -12,5 +12,6 @@ namespace DMR_API._Services.Interface
         Task<List<StirDTO>> GetStirByMixingInfoID(int mixingInfoID);
         Task<Setting> ScanMachine(int buildingID, string scanValue);
         Task<bool> UpdateStartScanTime(int mixingInfoID);
+        Task<Stir> UpdateStir(StirDTO model);
     }
 }

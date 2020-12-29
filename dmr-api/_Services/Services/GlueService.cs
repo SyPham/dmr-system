@@ -82,44 +82,15 @@ namespace DMR_API._Services.Services
         //Thêm Brand mới vào bảng Glue
         public async Task<bool> Add(GlueCreateDto model)
         {
-            try
+            using var transaction = new TransactionScopeAsync().Create();
             {
+                try
+                {
 
-                var glue = _mapper.Map<Glue>(model);
-                // Neu chau co GlueName trong bang GlueName thi them moi va cap nhat ID vao Glues
-                // nguoc lai thi update
-                var glueNameModal = _repoGlueName.FindAll(x => x.Name == model.Name).FirstOrDefault();
-                if (glueNameModal is null)
-                {
-                    var glueNameItem = new GlueName { Name = model.Name };
-                    _repoGlueName.Add(glueNameItem);
-                    _repoGlueName.Save();
-
-                    glue.GlueNameID = glueNameItem.ID;
-                    glue.Name = model.Name;
-                }
-                else
-                {
-                    glue.Name = model.Name;
-                    glue.GlueNameID = glueNameModal.ID;
-                }
-                glue.isShow = true;
-                glue.Code = await GenatateGlueCode(glue.Code);
-                glue.CreatedDate = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss tt");
-
-                var nameList = new List<int>();
-                foreach (var item in _repoGlue.FindAll().Include(x => x.GlueName).Where(x => x.isShow == true && x.BPFCEstablishID == model.BPFCEstablishID))
-                {
-                    if (item.GlueName.Name.ToInt() > 0)
-                    {
-                        nameList.Add(item.Name.ToInt());
-                    }
-                }
-                if (nameList.Count > 0)
-                {
-                    var name = nameList.OrderByDescending(x => x).FirstOrDefault();
-                    var nameTemp = name + "";
-                    var glueNameModalTemp = _repoGlueName.FindAll(x => x.Name == nameTemp).FirstOrDefault();
+                    var glue = _mapper.Map<Glue>(model);
+                    // Neu chau co GlueName trong bang GlueName thi them moi va cap nhat ID vao Glues
+                    // nguoc lai thi update
+                    var glueNameModal = _repoGlueName.FindAll(x => x.Name == model.Name).FirstOrDefault();
                     if (glueNameModal is null)
                     {
                         var glueNameItem = new GlueName { Name = model.Name };
@@ -127,27 +98,61 @@ namespace DMR_API._Services.Services
                         _repoGlueName.Save();
 
                         glue.GlueNameID = glueNameItem.ID;
-                        glue.Name = (name + 1).ToString();
-                        _repoGlue.Save();
-
+                        glue.Name = model.Name;
                     }
                     else
                     {
                         glue.Name = model.Name;
                         glue.GlueNameID = glueNameModal.ID;
-                        glue.Name = glueNameModalTemp.Name;
-                        glue.isShow = true;
-                        _repoGlue.Add(glue);
-                        _repoGlue.Save();
                     }
+                    glue.isShow = true;
+                    glue.Code = await GenatateGlueCode(glue.Code);
+                    glue.CreatedDate = DateTime.Now.ToString("MMMM dd, yyyy HH:mm:ss tt");
+
+                    var nameList = new List<int>();
+                    foreach (var item in _repoGlue.FindAll().Include(x => x.GlueName).Where(x => x.isShow == true && x.BPFCEstablishID == model.BPFCEstablishID))
+                    {
+                        if (item.Name.ToInt() > 0)
+                        {
+                            nameList.Add(item.Name.ToInt());
+                        }
+                    }
+                    if (nameList.Count > 0)
+                    {
+                        var name = nameList.OrderByDescending(x => x).FirstOrDefault();
+                        var nameTemp = name + "";
+                        var glueNameModalTemp = _repoGlueName.FindAll(x => x.Name == nameTemp).FirstOrDefault();
+                        if (glueNameModal is null)
+                        {
+                            var glueNameItem = new GlueName { Name = model.Name };
+                            _repoGlueName.Add(glueNameItem);
+                            _repoGlueName.Save();
+
+                            glue.GlueNameID = glueNameItem.ID;
+                            glue.Name = (name + 1).ToString();
+                            _repoGlue.Save();
+
+                        }
+                        else
+                        {
+                            glue.Name = model.Name;
+                            glue.GlueNameID = glueNameModal.ID;
+                            glue.Name = glueNameModalTemp.Name;
+                            glue.isShow = true;
+                            _repoGlue.Add(glue);
+                            _repoGlue.Save();
+                        }
+                    }
+                    _repoGlue.Add(glue);
+                    _repoGlue.Save();
+                    transaction.Complete();
+                    return true;
                 }
-                _repoGlue.Add(glue);
-                _repoGlue.Save();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
+                catch 
+                {
+                    transaction.Dispose();
+                    return false;
+                }
             }
 
         }
@@ -245,6 +250,7 @@ namespace DMR_API._Services.Services
         public async Task<List<GlueCreateDto1>> GetAllGluesByBPFCID(int BPFCID)
         {
             var lists = await _repoGlue.FindAll(x => x.BPFCEstablishID == BPFCID && x.isShow == true)
+                .Include(x=> x.GlueName)
                 .Include(x => x.Kind)
                 .Include(x => x.Part)
                 .Include(x => x.Material)

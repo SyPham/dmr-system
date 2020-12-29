@@ -88,8 +88,8 @@
     "SCAN_QRCODE": "Quét QR Code",
     "HISTORY": "Lịch Sử",
     "History": "Lịch Sử",
-    "MIXING": "Pha Keo",
-    "OPTION": "Lựa Chọn",
+    "MIXING": "Pha",
+    "OPTION": "Thao Tác",
     "COUNT": "SL",
     "TOTAL_COMSUMPTION": "Tổng Tiêu Thụ",
     "CHEMICAL": "Hóa Chất",
@@ -100,7 +100,7 @@
     "LINE_LABEL": "Chuyền",
     "BPFC_NAME_LABEL": "BPFC",
     "WORKING_HOUR_LABEL": "Giờ Làm Việc",
-    "HOURLY_OUTPUT_LABEL": "Sản Lượng Hàng Giờ",
+    "HOURLY_OUTPUT_LABEL": "Sản Lượng",
     "DUE_DATE_LABEL": "Ngày Thực Thi",
     "CREATED_DATE_LABEL": "Ngày Giờ Tạo",
     "WORK_PLAN_LABEL": "Kế Hoạch Làm Việc",
@@ -160,10 +160,10 @@
     "Estimated Time": "TG Dự Định",
     "Estimated Finish Time": "TG Dự Định Kết Thúc",
     "Estimated Start Time": "TG Dự Định Bắt Đầu",
-    "Option": "Tùy Chọn",
+    "Option": "Thao Tác",
     "true": "Đạt",
     "false": "Không Đạt",
-    "Dispatch": "Giao Keo",
+    "Dispatch": "Giao",
     "Print": "In",
     "Done": "Hoàn Thành",
     "Undone": "Chưa Xong",
@@ -207,15 +207,12 @@
     "Standard Duration": "TG Tiêu Chuẩn(Giây)",
     "Standard RPM": "Số Vòng Quay Mỗi Phút",
     "minutes": "phút",
-    "Start Time": "TG Bắt Đầu",
-    "End Time": "TG Kết Thúc",
-    "Duration" : "Thời Gian Quay"
-    
-
-
-    
-    
-
-
-
+    "Start Time": "Bắt Đầu",
+    "End Time": "Kết Thúc",
+    "Deliver Time": "Giao Lúc",
+    "Duration" : "Thời Gian Quay",
+    "% of Done": "Tỷ Lệ Hoàn Thành",
+    "Amount": "Khối Lượng",
+    "Select a date": "Chọn ngày",
+    "Select a model": "Chọn BPFC"
 }
