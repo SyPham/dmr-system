@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, ViewChild, OnDestroy } from '@angular/core';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { IngredientService } from 'src/app/_core/_service/ingredient.service';
@@ -10,6 +10,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { TodolistService } from 'src/app/_core/_service/todolist.service';
 import { IStir, IStirForAdd, IStirForUpdate } from 'src/app/_core/_model/stir';
+import { Subject, Subscription } from 'rxjs';
+import { IScanner } from 'src/app/_core/_model/IToDoList';
+import { debounceTime } from 'rxjs/operators';
 
 declare const $: any;
 
@@ -22,7 +25,7 @@ declare const $: any;
     DatePipe
   ]
 })
-export class StirComponent implements OnInit {
+export class StirComponent implements OnInit, OnDestroy {
   public ADMIN = 1;
   public SUPERVISOR = 2;
   STIRRED = 1;
@@ -62,6 +65,8 @@ export class StirComponent implements OnInit {
   startScanTime = null;
   remainingTime: Date;
   leftTime: any;
+  subject = new Subject<IScanner>();
+  subscription: Subscription[] = [];
   constructor(
     private route: ActivatedRoute,
     public modalService: NgbModal,
@@ -74,12 +79,50 @@ export class StirComponent implements OnInit {
     public todolistService: TodolistService,
     private translate: TranslateService
   ) { }
+  ngOnDestroy(): void {
+    this.subscription.forEach(item => item.unsubscribe());
+  }
   public ngOnInit(): void {
     this.building = JSON.parse(localStorage.getItem('building'));
     this.role = JSON.parse(localStorage.getItem('level'));
     this.startStiringTime = new Date().toLocaleString();
     this.getAllSetting();
     this.onRouteChange();
+    this.checkQRCode();
+
+  }
+  private checkQRCode() {
+    this.subscription.push(this.subject
+      .pipe(debounceTime(500)).subscribe(async (res) => {
+        try {
+          const check = this.stirData.every(x => x.actualDuration > 0);
+          // if (check === true) {
+          //   this.alertify.warning('The glue has been stired <br> Keo này đã được khuấy', true);
+          //   return;
+          // }
+          const qrCode = res.QRCode;
+          const setting = await this.scanQrCode(qrCode) as any;
+          this.qrCode = qrCode;
+          const stirModel: IStirForAdd = {
+            id: 0,
+            glueName: this.glueName,
+            settingID: setting.id,
+            mixingInfoID: this.mixingInfoID,
+            startScanTime: new Date(),
+            startStiringTime: new Date().toLocaleString()
+          };
+          if (this.stirData.length === 0) {
+            const create = await this.create(stirModel);
+          } else {
+            const status = await this.updateStartScanTime(this.mixingInfoID);
+          }
+          const data = await this.getStirByMixingInfoID(this.mixingInfoID);
+          this.stirData = data;
+          this.getStandardRPMAndDuration();
+        } catch (error) {
+          this.alertify.error('QR Code invalid!', true);
+        }
+      }));
   }
   onRouteChange() {
     this.route.data.subscribe(data => {
@@ -323,7 +366,14 @@ export class StirComponent implements OnInit {
     await this.loadRPM(data.stirID);
   }
   // --------------------------------------------------------------------------------------
-  async onNgModelChangeScanQRCode(qrCode) {
+  async onNgModelChangeScanQRCode(args) {
+    const scanner: IScanner = {
+      QRCode: args,
+      ingredient: null
+    };
+    this.subject.next(scanner);
+  }
+  async onNgModelChangeScanQRCode2(qrCode) {
     if (qrCode.length !== 3) {
       this.alertify.warning('The QR Code is incorrect format <br> Mã QR sai định dạng của hệ thống!', true);
       return;
@@ -347,7 +397,7 @@ export class StirComponent implements OnInit {
       if (this.stirData.length === 0) {
         const create = await this.create(stirModel);
       } else {
-       const status = await this.updateStartScanTime(this.mixingInfoID);
+        const status = await this.updateStartScanTime(this.mixingInfoID);
       }
       const data = await this.getStirByMixingInfoID(this.mixingInfoID);
       this.stirData = data;
@@ -356,15 +406,16 @@ export class StirComponent implements OnInit {
       this.alertify.error('QR Code invalid!', true);
     }
   }
-  async confirmData(item: IStir) {
+  async confirmData(item) {
+
     if (item.startScanTime as any === '0001-01-01T00:00:00') {
       this.alertify.error('Please scan the machine QR Code first! <br> Hãy quét mã QR của máy trước!', true);
       return;
     } else {
       const currentTime = new Date().getTime();
-      const minutes = item.standardDuration > 0 ? item.standardDuration : item.glueType.minutes;
-      const startScanTime = new Date(Date.parse(item.startScanTime as any));
-      const endStart = startScanTime.setSeconds(minutes);
+      const second = item.standardDuration > 0 ? item.standardDuration : item.glueType.minutes * 60;
+      const startScanTime = new Date(item.startScanTime as any);
+      const endStart = startScanTime.setSeconds(startScanTime.getSeconds() + second);
       if (currentTime < endStart) {
         this.alertify.error('The glue is stiring! <br> Máy đang khuấy keo bạn ơi!', true);
         return;
@@ -392,7 +443,7 @@ export class StirComponent implements OnInit {
     }
   }
 
- async loadData() {
+  async loadData() {
     try {
       const data = await this.getStirByMixingInfoID(this.mixingInfoID);
       this.stirData = data;
@@ -401,7 +452,7 @@ export class StirComponent implements OnInit {
     }
   }
   getStandardRPMAndDuration() {
-    if (this.stirData.length > 0 ) {
+    if (this.stirData.length > 0) {
       this.standardRPM = this.stirData[0].glueType.rpm;
       this.duration = this.stirData[0].glueType.minutes;
       const newStir = this.stirData.filter(item => item.actualDuration === 0)[0];

@@ -12,6 +12,7 @@ using DMR_API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using dmr_api.Models;
+using System.Text.RegularExpressions;
 
 namespace DMR_API._Services.Services
 {
@@ -268,11 +269,22 @@ namespace DMR_API._Services.Services
             var result = _mapper.Map<IngredientDto>(ingredient);
             return result;
         }
-
+        
         public async Task<object> ScanQRCodeFromChemialWareHouse(string qrCode, string building, int userid)
         {
-            var obj = qrCode.Split('-');
-            var Barcode = obj[2];
+            var dayAndBatch = string.Empty;
+            var pattern = @"((\d*)-(\w*)-)*";
+            var obj = new string[] { };
+            Regex r = new Regex(pattern, RegexOptions.IgnoreCase);
+
+            Match m = r.Match(qrCode);
+            if (m.Success)
+            {
+                dayAndBatch = m.Groups[1].ToSafetyString();
+                obj = dayAndBatch.Split('-');
+            }
+
+            var Barcode = qrCode.Replace(dayAndBatch, "");
             var ProductionDate = obj[0];
             var Batch = obj[1];
             var model = _repoIngredient.FindAll().FirstOrDefault(x => x.MaterialNO.Equals(Barcode));
@@ -351,16 +363,27 @@ namespace DMR_API._Services.Services
         public async Task<object> ScanQRCodeOutput(string qrCode, string building, int userid)
         {
 
+            var dayAndBatch = string.Empty;
+            var pattern = @"((\d*)-(\w*)-)*";
+            var obj = new string[] { };
+            Regex r = new Regex(pattern, RegexOptions.IgnoreCase);
+
+            Match m = r.Match(qrCode);
+            if (m.Success)
+            {
+                dayAndBatch = m.Groups[1].ToSafetyString();
+                obj = dayAndBatch.Split('-');
+            }
             // load tat ca supplier
             var supModel = _repoSupplier.GetAll();
             // lay gia tri "barcode" trong chuỗi qrcode được chuyền lên
-            var Barcode = qrCode.Split('-', '-')[2];
+            var Barcode = qrCode.Replace(dayAndBatch, "");
             // tim ID của ingredient
             var ingredientID = _repoIngredient.FindAll().FirstOrDefault(x => x.MaterialNO.Equals(Barcode)).ID;
             // Find ingredient theo ingredientID vừa tìm được ở trên
             var model = _repoIngredient.FindById(ingredientID);
             // lấy giá trị "Batch" trong chuỗi qrcode được chuyền lên
-            var Batch = qrCode.Split('-', '-')[1];
+            var Batch = obj[1];
 
             var currentDay = DateTime.Now;
 

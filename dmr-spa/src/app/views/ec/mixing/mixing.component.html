@@ -1,25 +1,25 @@
 <div class="card my-height">
-  <div class="card-body my-vertical">
+  <div class="card-body">
     <div class="row">
       <div class="col-md-12">
-        <h2 class="text-center text-danger"> {{ 'GLUE_NAME' | translate }}: {{glueName}} </h2>
+        <h2 class="text-center text-danger font-weight-bold"> {{ 'GLUE_NAME' | translate }}: {{glueName}} </h2>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12">
         <div class="row">
 
-          <div class="col-md-3 col-xl-3 text-center">
+          <div class="col-md-2 col-xl-2 text-center">
             <div class="row">
               <div class="col-md-2">
-                <label class="font-weight-bold" for="">{{ 'STEP' | translate }}</label>
+                <label class="font-weight-bold text-black" for="">{{ 'STEP' | translate }}</label>
               </div>
               <div class="col-md-10">
                 <label class="font-weight-bold" for="">{{ 'SCAN_QRCODE' | translate }}</label>
               </div>
             </div>
           </div>
-          <div class="col-md-4 col-xl-4 text-center">
+          <div class="col-md-5 col-xl-5 text-center">
             <label class="font-weight-bold" for="">{{ 'INGREDIENT_NAME' | translate}}</label>
           </div>
           <div class="col-md-5">
@@ -36,7 +36,7 @@
 
         <ng-container *ngFor="let item of ingredients ;let i=index">
           <div class="row mb-1">
-            <div class="col-md-3 col-xl-3">
+            <div class="col-md-2 col-xl-2">
               <div class="row">
                 <div class="col-xl-2">
                   <div class="align-middle">
@@ -57,7 +57,7 @@
               </div>
 
             </div>
-            <div class="form-group col-md-4 col-xl-4">
+            <div class="form-group col-md-5 col-xl-5">
               <input [class]="item.info" [class.lock]="true" class="form-control form-control-lg rounded-pill lock"
                 [value]="item.name + ' ( ' + item.percentage + '% )'" type="text">
             </div>

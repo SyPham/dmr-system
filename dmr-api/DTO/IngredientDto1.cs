@@ -25,7 +25,7 @@ namespace DMR_API.DTO
         public bool Status { get; set; }
 
         public int SupplierID { get; set; }
-        public int GlueTypeID { get; set; }
+        public int? GlueTypeID { get; set; }
         public int CreateBy { get; set; }
         public int ModifiedBy { get; set; }
 

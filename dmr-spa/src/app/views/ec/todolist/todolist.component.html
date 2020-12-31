@@ -102,7 +102,7 @@
                   <i class="fa fa-fan"></i>
                   {{ 'STIR' | translate }}
                 </button>
-                <button type="button" [ngClass]="{'disabled': data.printTime !== null, 'cursor-pointer': data.printTime !== null}"
+                <button type="button" 
                   (click)='openPrintModal(data)' class="btn btn-sm btn-secondary" [class.ml-1]="data.glueName.indexOf(' + ') !== -1">
                   <i class="fa fa-print"></i>
                   {{ 'Print' | translate }}

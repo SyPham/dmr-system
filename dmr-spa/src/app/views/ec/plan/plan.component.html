@@ -64,6 +64,7 @@
                                     [(ngModel)]="data.buildingName"
                                     popupHeight='200px' popupWidth='250px'
                                     [fields]='fieldsLine'
+                                    (created)='createdLine()'
                                     [allowFiltering]='true'
                                     (select)='onChangeBuildingNameEdit($event)'
                                     >

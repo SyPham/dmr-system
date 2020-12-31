@@ -10,7 +10,7 @@ namespace DMR_API._Services.Interface
     public interface IToDoListService
     {
         Task<ToDoListForReturnDto> Done(int buildingID);
-        Task<bool> GenerateToDoList(List<int> plans);
+        Task<object> GenerateToDoList(List<int> plans);
         Task<ToDoListForReturnDto> ToDo(int buildingID);
         Task<bool> AddRange(List<ToDoList> toDoList);
         Task<MixingInfo> Mix(MixingInfoForCreateDto mixForToDoListDto);
@@ -24,7 +24,5 @@ namespace DMR_API._Services.Interface
         Task<bool> CancelRange(List<ToDoListForCancelDto> todolistIDList);
         bool UpdateStartStirTimeByMixingInfoID(int mixingInfoID);
         bool UpdateFinishStirTimeByMixingInfoID(int mixingInfoID);
-
-
     }
 }

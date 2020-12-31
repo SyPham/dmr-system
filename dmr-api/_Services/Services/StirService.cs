@@ -81,7 +81,6 @@ namespace DMR_API._Services.Services
                 .ThenInclude(x => x.Ingredient)
                 .ThenInclude(x => x.GlueType)
                 .ProjectTo<StirDTO>(_configMapper).OrderBy(x => x.CreatedTime).ToListAsync();
-
         }
 
         public async Task<PagedList<StirDTO>> GetWithPaginations(PaginationParams param)

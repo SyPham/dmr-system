@@ -67,16 +67,16 @@ export class BreadcrumbComponent implements OnInit {
       this.router.navigate(['/ec/setting/ingredient']);
     }
     if (data.label === 'Todolist' ) {
-      this.router.navigate(['/ec/execution/todolist']);
+      this.router.navigate(['/ec/execution/todolist-2']);
     }
     if (data.label === 'BPFC') {
-      this.router.navigate(['/ec/establish/bpfc']);
+      this.router.navigate(['/ec/establish/bpfc-1']);
     }
     if (data.label === 'Home') {
       if (this.level === this.ADMIN || this.level === this.SUPERVISOR || this.level === this.STAFF) {
-        this.router.navigate(['/ec/establish/bpfc']);
+        this.router.navigate(['/ec/establish/bpfc-1']);
       } else {
-        this.router.navigate(['/ec/execution/todolist']);
+        this.router.navigate(['/ec/execution/todolist-2']);
       }
     }
   }

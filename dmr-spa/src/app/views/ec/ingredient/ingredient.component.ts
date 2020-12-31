@@ -152,7 +152,7 @@ export class IngredientComponent implements OnInit, AfterViewInit {
   }
   rowDB(args: RowDataBoundEventArgs) {
     const data = args.data as any;
-    if (data.expiredTime === 0 || data.unit === 0 || data.daysToExpiration === 0 || data.materialNO === '') {
+    if (data.expiredTime === 0 || data.unit === 0 || data.replacementFrequency === 0 ||  data.daysToExpiration === 0 || data.materialNO === '') {
       args.row.classList.add('bgcolor');
     }
   }
@@ -661,6 +661,6 @@ export class IngredientComponent implements OnInit, AfterViewInit {
     return (this.ingredientGrid.pageSettings.currentPage - 1) * this.ingredientGrid.pageSettings.pageSize + Number(index) + 1;
   }
   dataBound() {
-    this.ingredientGrid.autoFitColumns();
+   this.ingredientGrid.autoFitColumns();
   }
 }

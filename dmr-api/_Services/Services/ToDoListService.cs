@@ -156,7 +156,6 @@ namespace DMR_API._Services.Services
 
         public async Task<ToDoListForReturnDto> ToDo(int buildingID)
         {
-
             var currentTime = DateTime.Now;
             var currentDate = currentTime.Date;
 
@@ -220,7 +219,7 @@ namespace DMR_API._Services.Services
             }
             var todoList = result.Where(x => x.FinishDispatchingTime is null).ToList();
             var total = result.Count;
-            var doneTotal = result.Where(x => x.FinishDispatchingTime != null).Count();;
+            var doneTotal = result.Where(x => x.FinishDispatchingTime != null).Count(); ;
             var todoTotal = result.Where(x => x.FinishDispatchingTime is null).Count();
 
             return new ToDoListForReturnDto(todoList, doneTotal, todoTotal, total);
@@ -250,7 +249,7 @@ namespace DMR_API._Services.Services
         {
             var dispatch = model.Dispatches.Select(x => x.Amount).ToList();
             var total = dispatch.Sum();
-            var list = _repoToDoList.FindAll(x => x.EstimatedStartTime == model.EstimatedStartTime && x.EstimatedFinishTime == model.EstimatedFinishTime && x.GlueName == model.GlueName && x.LineID == model.LineID).ToList();
+            var list = _repoToDoList.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToList();
             list.ForEach(x =>
             {
                 x.FinishDispatchingTime = model.FinishTime;
@@ -278,7 +277,7 @@ namespace DMR_API._Services.Services
 
         public void UpdateStiringTimeRange(ToDoListForUpdateDto model)
         {
-            var list = _repoToDoList.FindAll(x => x.EstimatedStartTime == model.EstimatedStartTime && x.EstimatedFinishTime == model.EstimatedFinishTime && x.GlueName == model.GlueName).ToList();
+            var list = _repoToDoList.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToList();
             list.ForEach(x =>
             {
                 x.FinishStirTime = model.FinishTime;
@@ -299,7 +298,7 @@ namespace DMR_API._Services.Services
                     mixing.PrintTime = printTime;
                     _repoMixingInfo.Update(mixing);
                     _repoMixingInfo.Save();
-                    var todolist = _repoToDoList.FindAll(x => x.GlueName == mixing.GlueName && x.EstimatedStartTime == mixing.EstimatedStartTime && x.EstimatedFinishTime == mixing.EstimatedFinishTime).ToList();
+                    var todolist = _repoToDoList.FindAll(x => x.MixingInfoID == mixingInfoID).ToList();
                     todolist.ForEach(item =>
                     {
                         item.Status = mixing.Status;
@@ -388,9 +387,13 @@ namespace DMR_API._Services.Services
             }
         }
 
-        public async Task<bool> GenerateToDoList(List<int> plans)
+        public async Task<object> GenerateToDoList(List<int> plans)
         {
-            if (plans.Count == 0) return false;
+            if (plans.Count == 0) return new
+            {
+                status = false,
+                message = "Không có kế hoạch làm việc nào được gửi lên server"
+            };
             var currentTime = DateTime.Now;
             var currentDate = currentTime.Date;
             var plansModel = await _repoPlan.FindAll(x => plans.Contains(x.ID))
@@ -419,15 +422,33 @@ namespace DMR_API._Services.Services
                         ChemicalA = glue.GlueIngredients.FirstOrDefault(x => x.Position == "A").Ingredient,
                     }).ToListAsync();
 
-            if (plansModel.Count == 0) return false;
+            if (plansModel.Count == 0) return new
+            {
+                status = false,
+                message = "Không có danh sách keo nào cho kế hoạch làm việc này!"
+            };
             var value = plansModel.FirstOrDefault();
 
             var line = await _repoBuilding.FindAll(x => x.ID == value.Building.ID).FirstOrDefaultAsync();
-            if (line is null) return false;
+            if (line is null) return new
+            {
+                status = false,
+                message = "Không tìm thấy tòa nhà nào trong hệ thống!"
+            };
 
             var building = await _repoBuilding.FindAll(x => x.ID == line.ParentID)
                .Include(x => x.LunchTime).FirstOrDefaultAsync();
-            if (building is null) return false;
+            if (building is null) return new
+            {
+                status = false,
+                message = "Không tìm thấy tòa nhà nào trong hệ thống!"
+            };
+
+            if (building.LunchTime is null) return new
+            {
+                status = false,
+                message = $"Tòa nhà {building.Name} chưa cài đặt giờ ăn trưa!"
+            };
 
             var startLunchTimeBuilding = building.LunchTime.StartTime;
             var endLunchTimeBuilding = building.LunchTime.EndTime;
@@ -437,7 +458,16 @@ namespace DMR_API._Services.Services
             var glues = plansModel.GroupBy(x => x.GlueName).ToList();
             foreach (var glue in glues)
             {
-
+                foreach (var chemical in glue)
+                {
+                    var checmicalA = chemical.ChemicalA;
+                    double replacementFrequency = checmicalA.ReplacementFrequency;
+                    if (replacementFrequency == 0) return new
+                    {
+                        status = false,
+                        message = $"Cột Replacement Frequency của hóa chất {checmicalA.Name} chưa gán giờ làm việc nên không thể tạo danh sách việc làm được!"
+                    };
+                }
                 foreach (var item in glue)
                 {
                     var startLunchTime = item.DueDate.Date.Add(new TimeSpan(startLunchTimeBuilding.Hour, startLunchTimeBuilding.Minute, 0));
@@ -448,9 +478,10 @@ namespace DMR_API._Services.Services
 
                     double prepareTime = checmicalA.PrepareTime;
                     double replacementFrequency = checmicalA.ReplacementFrequency;
+                   
                     var kgPair = item.Consumption.ToDouble() / 1000;
                     double lunchHour = (endLunchTime - startLunchTime).TotalHours;
-                    if (item.CreatedDate.Date != currentDate)
+                    if (item.DueDate.Date != currentDate && item.CreatedDate != currentDate)
                     {
                         var estimatedTime = item.DueDate.Date.Add(new TimeSpan(7, 30, 00)) - TimeSpan.FromHours(prepareTime);
                         var startWorkingTimeTemp = estimatedTime;
@@ -582,11 +613,19 @@ namespace DMR_API._Services.Services
                 var model = _mapper.Map<List<ToDoList>>(todolist);
                 _repoToDoList.AddRange(model);
                 _repoToDoList.Save();
-                return true;
+                return new
+                {
+                    status = true,
+                    message = "Tạo danh sách việc làm thành công!"
+                };
             }
             catch (Exception)
             {
-                return false;
+                return new
+                {
+                    status = false,
+                    message = "Tạo danh sách việc làm thất bại!"
+                };
             }
         }
     }

@@ -23,20 +23,20 @@ namespace DMR_API.Helpers.AutoMapper
             .ForMember(d => d.VOC, o => o.MapFrom(x => x.VOC.ToDouble().ToSafetyString()))
             .ForMember(d => d.Unit, o => o.MapFrom(x => x.Unit.ToDouble().ToSafetyString()))
             .ForMember(d => d.Supplier, o => o.Ignore())
+            .ForMember(d => d.GlueTypeID, o => o.MapFrom(x => x.GlueTypeID == 0 ? null : x.GlueTypeID))
             .ForMember(d => d.GlueType, o => o.Ignore());
             CreateMap<IngredientForImportExcelDto, Ingredient>();
             CreateMap<IngredientDto1, Ingredient>()
             .ForMember(d => d.VOC, o => o.MapFrom(x => x.VOC.ToDouble().ToSafetyString()))
             .ForMember(d => d.GlueType, o => o.Ignore())
+            .ForMember(d => d.GlueTypeID, o => o.MapFrom(x => x.GlueTypeID == 0 ? null : x.GlueTypeID))
             .ForMember(d => d.Supplier, o => o.Ignore())
             .ForMember(d => d.Unit, o => o.MapFrom(x => x.Unit.ToDouble().ToSafetyString()));
 
             CreateMap<LineDto, Line>();
             CreateMap<GlueIngredientForMapDto, GlueIngredient>();
             CreateMap<ModelNameDto, ModelName>();
-            CreateMap<PlanDto, Plan>()
-            .ForMember(d => d.StartWorkingTime, o => o.MapFrom(x => new DateTime(ct.Year, ct.Month, ct.Day, x.StartTime.Hour, x.StartTime.Minute, 0)))
-            .ForMember(d => d.FinishWorkingTime, o => o.MapFrom(x => new DateTime(ct.Year, ct.Month, ct.Day, x.EndTime.Hour, x.EndTime.Minute, 0)));
+            CreateMap<PlanDto, Plan>();
             CreateMap<StationDto, Station>().ForMember(d=> d.CreateTime, o=> o.MapFrom(x=> DateTime.Now.ToLocalTime()));
 
             CreateMap<MapModelDto, MapModel>();

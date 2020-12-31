@@ -163,7 +163,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
       newRowPosition: 'Normal',
     };
     this.dataText = this.dataService.currentMessages.subscribe((res: any) => {
-      this.textSearch = res ;
+      this.textSearch = res;
       if (res !== 0) {
         this.searchOptions = {
           fields: [
@@ -273,7 +273,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
       });
   }
 
-  openPopupDropdownlist() {}
+  openPopupDropdownlist() { }
 
   onBeforeRender(args, data, i) {
     const t = this.tooltip.filter((item, index) => index === +i)[0];
@@ -309,7 +309,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
           if (res.status === true) {
             this.alertify.success('Đã sao chép thành công! <br> Copy succeeded!');
             this.modalService.dismissAll();
-            this.getAllUsers();
+            this.getDone();
             this.value = null;
           } else {
             this.alertify.error('The BPFC exists!');
@@ -353,6 +353,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
     this.modalNameService.clone(clone).subscribe((res: any) => {
       if (res.status === true) {
         this.alertify.success('Đã sao chép thành công! <br> Copy succeeded!');
+        this.getUndone();
         this.modalService.dismissAll();
       } else {
         this.alertify.error('The BPFC exists!');
@@ -543,7 +544,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
       // reset color
       this.resetAttrBtn(this.undoneBtn);
       this.resetAttrBtn(this.allBtn);
-    } else if (this.isDone === false)  {
+    } else if (this.isDone === false) {
 
       this.setAttrBtn(this.undoneBtn);
       // reset color
@@ -559,103 +560,97 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
   }
   getAll() {
     this.spinner.show();
-    setTimeout(() => {
-      this.bPFCEstablishService.getAll().subscribe((res: any) => {
-        this.data = res.map((item: any) => {
-          return {
-            id: item.id,
-            modelNameID: item.modelNameID,
-            modelNoID: item.modelNoID,
-            articleNoID: item.articleNoID,
-            artProcessID: item.artProcessID,
-            modelName: item.modelName,
-            modelNo: item.modelNo,
-            createdDate: new Date(item.createdDate),
-            articleNo: item.articleNo,
-            approvalStatus: item.approvalStatus,
-            finishedStatus: item.finishedStatus,
-            approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
-              ?.username,
-            createdBy: item.createdBy,
-            artProcess: item.artProcess,
-            season: item.season,
-          };
-        });
-        this.spinner.hide();
-        this.isDone = null;
-        this.editTextOfBtn();
+    this.bPFCEstablishService.getAll().subscribe((res: any) => {
+      this.data = res.map((item: any) => {
+        return {
+          id: item.id,
+          modelNameID: item.modelNameID,
+          modelNoID: item.modelNoID,
+          articleNoID: item.articleNoID,
+          artProcessID: item.artProcessID,
+          modelName: item.modelName,
+          modelNo: item.modelNo,
+          createdDate: new Date(item.createdDate),
+          articleNo: item.articleNo,
+          approvalStatus: item.approvalStatus,
+          finishedStatus: item.finishedStatus,
+          approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
+            ?.username,
+          createdBy: item.createdBy,
+          artProcess: item.artProcess,
+          season: item.season,
+        };
       });
-    }, 1000);
+      this.spinner.hide();
+      this.isDone = null;
+      this.editTextOfBtn();
+    });
   }
 
   getDone() {
     this.spinner.show();
-    setTimeout(() => {
-      this.bPFCEstablishService.getDoneBPFC().subscribe((res: any) => {
-        this.data = res.data.map((item: any) => {
-          return {
-            id: item.id,
-            modelNameID: item.modelNameID,
-            modelNoID: item.modelNoID,
-            articleNoID: item.articleNoID,
-            artProcessID: item.artProcessID,
-            modelName: item.modelName,
-            modelNo: item.modelNo,
-            createdDate: new Date(item.createdDate),
-            articleNo: item.articleNo,
-            approvalStatus: item.approvalStatus,
-            finishedStatus: item.finishedStatus,
-            approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
-              ?.username,
-            createdBy: item.createdBy,
-            artProcess: item.artProcess,
-            season: item.season,
-          };
-        });
-        this.percentageOfDoneData = res.percentageOfDone;
-        this.percentageOfDone.element.innerHTML = this.percentageOfDoneData;
-        this.doneText = `Done (${res.doneTotal})`;
-        this.undoneText = `Undone (${res.undoneTotal})`;
-        this.isDone = true;
-        this.editTextOfBtn();
-        this.spinner.hide();
+    this.bPFCEstablishService.getDoneBPFC().subscribe((res: any) => {
+      this.data = res.data.map((item: any) => {
+        return {
+          id: item.id,
+          modelNameID: item.modelNameID,
+          modelNoID: item.modelNoID,
+          articleNoID: item.articleNoID,
+          artProcessID: item.artProcessID,
+          modelName: item.modelName,
+          modelNo: item.modelNo,
+          createdDate: new Date(item.createdDate),
+          articleNo: item.articleNo,
+          approvalStatus: item.approvalStatus,
+          finishedStatus: item.finishedStatus,
+          approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
+            ?.username,
+          createdBy: item.createdBy,
+          artProcess: item.artProcess,
+          season: item.season,
+        };
       });
-    }, 1000);
+      this.percentageOfDoneData = res.percentageOfDone;
+      this.percentageOfDone.element.innerHTML = this.percentageOfDoneData;
+      this.doneText = `Done (${res.doneTotal})`;
+      this.undoneText = `Undone (${res.undoneTotal})`;
+      this.isDone = true;
+      this.editTextOfBtn();
+      this.spinner.hide();
+    });
   }
 
   getUndone() {
     this.spinner.show();
-    setTimeout(() => {
-      this.bPFCEstablishService.getUndoneBPFC().subscribe((res: any) => {
-        this.data = res.data.map((item: any) => {
-          return {
-            id: item.id,
-            modelNameID: item.modelNameID,
-            modelNoID: item.modelNoID,
-            articleNoID: item.articleNoID,
-            artProcessID: item.artProcessID,
-            modelName: item.modelName,
-            modelNo: item.modelNo,
-            createdDate: new Date(item.createdDate),
-            articleNo: item.articleNo,
-            approvalStatus: item.approvalStatus,
-            finishedStatus: item.finishedStatus,
-            approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
-              ?.username,
-            createdBy: item.createdBy,
-            artProcess: item.artProcess,
-            season: item.season,
-          };
-        });
-        this.percentageOfDoneData = res.percentageOfDone;
-        this.percentageOfDone.element.innerHTML = this.percentageOfDoneData;
-        this.doneText = `Done (${res.doneTotal})`;
-        this.undoneText = `Undone (${res.undoneTotal})`;
-        this.isDone = false;
-        this.editTextOfBtn();
-        this.spinner.hide();
+    this.bPFCEstablishService.getUndoneBPFC().subscribe((res: any) => {
+      this.data = res.data.map((item: any) => {
+        return {
+          id: item.id,
+          modelNameID: item.modelNameID,
+          modelNoID: item.modelNoID,
+          articleNoID: item.articleNoID,
+          artProcessID: item.artProcessID,
+          modelName: item.modelName,
+          modelNo: item.modelNo,
+          createdDate: new Date(item.createdDate),
+          articleNo: item.articleNo,
+          approvalStatus: item.approvalStatus,
+          finishedStatus: item.finishedStatus,
+          approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
+            ?.username,
+          createdBy: item.createdBy,
+          artProcess: item.artProcess,
+          season: item.season,
+        };
       });
-    }, 1000);
+      this.percentageOfDoneData = res.percentageOfDone;
+      this.percentageOfDone.element.innerHTML = this.percentageOfDoneData;
+      this.doneText = `Done (${res.doneTotal})`;
+      this.undoneText = `Undone (${res.undoneTotal})`;
+      this.isDone = false;
+      this.editTextOfBtn();
+      this.spinner.hide();
+    });
   }
 
   showModal(importModal) {
@@ -665,7 +660,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
   NO(index) {
     return (
       (this.gridObj.pageSettings.currentPage - 1) *
-        this.gridObj.pageSettings.pageSize +
+      this.gridObj.pageSettings.pageSize +
       Number(index) +
       1
     );

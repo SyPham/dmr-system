@@ -29,7 +29,7 @@ namespace DMR_API.Models
         public double ReplacementFrequency { get; set; }
 
         public int ModifiedBy { get; set; }
-        public double PrepareTime { get; set; }
+        public double PrepareTime { get; set; } 
         public int? GlueTypeID { get; set; }
         public GlueType GlueType { get; set; }
         public int SupplierID { get; set; }

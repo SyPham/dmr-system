@@ -265,7 +265,7 @@ export class PrintGlueComponent implements OnInit, OnDestroy {
   }
   finish() {
     this.todolistService.printGlue(this.data.id).subscribe((data: any) => {
-      this.alertify.success('success' + data, true);
+      this.alertify.success('success', true);
       this.activeModal.close();
       this.todolistService.setValue(false);
     });

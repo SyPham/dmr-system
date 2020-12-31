@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild , OnDestroy} from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { IngredientService } from 'src/app/_core/_service/ingredient.service';
@@ -10,6 +10,8 @@ import { DecimalPipe } from '@angular/common';
 import { GridComponent } from '@syncfusion/ej2-angular-grids';
 import { BuildingService } from 'src/app/_core/_service/building.service';
 import { IBuilding } from 'src/app/_core/_model/building';
+import { Subject, Subscription } from 'rxjs';
+import { IScanner } from 'src/app/_core/_model/IToDoList';
 const ADMIN = 1;
 const SUPERVISER = 2;
 const BUILDING_LEVEL = 2;
@@ -41,6 +43,8 @@ export class InventoryComponent implements OnInit {
   buildings: IBuilding[];
   IsAdmin = false;
   buildingName: any;
+  subject = new Subject<IScanner>();
+  subscription: Subscription[] = [];
   constructor(
     public modalService: NgbModal,
     private alertify: AlertifyService,
@@ -49,7 +53,6 @@ export class InventoryComponent implements OnInit {
     private buildingService: BuildingService,
     pipe: DecimalPipe
   ) { }
-
   public ngOnInit(): void {
     const ROLES = [ADMIN, SUPERVISER];
     if (ROLES.includes(this.role.id)) {

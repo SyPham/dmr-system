@@ -214,5 +214,6 @@
     "% of Done": "% of Done",
     "Amount": "Amount",
     "Select a date": "Select a date",
-    "Select a model": "Select a BPFC"
+    "Select a model": "Select a BPFC",
+    "Start Scan Time": "Start Scan Time"
 }

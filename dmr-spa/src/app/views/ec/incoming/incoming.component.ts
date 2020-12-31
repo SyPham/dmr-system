@@ -1,10 +1,13 @@
-import { Component, OnInit, AfterViewInit, ViewChild, Renderer2, ElementRef, QueryList, Query, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, Renderer2, ElementRef, QueryList, Query, HostListener, OnDestroy } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { DisplayTextModel } from '@syncfusion/ej2-angular-barcode-generator';
 import { IngredientService } from 'src/app/_core/_service/ingredient.service';
 import { DatePipe } from '@angular/common';
 import { GridComponent } from '@syncfusion/ej2-angular-grids';
+import { Subject, Subscription } from 'rxjs';
+import { IScanner } from 'src/app/_core/_model/IToDoList';
+import { debounceTime } from 'rxjs/operators';
 
 @Component({
   selector: 'app-incoming',
@@ -14,7 +17,7 @@ import { GridComponent } from '@syncfusion/ej2-angular-grids';
     DatePipe
   ]
 })
-export class IncomingComponent implements OnInit {
+export class IncomingComponent implements OnInit, OnDestroy {
   @ViewChild('scanQRCode') scanQRCodeElement: ElementRef;
   public displayTextMethod: DisplayTextModel = {
     visibility: false
@@ -33,18 +36,24 @@ export class IncomingComponent implements OnInit {
   public ingredients: any = [];
   test: any = 'form-control w3-light-grey';
   checkCode: boolean;
-  autofocus = false ;
+  autofocus = false;
   toolbarOptions = ['Search'];
   filterSettings = { type: 'Excel' };
+  subject = new Subject<IScanner>();
+  subscription: Subscription[] = [];
   constructor(
     public modalService: NgbModal,
     private alertify: AlertifyService,
     private datePipe: DatePipe,
     public ingredientService: IngredientService,
   ) { }
+  ngOnDestroy(): void {
+    this.subscription.forEach(item => item.unsubscribe());
+  }
   public ngOnInit(): void {
     this.getIngredientInfo();
     this.getAllIngredient();
+    this.checkQRCode();
   }
 
   NO(index) {
@@ -77,48 +86,57 @@ export class IncomingComponent implements OnInit {
         break;
     }
   }
+  private checkQRCode() {
+    this.subscription.push(this.subject
+      .pipe(debounceTime(500))
+      .subscribe(async (res) => {
+        const input = res.QRCode.split('-') || [];
+        // const commonPattern = /(\d+)-(\w+)-([\w\-\d]+)/g;
+        const dateAndBatch = /(\d+)-(\w+)-/g;
+        const validFormat = res.QRCode.match(dateAndBatch);
+        const qrcode = res.QRCode.replace(validFormat[0], '');
+        const levels = [1, 0];
+        const building = JSON.parse(localStorage.getItem('building'));
+        let buildingName = building.name;
+        if (levels.includes(building.level)) {
+          buildingName = 'E';
+        }
+        this.findIngredientCode(qrcode);
+        if (this.checkin === true) {
+          if (this.checkCode === true) {
+            const userID = JSON.parse(localStorage.getItem('user')).User.ID;
+            this.ingredientService.scanQRCodeFromChemicalWareHouse(res.QRCode, buildingName, userID).subscribe((status: any) => {
+              if (status === true) {
+                this.getIngredientInfo();
+              }
+            });
+          } else {
+            this.alertify.error('Wrong Chemical!');
+          }
+        } else {
+          if (this.checkCode === true) {
+            const userID = JSON.parse(localStorage.getItem('user')).User.ID;
+            this.ingredientService.scanQRCodeOutput(res.QRCode, buildingName, userID).subscribe((status: any) => {
+              if (status === true) {
+                this.getIngredientInfoOutput();
+              } else {
+                this.alertify.error(status.message);
+              }
+            });
+          } else {
+            this.alertify.error('Wrong Chemical!');
+          }
+        }
+      }));
+  }
+
   // sau khi scan input thay doi
   async onNgModelChangeScanQRCode(args) {
-    const input = args.split('-');
-    const barcode = args.split('-')[2];
-    if (input.length !== 3) {
-      return;
-    }
-    if (input[2].length !== 8) {
-      return;
-    }
-    const levels = [1, 0];
-    const building = JSON.parse(localStorage.getItem('building'));
-    let buildingName = building.name;
-    if (levels.includes(building.level)) {
-      buildingName = 'E';
-    }
-    this.findIngredientCode(barcode);
-    if (this.checkin === true) {
-      if (this.checkCode === true) {
-        const userID = JSON.parse(localStorage.getItem('user')).User.ID;
-        this.ingredientService.scanQRCodeFromChemicalWareHouse(args, buildingName, userID).subscribe((res: any) => {
-          if (res === true) {
-            this.getIngredientInfo();
-          }
-        });
-      } else {
-        this.alertify.error('Wrong Chemical!');
-      }
-    } else {
-      if (this.checkCode === true) {
-        const userID = JSON.parse(localStorage.getItem('user')).User.ID;
-        this.ingredientService.scanQRCodeOutput(args, buildingName, userID).subscribe((res: any) => {
-          if (res === true) {
-            this.getIngredientInfoOutput();
-          } else {
-            this.alertify.error(res.message);
-          }
-        });
-      } else {
-        this.alertify.error('Wrong Chemical!');
-      }
-    }
+    const scanner: IScanner = {
+      QRCode: args,
+      ingredient: null
+    };
+    this.subject.next(scanner);
   }
 
   // load danh sach IngredientInfo

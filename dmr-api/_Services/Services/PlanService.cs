@@ -636,38 +636,41 @@ namespace DMR_API._Services.Services
                     var checkExist = await _repoPlan.FindAll().AllAsync(x => x.BuildingID == item.BuildingID && x.BPFCEstablishID == item.BPFCEstablishID && x.DueDate.Date == item.DueDate.Date);
                     if (!checkExist)
                     {
-                        var todolist = _repoToDoList.FindAll(x => x.PlanID == item.ID).ToList();
+                        //var todolist = _repoToDoList.FindAll(x => x.PlanID == item.ID).ToList();
 
                         using (TransactionScope scope = new TransactionScope())
                         {
                             try
                             {
                                 item.ID = 0;
+                                item.DueDate = item.DueDate.Date;
+                                item.StartWorkingTime = new DateTime(item.DueDate.Year,item.DueDate.Month, item.DueDate.Day, 7, 00, 00 );
+                                item.FinishWorkingTime = new DateTime(item.DueDate.Year, item.DueDate.Month, item.DueDate.Day, 16, 30, 00);
                                 _repoPlan.Add(item);
                                 _repoPlan.Save();
-                                todolist.ForEach(todo =>
-                                {
-                                    todo.ID = 0;
-                                    todo.PlanID = item.ID;
-                                    var startTime = new TimeSpan(todo.EstimatedStartTime.Hour, todo.EstimatedStartTime.Minute, todo.EstimatedStartTime.Second);
-                                    var finishTime = new TimeSpan(todo.EstimatedFinishTime.Hour, todo.EstimatedFinishTime.Minute, todo.EstimatedFinishTime.Second);
-                                    todo.EstimatedStartTime = item.DueDate.Date.Add(startTime);
-                                    todo.EstimatedFinishTime = item.DueDate.Date.Add(finishTime);
-                                    todo.StartMixingTime = null;
-                                    todo.FinishMixingTime = null;
-                                    todo.StartStirTime = null;
-                                    todo.FinishStirTime = null;
-                                    todo.FinishDispatchingTime = null;
-                                    todo.FinishDispatchingTime = null;
-                                    todo.PrintTime = null;
-                                    todo.Status = false;
-                                    todo.AbnormalStatus = false;
-                                    todo.MixedConsumption = 0;
-                                    todo.DeliveredConsumption = 0;
-                                    todo.MixingInfoID = 0;
-                                });
-                                _repoToDoList.AddRange(todolist);
-                                _repoToDoList.Save();
+                                //todolist.ForEach(todo =>
+                                //{
+                                //    todo.ID = 0;
+                                //    todo.PlanID = item.ID;
+                                //    var startTime = new TimeSpan(todo.EstimatedStartTime.Hour, todo.EstimatedStartTime.Minute, todo.EstimatedStartTime.Second);
+                                //    var finishTime = new TimeSpan(todo.EstimatedFinishTime.Hour, todo.EstimatedFinishTime.Minute, todo.EstimatedFinishTime.Second);
+                                //    todo.EstimatedStartTime = item.DueDate.Date.Add(startTime);
+                                //    todo.EstimatedFinishTime = item.DueDate.Date.Add(finishTime);
+                                //    todo.StartMixingTime = null;
+                                //    todo.FinishMixingTime = null;
+                                //    todo.StartStirTime = null;
+                                //    todo.FinishStirTime = null;
+                                //    todo.FinishDispatchingTime = null;
+                                //    todo.FinishDispatchingTime = null;
+                                //    todo.PrintTime = null;
+                                //    todo.Status = false;
+                                //    todo.AbnormalStatus = false;
+                                //    todo.MixedConsumption = 0;
+                                //    todo.DeliveredConsumption = 0;
+                                //    todo.MixingInfoID = 0;
+                                //});
+                                //_repoToDoList.AddRange(todolist);
+                                //_repoToDoList.Save();
                                 scope.Complete();
                                 flag.Add(true);
                             }

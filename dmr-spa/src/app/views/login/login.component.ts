@@ -291,50 +291,50 @@ export class LoginComponent implements OnInit {
         if (this.checkRouteAdmin(uri)) {
           this.router.navigate([uri]);
         } else {
-          this.router.navigate(['/ec/establish/bpfc']);
+          this.router.navigate(['/ec/establish/bpfc-1']);
         }
       } else {
-        this.router.navigate(['/ec/establish/bpfc']);
+        this.router.navigate(['/ec/establish/bpfc-1']);
       }
     } else if (this.level === SUPERVISOR) {
       if (uri !== 'undefined') {
         if (this.checkRouteSupervisor(uri)) {
           this.router.navigate([uri]);
         } else {
-          this.router.navigate(['/ec/establish/bpfc']);
+          this.router.navigate(['/ec/establish/bpfc-1']);
         }
       } else {
-        this.router.navigate(['/ec/establish/bpfc']);
+        this.router.navigate(['/ec/establish/bpfc-1']);
       }
     } else if (this.level === STAFF) {
       if (uri !== 'undefined') {
         if (this.checkRouteStaff(uri)) {
           this.router.navigate([uri]);
         } else {
-          this.router.navigate(['/ec/establish/bpfc']);
+          this.router.navigate(['/ec/establish/bpfc-1']);
         }
       } else {
-        this.router.navigate(['/ec/establish/bpfc']);
+        this.router.navigate(['/ec/establish/bpfc-1']);
       }
     } else if (this.level === WORKER) {
       if (uri !== 'undefined') {
         if (this.checkRouteWorker(uri)) {
           this.router.navigate([uri]);
         } else {
-          this.router.navigate(['/ec/execution/todolist']);
+          this.router.navigate(['/ec/execution/todolist-2']);
         }
       } else {
-        this.router.navigate(['/ec/execution/todolist']);
+        this.router.navigate(['/ec/execution/todolist-2']);
       }
     } else if (this.level === WORKER2) {
       if (uri !== 'undefined') {
         if (this.checkRouteWorker(uri)) {
           this.router.navigate([uri]);
         } else {
-          this.router.navigate(['/ec/execution/todolist']);
+          this.router.navigate(['/ec/execution/todolist-2']);
         }
       } else {
-        this.router.navigate(['/ec/execution/todolist']);
+        this.router.navigate(['/ec/execution/todolist-2']);
       }
     }
   }

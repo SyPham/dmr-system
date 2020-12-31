@@ -34,7 +34,7 @@
     <div class="d-inline-flex mb-3">
       <div class="p-2 mx-1"><b class="font-weight-bold">{{ 'Standard RPM' | translate }}:</b> {{standardRPM}}</div>
       <div class="p-2 mr-1"><b class="font-weight-bold">{{ 'Duration' | translate }}:</b> {{duration }} {{ 'minutes' | translate }}</div>
-      <div class="p-2 mr-1" *ngIf="startScanTime !== null"><b class="font-weight-bold">Start Scan Time: </b> {{startScanTime | date: 'HH:mm'}} </div>
+      <div class="p-2 mr-1" *ngIf="startScanTime !== null"><b class="font-weight-bold">{{'Start Scan Time'| translate}}: </b> {{startScanTime | date: 'HH:mm:ss'}} </div>
     </div>
     <ejs-grid [dataSource]='stirData' #grid gridLines='Both' [allowSorting]='true' [allowExcelExport]='true'
       allowFiltering='true' [filterSettings]='filterSettings' [pageSettings]='pageSettings' allowPaging="true"

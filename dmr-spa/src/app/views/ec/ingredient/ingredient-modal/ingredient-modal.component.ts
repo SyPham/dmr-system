@@ -58,12 +58,61 @@ export class IngredientModalComponent implements OnInit {
   getAllGlueType() {
     this.ingredientService.getAllGlueType().subscribe(res => {
       this.glueTypeData = res.filter(item => item.level === 2);
+      const NA = {
+        code: 'N/A',
+        id: null,
+        level: 1,
+        minutes: 0,
+        parentID: null,
+        rpm: 0,
+        title: 'N/A'
+      };
+      this.glueTypeData.unshift(NA);
     });
   }
   onSelectGlueType(args: any): void {
     this.ingredient.glueTypeID = +args.itemData.id;
   }
+  validForm() {
+    if (this.ingredient.name === '') {
+      this.alertify.warning('Please key in chemical name<br> Vui lòng nhập tên hóa chất', true);
+      return false;
+    }
+    if (this.ingredient.materialNO === '') {
+      this.alertify.warning('Please key in the material NO <br> Vui lòng nhập material NO', true);
+      return false;
+    }
+    if (this.ingredient.unit === 0) {
+      this.alertify.warning('The amount must be greater than zero<br> Vui lòng nhập khối lượng phải lớn hơn 0', true);
+      return false;
+    }
+    if (this.ingredient.expiredTime === 0) {
+      this.alertify.warning('The expiry period must be greater than zero<br> Vui lòng nhập thời gian hết hạn phải lớn hơn 0', true);
+      return false;
+    }
+    if (this.ingredient.daysToExpiration === 0) {
+      this.alertify.warning('The days to expiry must be greater than zero<br> Vui lòng nhập ngày hết hạn phải lớn hơn 0', true);
+      return false;
+    }
+    if (this.ingredient.replacementFrequency === 0 || this.ingredient.replacementFrequency > 9.5) {
+      this.alertify.warning(`
+      Please key in the replacement frequency.
+       This must be greater than zero or less than 9.5 hours (a working day)
+      <br> Vui lòng nhập replacement frequency lớn hơn 0 và không được vượt quá 9.5 giờ (1 ngày làm việc tính cả giờ tăng ca)`, true);
+      return false;
+    }
+    if (this.ingredient.prepareTime === 0) {
+      this.alertify.warning('The prepare time must be greater than zero<br> Vui lòng nhập thời gian chuẩn bị phải lớn hơn 0', true);
+      return false;
+    }
+    if (this.ingredient.supplierID === 0) {
+      this.alertify.warning('Please select a supplier<br> Vui lòng chọn 1 nhà cung cấp', true);
+      return false;
+    }
+  }
   create() {
+    const check = this.validForm();
+    if (!check) { return; }
     // tslint:disable-next-line:no-string-literal
     delete this.ingredient['glueType'];
     this.ingredientService.create(this.ingredient).subscribe( () => {
@@ -78,7 +127,10 @@ export class IngredientModalComponent implements OnInit {
   }
 
   update() {
-    // tslint:disable-next-line:no-string-literal
+    // const validNumber = /^(^[0-9]+[.])?[0-9]+$/.test(this.ingredient.replacementFrequency.toString());
+    // if (this.ingredient.replacementFrequency ) {
+      // }
+     // tslint:disable-next-line:no-string-literal
     delete this.ingredient['glueType'];
     this.ingredientService.update(this.ingredient).subscribe( res => {
       this.alertify.success('Updated successed!');

@@ -86,12 +86,13 @@ namespace DMR_API.Controllers
             var batchs = _toDoList.Cancel(todolistID);
             return Ok(batchs);
         }
-        
-       [HttpPost]
-        public IActionResult GenerateToDoList(List<int> plans)
+
+        [HttpPost]
+        public async Task<IActionResult> GenerateToDoList(List<int> plans)
         {
-            var batchs = _toDoList.GenerateToDoList(plans);
-            return Ok(batchs);
+            var status = await _toDoList.GenerateToDoList(plans);
+            return Ok(status);
+
         }
         [HttpPost]
         public IActionResult CancelRange(List<ToDoListForCancelDto> todolistIDList)

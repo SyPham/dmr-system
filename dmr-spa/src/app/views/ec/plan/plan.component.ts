@@ -121,6 +121,7 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.buildingID = 0;
     this.numericParams = { params: { value: 120 }, format: '####' };
     this.hourlyOutputRules = {
       required: true
@@ -162,15 +163,6 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
     this.subscription.push(watchAction);
   }
   checkRole(): void {
-    // const ROLES = [ADMIN, SUPERVISOR];
-    // if (ROLES.includes(this.role.id)) {
-    //   this.buildingService.getBuildings().subscribe( buildingData => {
-    //     const lines = buildingData.filter(item => item.level === 3);
-    //     this.buildingName = lines;
-    //   });
-    // } else {
-    //   this.getAllLine(this.buildingID);
-    // }
     const roles = [ADMIN, SUPERVISOR];
     if (roles.includes(this.role.id)) {
       this.IsAdmin = true;
@@ -182,14 +174,12 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
         this.getBuilding(() => {
           this.buildingID = buildingId;
           this.getAll();
-          this.getAllLine(this.buildingID);
         });
       }
     } else {
       this.getBuilding(() => {
         this.buildingID = this.building.id;
         this.getAll();
-        this.getAllLine(this.buildingID);
       });
     }
   }
@@ -233,14 +223,12 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
         this.toolbarOptions = ['Add',
           { text: 'Cập Nhật', tooltipText: 'Cập Nhật', prefixIcon: 'fa fa-tasks', id: 'Update' },
           { text: 'Nhân Bản', tooltipText: 'Nhân Bản', prefixIcon: 'fa fa-clone', id: 'Clone' },
-          { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
         ];
         return;
       } else if (lang === 'en') {
         this.toolbarOptions = ['Add',
           { text: 'Update', tooltipText: 'Update', prefixIcon: 'fa fa-tasks', id: 'Update' },
           { text: 'Clone', tooltipText: 'Clone', prefixIcon: 'fa fa-clone', id: 'Clone' },
-          { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
         ];
         return;
       } else {
@@ -249,14 +237,12 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
           this.toolbarOptions = ['Add',
             { text: 'Cập Nhật', tooltipText: 'Cập Nhật', prefixIcon: 'fa fa-tasks', id: 'Update' },
             { text: 'Nhân Bản', tooltipText: 'Nhân Bản', prefixIcon: 'fa fa-clone', id: 'Clone' },
-            { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
           ];
           return;
         } else if (langLocal === 'en') {
           this.toolbarOptions = ['Add',
             { text: 'Update', tooltipText: 'Update', prefixIcon: 'fa fa-tasks', id: 'Update' },
             { text: 'Clone', tooltipText: 'Clone', prefixIcon: 'fa fa-clone', id: 'Clone' },
-            { text: 'ExcelExport', tooltipText: 'ExcelExport', prefixIcon: 'fa fa-file-excel-o', id: 'ExcelExport' },
           ];
           return;
         }
@@ -268,6 +254,10 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   }
   onDoubleClick(args: any): void {
     this.setFocus = args.column; // Get the column from Double click event
+  }
+  createdLine() {
+    this.buildingID = this.buildingID === undefined ? 0 : this.buildingID;
+    this.getAllLine(this.buildingID);
   }
   getBuilding(callback): void {
     this.buildingService.getBuildings().subscribe(async (buildingData) => {
@@ -362,10 +352,13 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
         this.modalPlan.startTime =
         {
           hour: this.modalPlan.startWorkingTime.getHours(),
-          minute: this.modalPlan.startWorkingTime.getMinutes() };
+          minute: this.modalPlan.startWorkingTime.getMinutes()
+        };
         this.modalPlan.endTime =
-        { hour: this.modalPlan.finishWorkingTime.getHours(),
-          minute: this.modalPlan.finishWorkingTime.getMinutes() };
+        {
+          hour: this.modalPlan.finishWorkingTime.getHours(),
+          minute: this.modalPlan.finishWorkingTime.getMinutes()
+        };
         // this.modalPlan.finishWorkingTime = args.data.finishWorkingTime;
         // this.modalPlan.startWorkingTime = args.data.startWorkingTime;
 
@@ -550,12 +543,12 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
   openCloneModal(item) {
     this.modalReference = this.modalService.open(this.cloneModal);
     this.plansSelected = [{
-        id: item.id,
-        bpfcEstablishID: item.bpfcEstablishID,
-        workingHour: item.workingHour,
-        hourlyOutput: item.hourlyOutput,
-        dueDate: item.dueDate,
-        buildingID: item.buildingID
+      id: item.id,
+      bpfcEstablishID: item.bpfcEstablishID,
+      workingHour: item.workingHour,
+      hourlyOutput: item.hourlyOutput,
+      dueDate: item.dueDate,
+      buildingID: item.buildingID
     }];
   }
   toolbarClick(args: any): void {
@@ -675,12 +668,16 @@ export class PlanComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
     const plansSelected: number[] = data.map((item: any) => {
-        return item.id;
+      return item.id;
     });
-    this.todolistService.generateToDoList(plansSelected).subscribe(() => {
-      this.alertify.success('Tạo nhiệm vụ thành công!<br>Success!', true);
-      this.getAll();
-    });
+    this.todolistService.generateToDoList(plansSelected).subscribe((res: any) => {
+      if (res.status) {
+        this.alertify.success('Tạo nhiệm vụ thành công!<br>Success!', true);
+        this.getAll();
+      } else {
+        this.alertify.error(res.message, true);
+      }
+    }, err => this.alertify.error(err, true));
   }
   // End API
 

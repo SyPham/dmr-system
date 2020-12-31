@@ -143,6 +143,7 @@ namespace DMR_API._Services.Services
                         MixingInfoID = firstDispatch.MixingInfoID,
                         Amount = firstDispatch.Amount,
                         LineID = firstDispatch.LineID,
+                        BuildingID = mixing.BuildingID,
                         Dispatches = dispatchList
                     };
                     _toDoListService.UpdateDispatchTimeRange(item);

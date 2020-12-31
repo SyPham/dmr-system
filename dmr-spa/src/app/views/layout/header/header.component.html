@@ -64,8 +64,8 @@
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
             <a class="dropdown-item" *ngIf="level === ADMIN || level === SUPERVISOR || level === STAFF || level === WORKER || level === WORKER2" [routerLink]="[ '/ec/execution/workplan']">{{ 'WORK_PLAN' | translate }}</a>
             <a class="dropdown-item" *ngIf="level === ADMIN || level === SUPERVISOR || level === STAFF || level === WORKER || level === WORKER2" [routerLink]="[ '/ec/execution/incoming']">{{'INCOMING_LABEL' | translate}}</a>
-            <a class="dropdown-item" *ngIf="level === ADMIN || level === SUPERVISOR || level === WORKER || level === WORKER2" [routerLink]="[ '/ec/execution/todolist-2']">{{ 'TODOLIST' | translate }} 2</a><a class="dropdown-item" *ngIf="level === ADMIN || level === SUPERVISOR || level === WORKER || level === WORKER2"
-              [routerLink]="[ '/ec/execution/todolist']">{{ 'TODOLIST' | translate }}</a>
+            <a class="dropdown-item" *ngIf="level === ADMIN || level === SUPERVISOR || level === WORKER || level === WORKER2" [routerLink]="[ '/ec/execution/todolist-2']">{{ 'TODOLIST' | translate }} 2</a>
+            
             <a class="dropdown-item" *ngIf="level === ADMIN || level === SUPERVISOR || level === WORKER || level === STAFF|| level === WORKER2" [routerLink]="[ '/ec/execution/output-quantity']">{{ 'OUTPUT_QUANTITY' | translate }}</a>
           </div>
         </li>
