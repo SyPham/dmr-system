@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,13 +21,17 @@ namespace DMR_API._Services.Services
 
         private readonly IDispatchRepository _repoDispatch;
         private readonly IToDoListService _toDoListService;
+        private readonly IPlanService _planService;
         private readonly IMixingInfoRepository _repoMixingInfo;
+        private readonly IStationRepository _repoStation;
         private readonly IMapper _mapper;
         private readonly MapperConfiguration _configMapper;
         public DispatchService(
             IDispatchRepository repoDispatch,
             IToDoListService toDoListService,
+            IPlanService planService,
             IMixingInfoRepository repoMixingInfo,
+            IStationRepository repoStation,
             IMapper mapper,
             MapperConfiguration configMapper)
         {
@@ -35,7 +39,9 @@ namespace DMR_API._Services.Services
             _mapper = mapper;
             _repoDispatch = repoDispatch;
             _toDoListService = toDoListService;
+            _planService = planService;
             _repoMixingInfo = repoMixingInfo;
+            _repoStation = repoStation;
         }
 
         public async Task<bool> Add(Dispatch model)
@@ -113,16 +119,54 @@ namespace DMR_API._Services.Services
             throw new NotImplementedException();
         }
 
-        public bool AddDispatchingRange(List<Dispatch> dispatch)
+        public object AddDispatchingRange(List<Dispatch> dispatch)
         {
 
-            if (dispatch.Count == 0) return false;
-            if (dispatch.All(x => x.ID == 0) == true) return false;
+            if (dispatch.Count == 0) return new
+            {
+                status = false,
+                message = ""
+            };
+            if (dispatch.All(x => x.ID == 0) == true) return new
+            {
+                status = false,
+                message = ""
+            };
+
+            foreach (var item in dispatch)
+            {
+                var station = _repoStation.FindById(item.StationID);
+                if (station != null && station.Amount == 0)
+                {
+                    var mixingModel = _repoMixingInfo.FindAll(x => x.ID == item.MixingInfoID).Include(x => x.Glue).ThenInclude(x => x.GlueName).FirstOrDefault();
+                    var glueName = mixingModel.Glue.GlueName.Name;
+                    var plan = _planService.FindByID(station.PlanID);
+                    return new
+                    {
+                        status = false,
+                        message = $"Vui lòng thêm station của tên keo '{glueName}' cho BPFC '{plan.BPFCName}' ! Please add station"
+                    };
+                }
+                if (station == null)
+                {
+                    var plan = _planService.FindByID(station.PlanID);
+
+                    return new
+                    {
+                        status = false,
+                        message = $"Vui lòng thêm station cho BPFC là ({plan.BPFCName}) ! Please add station"
+                    };
+                }
+            }
             var dispatchList = _repoDispatch.FindAll(x => dispatch.Select(a => a.ID).Contains(x.ID)).ToList();
             var firstDispatch = dispatchList.OrderBy(x => x.ID).FirstOrDefault();
             var lastDispatch = dispatchList.OrderBy(x => x.ID).LastOrDefault();
             var mixing = _repoMixingInfo.FindById(dispatch.FirstOrDefault().MixingInfoID);
-            if (mixing == null) return false;
+            if (mixing == null) return new
+            {
+                status = false,
+                message = "Vui lòng trộn keo! Please do mixing process!"
+            };
 
             var flags = new List<bool>();
 
@@ -156,7 +200,12 @@ namespace DMR_API._Services.Services
                     flags.Add(false);
                 }
             }
-            return flags.All(x => x == true);
+
+            return new
+            {
+                status = flags.All(x => x == true),
+                message = flags.All(x => x == true) is true ? "" : "Vui lòng thử lại!"
+            };
         }
 
         public async Task<bool> UpdateAmount(int id, double amount)

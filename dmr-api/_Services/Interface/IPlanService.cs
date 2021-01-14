@@ -38,7 +38,7 @@ namespace DMR_API._Services.Interface
         Task<MixingInfo> Print(DispatchParams todolistDto);
         MixingInfo PrintGlue(int mixingÌnoID);
         Task<object> Finish(int mixingÌnoID);
-
+        PlanDto FindByID(int ID);
         Task<bool> DeletePlan(int id);
         Task<bool> CheckExistTimeRange(int lineID, DateTime statTime, DateTime endTime, DateTime dueDate);
         Task<bool> CheckDuplicate(int lineID, int BPFCEstablishID, DateTime dueDate);

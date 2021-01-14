@@ -13,6 +13,17 @@
         <input name="Building"  type="text" [(ngModel)]="building.name" placeholder="Building Name" class="form-control Name" />
       </div>
     </div>
+    <div class="col-md-12">
+      <div class="form-group">
+        <input name="Building" type="text" [(ngModel)]="building.hourlyOutput" placeholder="Hourly Output"
+          class="form-control hourlyOuput" />
+      </div>
+    </div>
+    <div class="col-md-12">
+      <ejs-dropdownlist #lineDropdownlist [dataSource]='lunchTimeData' [(ngModel)]="building.lunchTime" popupHeight='200px'
+        popupWidth='250px'  placeholder="Select the lunch time" [allowFiltering]='true' [fields]='fields' (select)='onSelectLunchTime($event)'>
+      </ejs-dropdownlist>
+    </div>
   </div>
 </div>
 <div class="modal-footer">

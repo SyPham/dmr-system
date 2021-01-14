@@ -186,8 +186,8 @@ export class SummaryComponent implements OnInit, AfterViewInit {
     this.hasWarning = false;
     this.checkQRCode();
     this.checkRole();
-    if (signalr.SCALING_CONNECTION_HUB.state === HubConnectionState.Connected) {
-      signalr.SCALING_CONNECTION_HUB.on('summaryRecieve', (status) => {
+    if (signalr.CONNECTION_HUB.state === HubConnectionState.Connected) {
+      signalr.CONNECTION_HUB.on('summaryRecieve', (status) => {
         if (status === SUMMARY_RECIEVE_SIGNALR) {
           this.summary();
         }
@@ -515,8 +515,8 @@ export class SummaryComponent implements OnInit, AfterViewInit {
   }
 
   signal() {
-    if (signalr.SCALING_CONNECTION_HUB.state === HubConnectionState.Connected) {
-      signalr.SCALING_CONNECTION_HUB.on(
+    if (signalr.CONNECTION_HUB.state === HubConnectionState.Connected) {
+      signalr.CONNECTION_HUB.on(
         'Welcom',
         (scalingMachineID, message, unit) => {
           if (this.scalingSetting.includes(+scalingMachineID)) {
@@ -1332,7 +1332,7 @@ export class SummaryComponent implements OnInit, AfterViewInit {
     // this.changeReal(ingredient.code, args);
   }
   onSignalr() {
-    signalr.SCALING_CONNECTION_HUB.on('Welcom');
+    signalr.CONNECTION_HUB.on('Welcom');
   }
   onKeyupReal(ingredient, args) {
     if (args.keyCode === 13) {
@@ -1502,7 +1502,7 @@ export class SummaryComponent implements OnInit, AfterViewInit {
     }
   }
   offSignalr() {
-    signalr.SCALING_CONNECTION_HUB.off('Welcom');
+    signalr.CONNECTION_HUB.off('Welcom');
   }
   changeScanStatusByLength(length, item) {
     switch (length) {

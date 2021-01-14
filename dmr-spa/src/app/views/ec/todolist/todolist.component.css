@@ -25,3 +25,6 @@
 .done > span {
     color:  #f8f9fa!important;
 }
+ .e-grid .e-altrow { 
+        background-color: #d6d8db; 
+    } 

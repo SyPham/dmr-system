@@ -5,7 +5,7 @@ import { BuildingModalComponent } from './building-modal/building-modal.componen
 import { TreeGridComponent } from '@syncfusion/ej2-angular-treegrid/';
 import { AlertifyService } from 'src/app/_core/_service/alertify.service';
 import { SortService, FilterService, ReorderService, ITreeData } from '@syncfusion/ej2-angular-treegrid/';
-import { HierarchyNode, IBuilding } from 'src/app/_core/_model/building';
+import { HierarchyNode, IBuilding, LunchTime } from 'src/app/_core/_model/building';
 
 @Component({
   selector: 'app-building',
@@ -16,9 +16,9 @@ import { HierarchyNode, IBuilding } from 'src/app/_core/_model/building';
 })
 export class BuildingComponent implements OnInit {
   toolbar: object;
-  data: Array<HierarchyNode<IBuilding>>;
+  data: HierarchyNode<IBuilding>[];
   editing: any;
-
+  fields: object = { text: 'content', value: 'content' };
   contextMenuItems: any;
   pageSettings: any;
   editparams: { params: { format: string; }; };
@@ -27,7 +27,10 @@ export class BuildingComponent implements OnInit {
   @ViewChild('buildingModal')
   buildingModal: any;
   building: { id: 0, name: '', level: 0, parentID: 0 };
-  edit: { id: 0, name: '', level: 0, parentID: 0 };
+  edit: { id: 0, name: '', hourlyOutput: 0, level: 0, parentID: 0 };
+  lunchTimeData = new LunchTime().data;
+  buildingID: any;
+
   constructor(
     private buildingService: BuildingService,
     private modalService: NgbModal,
@@ -40,6 +43,27 @@ export class BuildingComponent implements OnInit {
     this.optionTreeGrid();
     this.onService();
     this.getBuildingsAsTreeView();
+  }
+  onSelectLunchTime(args) {
+    const item = {
+      startTime: args.itemData.startTime,
+      endTime: args.itemData.endTime,
+      buildingID: this.buildingID
+    };
+    this.buildingService.addOrUpdateLunchTime(item).subscribe(() => {
+      this.alertify.success('success!');
+      this.getBuildingsAsTreeView();
+    }, err => {
+      this.alertify.error(err);
+    });
+  }
+  queryCellInfo(args) {
+    if (args.column.field === 'entity.name') {
+      if (args.data.entity.level === 1 || args.data.entity.level === 2) {
+        args.colSpan = 4;
+        // merging 2 columns of same row using colSpan property
+      }
+    }
   }
   optionTreeGrid() {
     this.contextMenuItems = [
@@ -125,6 +149,7 @@ export class BuildingComponent implements OnInit {
   actionComplete(args) {
     if (args.requestType === 'save') {
       this.edit.name = args.data.entity.name;
+      this.edit.hourlyOutput = args.data.entity.hourlyOutput;
       this.rename();
     }
    }
@@ -133,8 +158,10 @@ export class BuildingComponent implements OnInit {
       id: args.data.entity.id,
       name: args.data.entity.name,
       level: args.data.entity.level,
+      hourlyOutput: args.data.entity.hourlyOutput,
       parentID: args.data.entity.parentID,
     };
+    this.buildingID = args.data.entity.id;
     this.building = {
       id: 0,
       name: '',
@@ -145,6 +172,7 @@ export class BuildingComponent implements OnInit {
   getBuildingsAsTreeView() {
     this.buildingService.getBuildingsAsTreeView().subscribe(res => {
       this.data = res;
+      console.log('tag', res);
     });
   }
   clearFrom() {

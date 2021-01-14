@@ -216,6 +216,8 @@ namespace DMR_API._Services.Services
                     await _repoPlan.SaveAll();
                     var stationModel = await _stationService.GetAllByPlanID(plan.ID);
                     await _stationService.AddRange(stationModel);
+
+
                     transaction.Complete();
                     await _hubContext.Clients.All.SendAsync("summaryRecieve", "ok");
                     return true;
@@ -638,16 +640,20 @@ namespace DMR_API._Services.Services
                     {
                         //var todolist = _repoToDoList.FindAll(x => x.PlanID == item.ID).ToList();
 
-                        using (TransactionScope scope = new TransactionScope())
+                        using var scope = new TransactionScopeAsync().Create();
                         {
                             try
                             {
                                 item.ID = 0;
                                 item.DueDate = item.DueDate.Date;
-                                item.StartWorkingTime = new DateTime(item.DueDate.Year,item.DueDate.Month, item.DueDate.Day, 7, 00, 00 );
+                                item.StartWorkingTime = new DateTime(item.DueDate.Year, item.DueDate.Month, item.DueDate.Day, 7, 00, 00);
                                 item.FinishWorkingTime = new DateTime(item.DueDate.Year, item.DueDate.Month, item.DueDate.Day, 16, 30, 00);
                                 _repoPlan.Add(item);
-                                _repoPlan.Save();
+                                await _repoPlan.SaveAll();
+
+                                var stationModel = await _stationService.GetAllByPlanID(item.ID);
+                                await _stationService.AddRange(stationModel);
+
                                 //todolist.ForEach(todo =>
                                 //{
                                 //    todo.ID = 0;
@@ -723,9 +729,12 @@ namespace DMR_API._Services.Services
         public async Task<object> GetAllPlanByRange(int building, DateTime min, DateTime max)
         {
             var lines = new List<int>();
-            if (building == 0 || building == 1)
+            int NO_BUILDING = 0;
+            int SHC = 1;
+            int LINE_LEVEL = 3;
+            if (building == SHC || building == NO_BUILDING)
             {
-                lines = await _repoBuilding.FindAll(x => x.Level == 3).Select(x => x.ID).ToListAsync();
+                lines = await _repoBuilding.FindAll(x => x.Level == LINE_LEVEL).Select(x => x.ID).ToListAsync();
             }
             else
             {
@@ -749,6 +758,26 @@ namespace DMR_API._Services.Services
                 .ToListAsync();
         }
 
+        public PlanDto FindByID(int ID)
+        {
+
+            return  _repoPlan.FindAll()
+                .Where(x => x.ID == ID)
+                .Include(x => x.Building)
+                .Include(x => x.ToDoList)
+                .Include(x => x.BPFCEstablish)
+                    .ThenInclude(x => x.ModelName)
+                .Include(x => x.BPFCEstablish)
+                    .ThenInclude(x => x.ModelNo)
+                .Include(x => x.BPFCEstablish)
+                    .ThenInclude(x => x.ArticleNo)
+                .Include(x => x.BPFCEstablish)
+                    .ThenInclude(x => x.ArtProcess)
+                    .ThenInclude(x => x.Process)
+                .ProjectTo<PlanDto>(_configMapper)
+                .OrderByDescending(x => x.CreatedDate)
+                .FirstOrDefault();
+        }
         public async Task<object> GetBPFCByGlue(TooltipParams tooltip)
         {
             var name = tooltip.Glue.Trim().ToSafetyString();

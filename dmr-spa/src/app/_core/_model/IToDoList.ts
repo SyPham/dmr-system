@@ -37,6 +37,7 @@ export interface IToDoListForReturn {
     total: number;
     doneTotal: number;
     todoTotal: number;
+    delayTotal: number;
     percentageOfDone: number;
     data: IToDoList[];
 }

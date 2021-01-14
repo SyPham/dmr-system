@@ -85,7 +85,7 @@ export class StirComponent implements OnInit, OnDestroy {
   public ngOnInit(): void {
     this.building = JSON.parse(localStorage.getItem('building'));
     this.role = JSON.parse(localStorage.getItem('level'));
-    this.startStiringTime = new Date().toLocaleString();
+    this.startStiringTime = new Date();
     this.getAllSetting();
     this.onRouteChange();
     this.checkQRCode();
@@ -109,7 +109,7 @@ export class StirComponent implements OnInit, OnDestroy {
             settingID: setting.id,
             mixingInfoID: this.mixingInfoID,
             startScanTime: new Date(),
-            startStiringTime: new Date().toLocaleString()
+            startStiringTime: new Date()
           };
           if (this.stirData.length === 0) {
             const create = await this.create(stirModel);
@@ -147,7 +147,7 @@ export class StirComponent implements OnInit, OnDestroy {
     const minTime = '0001-01-01T00:00:00';
     const startTime = new Date();
     const endTime = new Date();
-    this.startStiringTime = new Date().toLocaleString();
+    this.startStiringTime = new Date();
     if (item.machineType === 'Water') {
       endTime.setMinutes(startTime.getMinutes() + 3);
     } else {
@@ -247,13 +247,13 @@ export class StirComponent implements OnInit, OnDestroy {
   stirGlue(data) {
     const startTime = new Date();
     const endTime = new Date();
-    this.startStiringTime = new Date().toLocaleString();
+    this.startStiringTime = new Date();
     if (data.glueType.code === 'Water') {
       endTime.setMinutes(startTime.getMinutes() + 3);
     } else {
       endTime.setMinutes(startTime.getMinutes() + 3);
     }
-    this.finishStiringTime = new Date().toLocaleString();
+    this.finishStiringTime = new Date();
     const setting = this.settingData.filter(item => item.glueTypeID === data.glueType.id)[0];
     const model = {
       id: 0,
@@ -289,13 +289,13 @@ export class StirComponent implements OnInit, OnDestroy {
     const minTime = '0001-01-01T00:00:00';
     const startTime = new Date();
     const endTime = new Date();
-    this.startStiringTime = new Date().toLocaleString();
+    this.startStiringTime = new Date();
     if (data.glueType.code === 'Water') {
       endTime.setMinutes(startTime.getMinutes() + 3);
     } else {
       endTime.setMinutes(startTime.getMinutes() + 3);
     }
-    this.finishStiringTime = new Date().toLocaleString();
+    this.finishStiringTime = new Date();
     const model = {
       id: 0,
       rpm: 0,
@@ -392,7 +392,7 @@ export class StirComponent implements OnInit, OnDestroy {
         settingID: setting.id,
         mixingInfoID: this.mixingInfoID,
         startScanTime: new Date(),
-        startStiringTime: new Date().toLocaleString()
+        startStiringTime: new Date()
       };
       if (this.stirData.length === 0) {
         const create = await this.create(stirModel);
@@ -428,8 +428,8 @@ export class StirComponent implements OnInit, OnDestroy {
         settingID: item.settingID,
         mixingInfoID: this.mixingInfoID,
         glueType: item.glueType,
-        startScanTime: new Date().toLocaleString(),
-        finishStiringTime: new Date().toLocaleString(),
+        startScanTime: new Date(),
+        finishStiringTime: new Date(),
       };
       const update = await this.update(stirModel as IStirForUpdate) as IStir;
       const data = await this.getStirByMixingInfoID(this.mixingInfoID);

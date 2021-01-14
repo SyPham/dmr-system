@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, HostListener, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { GridComponent, PageSettingsModel } from '@syncfusion/ej2-angular-grids';
+import { GridComponent, PageSettingsModel, RowDataBoundEventArgs } from '@syncfusion/ej2-angular-grids';
 import { Subscription } from 'rxjs';
 import { IBuilding } from 'src/app/_core/_model/building';
 import { DispatchParams, IMixingInfo } from 'src/app/_core/_model/plan';
@@ -22,10 +22,12 @@ import { IToDoList, IToDoListForCancel } from 'src/app/_core/_model/IToDoList';
 import { ClickEventArgs, ToolbarComponent } from '@syncfusion/ej2-angular-navigations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Button } from '@syncfusion/ej2-angular-buttons';
+import { NgxSpinnerService } from 'ngx-spinner';
 declare var $: any;
 const ADMIN = 1;
 const SUPERVISOR = 2;
 const BUILDING_LEVEL = 2;
+
 @Component({
   selector: 'app-todolist',
   templateUrl: './todolist.component.html',
@@ -34,11 +36,13 @@ const BUILDING_LEVEL = 2;
 export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('toolbarTodo') toolbarTodo: ToolbarComponent;
   @ViewChild('toolbarDone') toolbarDone: ToolbarComponent;
+  @ViewChild('toolbarDelay') toolbarDelay: ToolbarComponent;
   @ViewChild('gridDone') gridDone: GridComponent;
   @ViewChildren('tooltip') tooltip: QueryList<any>;
 
   @ViewChild('gridTodo') gridTodo: GridComponent;
-  focusDone: boolean;
+  @ViewChild('gridDelay') gridDelay: GridComponent;
+  focusDone: string;
   @ViewChild('fullScreen') divRef;
   sortSettings: object;
   pageSettings: PageSettingsModel;
@@ -52,7 +56,7 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   building: IBuilding;
   role: IRole;
   buildingID: number;
-  isShowTodolistDone: boolean;
+  isShowTodolistDone: string;
   subscription: Subscription[] = [];
   IsAdmin: boolean;
   buildings: IBuilding[];
@@ -64,6 +68,10 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   total = 0;
   percentageOfDone = 0;
   public mediaBtn: any;
+  delayTotal = 0;
+  TODO = 'todo';
+  DONE = 'done';
+  DELAY = 'delay';
   @HostListener('fullscreenchange', ['$event']) fullscreenchange(e) {
     if (document.fullscreenElement) {
       this.mediaBtn.iconCss = 'fas fa-compress-arrows-alt';
@@ -83,16 +91,18 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
     public dataService: DataService,
     private route: ActivatedRoute,
     private router: Router,
+    private spinner: NgxSpinnerService,
     public todolistService: TodolistService
   ) { }
   ngOnDestroy() {
     this.subscription.forEach(subscription => subscription.unsubscribe());
   }
   ngAfterViewInit() {
+    this.checkRole();
   }
   ngOnInit() {
     this.hasFullScreen = false;
-    this.focusDone = false;
+    this.focusDone = this.TODO;
     if (signalr.CONNECTION_HUB.state === HubConnectionState.Connected) {
       signalr.CONNECTION_HUB.on(
         'ReceiveTodolist',
@@ -110,9 +120,8 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
     this.role = ROLE;
     this.building = BUIDLING;
     // this.buildingID = this.building.id;
-    this.isShowTodolistDone = false;
+    this.isShowTodolistDone = this.TODO;
     this.gridConfig();
-    this.checkRole();
     this.subscription.push(this.todolistService.getValue().subscribe(status => {
       if (status !== null ) {
         this.buildingID = this.building.id;
@@ -204,6 +213,17 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
       this.todoTotal = res.todoTotal;
       this.doneTotal = res.doneTotal;
       this.total = res.total;
+      this.delayTotal = res.delayTotal;
+      this.percentageOfDone = res.percentageOfDone;
+    });
+  }
+  delay() {
+    this.todolistService.delay(this.buildingID).subscribe(res => {
+      this.data = res.data;
+      this.todoTotal = res.todoTotal;
+      this.doneTotal = res.doneTotal;
+      this.delayTotal = res.delayTotal;
+      this.total = res.total;
       this.percentageOfDone = res.percentageOfDone;
     });
   }
@@ -212,6 +232,7 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
       this.doneData = res.data;
       this.todoTotal = res.todoTotal;
       this.doneTotal = res.doneTotal;
+      this.delayTotal = res.delayTotal;
       this.percentageOfDone = res.percentageOfDone;
       this.total = res.total;
     });
@@ -245,8 +266,9 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
         this.mediaBtn.content = 'CloseScreen';
       }
     };
-    const target: HTMLElement = (this.toolbarTodo.element as HTMLElement).querySelector('#todo');
-    target?.classList.add('done');
+    const todoButton: HTMLElement = (this.toolbarTodo.element as HTMLElement).querySelector('#todo');
+    todoButton?.classList.add('done');
+
   }
   createdDone() {
     this.mediaBtn = new Button(
@@ -267,14 +289,39 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
         this.mediaBtn.content = 'CloseScreen';
       }
     };
-    const target: HTMLElement = (this.toolbarDone.element as HTMLElement).querySelector('#done');
-    target?.classList.add('done');
+    const doneButton: HTMLElement = (this.toolbarDone.element as HTMLElement).querySelector('#done');
+    doneButton?.classList.add('done');
+
+  }
+  createdDelay() {
+    this.mediaBtn = new Button(
+      {
+        cssClass: `e-tbar-btn e-tbtn-txt e-control e-btn e-lib`,
+        iconCss: 'fa fa-expand-arrows-alt',
+        isToggle: true
+      });
+    this.mediaBtn.appendTo('#screen');
+    this.mediaBtn.element.onclick = (): void => {
+      if (this.mediaBtn.content === 'CloseScreen') {
+        this.mediaBtn.iconCss = 'fa fa-expand-arrows-alt';
+        this.mediaBtn.content = 'FullScreen';
+        this.closeFullscreen();
+      } else {
+        this.openFullscreen();
+        this.mediaBtn.iconCss = 'fas fa-compress-arrows-alt';
+        this.mediaBtn.content = 'CloseScreen';
+      }
+    };
+    const delayButton: HTMLElement = (this.toolbarDelay.element as HTMLElement).querySelector('#delay');
+    delayButton?.classList.add('done');
   }
   searchDone(args) {
-    if (this.focusDone === true) {
+    if (this.focusDone === this.DONE) {
       this.gridDone.search(args.target.value);
-    } else {
+    } else if (this.focusDone === this.TODO) {
       this.gridTodo.search(args.target.value);
+    } else if (this.focusDone === this.DELAY) {
+      this.gridDelay.search(args.target.value);
     }
   }
   onClickToolbar(args: ClickEventArgs): void {
@@ -282,16 +329,36 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
     const target: HTMLElement = (args.originalEvent.target as HTMLElement).closest('button'); // find clicked button
     switch (target?.id) {
       case 'done':
-        this.isShowTodolistDone = true;
-        this.focusDone = true;
+        this.isShowTodolistDone = this.DONE;
+        this.focusDone = this.DONE;
         this.done();
-        target.focus();
+        // target.focus();
         break;
       case 'todo':
-        this.isShowTodolistDone = false;
-        this.focusDone = false;
+        this.isShowTodolistDone = this.TODO;
+        this.focusDone = this.TODO;
         this.todo();
-        target.focus();
+        // target.focus();
+        break;
+      case 'delay':
+        this.isShowTodolistDone = this.DELAY;
+        this.focusDone = this.DELAY;
+        this.delay();
+        // target.focus();
+        break;
+      case 'excelExport':
+        this.spinner.show();
+        this.todolistService.exportExcel(this.building.id).subscribe((data: any) => {
+          const blob = new Blob([data],
+            { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+          const downloadURL = window.URL.createObjectURL(data);
+          const link = document.createElement('a');
+          link.href = downloadURL;
+          link.download = 'doneListReport.xlsx';
+          link.click();
+          this.spinner.hide();
+        });
         break;
       default:
         break;
@@ -300,11 +367,15 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   toolbarClick(args: any): void {
     switch (args.item.id) {
       case 'Done':
-        this.isShowTodolistDone = true;
+        this.isShowTodolistDone = this.DONE;
         this.done();
         break;
       case 'Undone':
-        this.isShowTodolistDone = false;
+        this.isShowTodolistDone = this.TODO;
+        this.todo();
+        break;
+      case 'Delay':
+        this.isShowTodolistDone = this.DELAY;
         this.todo();
         break;
       default:
@@ -320,6 +391,15 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
   }
   onDoubleClick(args: any): void {
     this.setFocus = args.column; // Get the column from Double click event
+  }
+  rowDB(args: RowDataBoundEventArgs): void {
+    const data = args.data as any;
+  }
+  onDoubleClickDone(args: any): void {
+    if (args.column.field === 'deliveredConsumption') {
+      const value = args.rowData as IToDoList;
+      this.openDispatchModal(value);
+    }
   }
   actionBegin(args) {
     if (args.requestType === 'cancel') {
@@ -371,10 +451,10 @@ export class TodolistComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
   openPrintModal(value: IToDoList) {
-    if (value.finishStirTime === null && value.glueName.includes(' + ')) {
-      this.alertify.warning('Hãy thực hiện bước khuấy keo trước!', true);
-      return;
-    }
+    // if (value.finishStirTime === null && value.glueName.includes(' + ')) {
+    //   this.alertify.warning('Hãy thực hiện bước khuấy keo trước!', true);
+    //   return;
+    // }
     this.todolistService.findPrintGlue(value.mixingInfoID).subscribe(data => {
       if (data?.id === 0 && value.glueName.includes(' + ')) {
         this.alertify.error('Please mixing this glue first!', true);

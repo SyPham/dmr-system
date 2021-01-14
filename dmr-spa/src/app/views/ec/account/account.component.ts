@@ -129,7 +129,7 @@ export class AccountComponent implements OnInit {
     }
   }
   dataBound() {
-    document.querySelectorAll('button[aria-label=Update] > span.e-tbar-btn-text')[0].innerHTML = 'Save';
+    // document.querySelectorAll('button[aria-label=Update] > span.e-tbar-btn-text')[0].innerHTML = 'Save';
   }
   // end life cycle ejs-grid
 

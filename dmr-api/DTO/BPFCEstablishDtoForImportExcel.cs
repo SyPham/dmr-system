@@ -14,5 +14,6 @@ namespace DMR_API.DTO
         public string Process { get; set; }
         public int CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; }
+        public DateTime? DueDate { get; set; }
     }
 }

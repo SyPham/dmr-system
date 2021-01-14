@@ -17,6 +17,7 @@ namespace DMR_API.DTO
         public string ModelNo { get; set; }
         public string ArticleNo { get; set; }
         public string ArtProcess { get; set; }
+        public bool DueDateStatus { get; set; }
         public bool ApprovalStatus { get; set; }
         public bool FinishedStatus { get; set; }
         public int ApprovalBy { get; set; }
@@ -24,6 +25,7 @@ namespace DMR_API.DTO
 
         public string Season { get; set; }
         public DateTime CreatedDate { get; set; }
+        public DateTime? DueDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public DateTime? UpdateTime { get; set; }
         

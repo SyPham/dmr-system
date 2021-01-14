@@ -391,7 +391,7 @@ namespace DMR_API._Services.Services
                              x.GlueName,
                              x.LineName,
                              x.MixedConsumption,
-                             x.Plan.Stations
+                             Stations = x.Plan.Stations.Where(x=> !x.IsDelete).ToList()
                          }).ToList();
                   
                     var todolist = todolistModel.GroupBy(x => new { x.GlueNameID, x.EstimatedFinishTime, x.EstimatedStartTime }).ToList();
@@ -435,11 +435,11 @@ namespace DMR_API._Services.Services
                                     });
                                 }
                             }
-                            else
-                            {
-                                scope.Dispose();
-                                return null;
-                            }
+                            //else
+                            //{
+                            //    scope.Dispose();
+                            //    return null;
+                            //}
                         }
                         var dispatch = _mapper.Map<List<Dispatch>>(dispatchModel);
                         _repoDispatch.AddRange(dispatch);

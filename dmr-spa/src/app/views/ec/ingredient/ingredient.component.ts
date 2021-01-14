@@ -14,8 +14,9 @@ import { ExcelExportProperties, Column, ColumnModel, GridComponent, RowDataBound
 import { DatePipe } from '@angular/common';
 import { DataManager } from '@syncfusion/ej2-data';
 import { Tooltip } from '@syncfusion/ej2-angular-popups';
+import { IBuilding } from 'src/app/_core/_model/building';
+import { IRole } from 'src/app/_core/_model/role';
 declare let $: any;
-const CURRENT_DATE = new Date();
 @Component({
   selector: 'app-ingredient',
   templateUrl: './ingredient.component.html',
@@ -23,7 +24,8 @@ const CURRENT_DATE = new Date();
   providers: [DatePipe, RowDDService]
 })
 export class IngredientComponent implements OnInit, AfterViewInit {
-
+  ADMIN = 1;
+  SUPERVISOR = 2;
   editSettings = { showDeleteConfirmDialog: false, allowEditing: true, mode: 'Normal' };
   pageSettings = { pageCount: 20, pageSizes: true, currentPage: 1, pageSize: 20 };
   data: any;
@@ -106,6 +108,8 @@ export class IngredientComponent implements OnInit, AfterViewInit {
   show: boolean;
   pd: Date;
   dataIsDone: any;
+  role: IRole;
+  building: IBuilding;
   constructor(
     private modalNameService: ModalNameService,
     public modalService: NgbModal,
@@ -115,8 +119,16 @@ export class IngredientComponent implements OnInit, AfterViewInit {
     private route: ActivatedRoute
   ) { }
   ngOnInit() {
+    const BUIDLING: IBuilding = JSON.parse(localStorage.getItem('building'));
+    const ROLE: IRole = JSON.parse(localStorage.getItem('level'));
+    this.role = ROLE;
+    this.building = BUIDLING;
+    if (this.role.id === this.ADMIN || this.role.id === this.SUPERVISOR) {
+      this.toolbarOptions = ['Search', 'Add ', 'Import Excel', 'Print QR Code', 'Excel Export'];
+    } else {
+      this.toolbarOptions = ['Search', 'Print QR Code', 'Excel Export'];
+    }
     this.filterSettings = { type: 'Excel' };
-    this.toolbarOptions = ['Search', 'Add ', 'Import Excel', 'Print QR Code', 'Excel Export'];
     this.excelDownloadUrl = `${environment.apiUrlEC}Ingredient/ExcelExport`;
     this.ingredientService.currentIngredient.subscribe(res => {
       if (res === 300) {
@@ -271,7 +283,7 @@ export class IngredientComponent implements OnInit, AfterViewInit {
           };
           const daysToExpirationModel: ColumnModel = {
             field: 'daysToExpiration',
-            headerText: 'Expired After',
+            headerText: 'Days to Expriry',
             textAlign: 'Center',
             autoFit: true,
             width: 200,
@@ -312,86 +324,53 @@ export class IngredientComponent implements OnInit, AfterViewInit {
   configurePrint(html) {
     const WindowPrt = window.open('', '_blank', 'left=0,top=0,width=1000,height=900,toolbar=0,scrollbars=0,status=0');
     WindowPrt.document.write(`
-    <html>
+     <html>
       <head>
       </head>
       <style>
-          body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: #FAFAFA;
-        font: 12pt "Tahoma";
-    }
-    * {
-        box-sizing: border-box;
-        -moz-box-sizing: border-box;
-    }
-    .page {
-        width: 210mm;
-        min-height: 297mm;
-        padding: 20mm;
-        margin: 10mm auto;
-        border: 1px #D3D3D3 solid;
-        border-radius: 5px;
-        background: white;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-    }
-    .subpage {
-        padding: 1cm;
-        border: 5px red solid;
-        height: 257mm;
-        outline: 2cm #FFEAEA solid;
-    }
-     .content {
-        height: 221px;
-         border: 1px #D3D3D3 solid;
-    }
-    .content .qrcode {
-      float:left;
+        * {
+          box-sizing: border-box;
+          -moz-box-sizing: border-box;
+        }
 
-      width: 177px;
-      height:177px;
-      margin-top: 12px;
-      margin-bottom: 12px;
-      margin-left: 5px;
-       border: 1px #D3D3D3 solid;
-    }
-    .content .info {
-       float:left;
-       list-style: none;
-    }
-    .content .info ul {
-       float:left;
-       list-style: none;
-       padding: 0;
-       margin: 0;
-      margin-top: 25px;
-    }
-    .content .info ul li.subInfo {
-      padding: .20rem .75rem;
-    }
-    @page {
-        size: A4;
-        margin: 0;
-    }
-    @media print {
-        html, body {
-            width: 210mm;
-            height: 297mm;
+        .content {
+          page-break-after: always;
+          clear: both;
         }
-        .page {
-            margin: 0;
-            border: initial;
-            border-radius: initial;
-            width: initial;
-            min-height: initial;
-            box-shadow: initial;
-            background: initial;
-            page-break-after: always;
+
+        .content .qrcode {
+          float:left;
+          width: 100px;
+          margin-top: 10px;
+          padding: 0;
+          margin-left: 0px;
         }
-    }
+
+        .content .info {
+          float:left;
+          list-style: none;
+          width: 200px;
+        }
+        .content .info ul {
+          float:left;
+          list-style: none;
+          padding: 0px;
+          margin: 0px;
+          margin-top: 20px;
+          font-weight: bold;
+          word-wrap: break-word;
+        }
+
+        @page {
+          size: 2.65 1.20 in;
+          page-break-after: always;
+          margin: 0;
+        }
+        @media print {
+          html, body {
+            width: 90mm; // Chi co nhan millimeter
+          }
+        }
       </style>
       <body onload="window.print(); window.close()">
         ${html}

@@ -215,5 +215,10 @@
     "Amount": "Khối Lượng",
     "Select a date": "Chọn ngày",
     "Select a model": "Chọn BPFC",
-    "Start Scan Time": "TG Bắt Đầu Quét Mã QR"
+    "Start Scan Time": "TG Bắt Đầu Quét Mã QR",
+    "Delay": "Chậm Trễ",
+    "Small Scale": "Cân Nhỏ",
+    "Big Scale": "Cân To",
+    "Refresh": "Làm Lại"
+
 }

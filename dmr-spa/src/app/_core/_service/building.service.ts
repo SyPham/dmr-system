@@ -36,6 +36,9 @@ export class BuildingService {
   getBuildingsForSetting() {
     return this.http.get(`${this.baseUrl}Building/GetBuildingsForSetting`);
   }
+  addOrUpdateLunchTime(item: any) {
+    return this.http.post(`${this.baseUrl}Building/AddOrUpdateLunchTime`, item);
+  }
   createMainBuilding(Building) { return this.http.post(`${this.baseUrl}Building/CreateMainBuilding`, Building); }
   createSubBuilding(Building) { return this.http.post(`${this.baseUrl}Building/CreateSubBuilding`, Building); }
 }

@@ -13,7 +13,6 @@ namespace DMR_API.Models
                 CreatedDate = DateTime.Now;
             UpdateTime = DateTime.Now;
         }
-
         public int ID { get; set; }
         public int ModelNameID { get; set; }
         public int ModelNoID { get; set; }
@@ -28,6 +27,7 @@ namespace DMR_API.Models
         public DateTime? ModifiedDate { get; set; }
         public DateTime? UpdateTime { get; set; }
         public DateTime? BuildingDate { get; set; }
+        public DateTime? DueDate { get; set; }
 
         public bool IsDelete { get; set; }
         public DateTime? DeleteTime { get; set; }

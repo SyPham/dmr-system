@@ -35,5 +35,6 @@ namespace DMR_API._Services.Interface
         Task<List<string>> GetGlueByBPFCID(int bpfcID);
         Task<BPFCEstablishDto> GetBPFCID(GetBPFCIDDto bpfcInfo);
         Task<bool> UpdateSeason(BPFCEstablishUpdateSeason entity);
+        Task<bool> UpdateDueDate(BPFCEstablishUpdateDueDate entity);
     }
 }

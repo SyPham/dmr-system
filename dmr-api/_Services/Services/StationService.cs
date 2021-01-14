@@ -196,7 +196,7 @@ namespace DMR_API._Services.Services
                               Amount = station == null ? 0 : station.Amount,
                           }).ToList();
 
-            return result;
+            return result.Where(x=> !x.IsDelete).ToList();
 
         }
 
@@ -215,13 +215,19 @@ namespace DMR_API._Services.Services
             var flag = new List<bool>();
             foreach (var station in stationDtos)
             {
-                var item = _mapper.Map<Station>(station);
-                if (item.Amount > 0 && item.ModifyTime is null || item.Amount > 0 && item.ModifyTime != null)
+                //var item = _mapper.Map<Station>(station);
+                var item = _repoStation.FindById(station.ID);
+                if (item != null)
                 {
-                    item.ModifyTime = DateTime.Now.ToLocalTime();
+                    if (item.Amount > 0 && item.ModifyTime is null || item.Amount > 0 && item.ModifyTime != null)
+                    {
+                        item.ModifyTime = DateTime.Now.ToLocalTime();
+                    }
+                    item.Amount = station.Amount;
+                    _repoStation.Update(item);
+                    flag.Add(await _repoStation.SaveAll());
                 }
-                _repoStation.Update(item);
-                flag.Add(await _repoStation.SaveAll());
+               
             }
             return flag.All(x => x == true);
         }

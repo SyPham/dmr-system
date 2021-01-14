@@ -29,30 +29,20 @@
     </div> -->
     <div class="row" *ngIf="show">
       <div class="col-xl-8">
-        <ejs-grid #printGrid id='Grid'
-          (rowDeselected)=rowDeselected($event)
-          [dataSource]='dataPrint' rowHeight='38'
-          [allowSelection]='true'
-          [selectionSettings]="{ checkboxMode: 'ResetOnRowClick'}"
-          height='450'
-          [allowExcelExport]='true'
-          [editSettings]='editSettings'
-          (actionBegin)="actionBegin($event)"
-          (rowDeselected)='rowDeselected($event)'
-          (rowSelected)='rowSelected($event)'
-          [enableHover]='false'
-          [allowRowDragAndDrop]='true'
-          [toolbar]='toolbar'
-          (toolbarClick)='toolbarClickPrint($event)'
-          [rowDropSettings]="srcDropOptions"
-          [allowSorting]='true'>
+        <ejs-grid #printGrid id='Grid' (rowDeselected)=rowDeselected($event) [dataSource]='dataPrint' rowHeight='38'
+          [allowSelection]='true' [selectionSettings]="{ checkboxMode: 'ResetOnRowClick'}" height='450'
+          [allowExcelExport]='true' [editSettings]='editSettings' (actionBegin)="actionBegin($event)"
+          (rowDeselected)='rowDeselected($event)' (rowSelected)='rowSelected($event)' [enableHover]='false'
+          [allowRowDragAndDrop]='true' [toolbar]='toolbar' (toolbarClick)='toolbarClickPrint($event)'
+          [rowDropSettings]="srcDropOptions" [allowSorting]='true'>
           <e-columns>
             <e-column type='checkbox' isPrimaryKey='true' width='60'></e-column>
             <e-column field='supplier' isPrimaryKey='true' headerText='Supplier' width='100'></e-column>
             <e-column field='name' isPrimaryKey='true' headerText='Chemical' width='100'></e-column>
             <e-column field='batch' headerText='Batch' width='100'>
             </e-column>
-            <e-column field='productionDate' type='date' format='yyyyMMdd'editType='datepickeredit' headerText='Production date' width='100'>
+            <e-column field='productionDate' type='date' format='yyyyMMdd' editType='datepickeredit'
+              headerText='Production date' width='100'>
               <ng-template #template let-data>{{data.productionDate | date: 'yyyyMMdd'}}</ng-template>
             </e-column>
           </e-columns>
@@ -69,15 +59,17 @@
             <ng-container *ngFor="let item of dataPicked">
               <tr *ngIf="dataPicked.length > 0">
                 <td class="text-center">
-                    <ejs-qrcodegenerator [id]='item.code' style="display: block;" [displayText]='displayTextMethod'
-                      width="177px" height="177px" mode="SVG"
-                      value="{{item.productionDate | date: 'yyyyMMdd'}}-{{item.batch}}-{{item.code}}"></ejs-qrcodegenerator>
+                  <ejs-qrcodegenerator [id]='item.code' style="display: block;" [displayText]='displayTextMethod'
+                    width="100px" height="130px" mode="SVG"
+                    value="{{item.productionDate | date: 'yyyyMMdd'}}-{{item.batch}}-{{item.code}}">
+                  </ejs-qrcodegenerator>
                 </td>
                 <td class="text-algin-left">
-                    <div><label>Name:</label> {{item.name}}</div>
-                    <div><label>QR Code: </label> {{item.productionDate | date: 'yyyyMMdd'}}-{{item.batch}}-{{item.code}}</div>
-                    <div><label>MFG:</label> {{item.productionDate | date: 'yyyyMMdd'}}</div>
-                    <div><label>EXP:</label> {{item.exp}}</div>
+                  <div><label>Name:</label> {{item.name}}</div>
+                  <div><label>QR Code: </label> {{item.productionDate | date: 'yyyyMMdd'}}-{{item.batch}}-{{item.code}}
+                  </div>
+                  <div><label>MFG:</label> {{item.productionDate | date: 'yyyyMMdd'}}</div>
+                  <div><label>EXP:</label> {{item.exp}}</div>
                 </td>
               </tr>
             </ng-container>
@@ -92,26 +84,12 @@
           <span class="float-right text-green font-weight-bold mb-2">{{dataIsDone}}</span>
         </div>
       </div>
-      
-      <ejs-grid #ingredientGrid
-        rowHeight='38'
-        [dataSource]='data'
-        [allowSelection]='true'
-        [allowSorting]='true'
-        [allowExcelExport]='true'
-        [allowSorting]='true'
-        allowFiltering='true'
-        [filterSettings]='filterSettings'
-        [toolbar]='toolbarOptions'
-        showColumnMenu='true'
-        [pageSettings]='pageSettings'
-        allowPaging="true"
-        allowResizing='true'
-        gridLines='Both'
-        (dataBound)='dataBound()'
-        (rowDataBound)='rowDB($event)'
-        (headerCellInfo)='headerCellInfo($event)'
-        (toolbarClick)='toolbarClick($event)'>
+
+      <ejs-grid #ingredientGrid rowHeight='38' [dataSource]='data' [allowSelection]='true' [allowSorting]='true'
+        [allowExcelExport]='true' [allowSorting]='true' allowFiltering='true' [filterSettings]='filterSettings'
+        [toolbar]='toolbarOptions' showColumnMenu='true' [pageSettings]='pageSettings' allowPaging="true"
+        allowResizing='true' gridLines='Both' (dataBound)='dataBound()' (rowDataBound)='rowDB($event)'
+        (headerCellInfo)='headerCellInfo($event)' (toolbarClick)='toolbarClick($event)'>
         <e-columns>
           <!-- <e-column field='#' headerText='#' width='40'>
             <ng-template let-data #template>
@@ -136,30 +114,34 @@
           <e-column field='glueType' headerText='Glue Type' textAlign='Center' width='130'>
             <ng-template #template let-data>{{data.glueType === '' ? "N/A": data.glueType}}</ng-template>
           </e-column>
-          <e-column field='replacementFrequency' headerText='RF (hr.)' textAlign='Center'  width='180'>
-            <ng-template #template let-data>{{data.replacementFrequency > 1 ? data.replacementFrequency + " hours" : data.replacementFrequency + " hour" }}</ng-template>
+          <e-column field='replacementFrequency' headerText='RF (hr.)' textAlign='Center' width='180'>
+            <ng-template #template let-data>{{data.replacementFrequency > 1 ? data.replacementFrequency + " hours" :
+              data.replacementFrequency + " hour" }}</ng-template>
           </e-column>
           <e-column field='prepareTime' headerText='PT (hr.)' textAlign='Center' width='180'>
-            <ng-template #template let-data>{{data.prepareTime > 1 ? data.prepareTime + " hours" : data.prepareTime + " hour"}}</ng-template>
+            <ng-template #template let-data>{{data.prepareTime > 1 ? data.prepareTime + " hours" : data.prepareTime + "
+              hour"}}</ng-template>
           </e-column>
-          <e-column field='createdDate' type='date' format='MM-dd-yyyy' headerText='Created Date' width='160' textAlign='Center'>
+          <e-column field='createdDate' type='date' format='MM-dd-yyyy' headerText='Created Date' width='160'
+            textAlign='Center'>
           </e-column>
           <e-column field='Option' headerText='Option' textAlign='Center' width='150'>
-            <ng-template let-data #template >
-                <div class="btn-group" data-toggle="tooltip" data-placement="top" title="Print QRCode">
-                  <a routerLink="/ec/setting/ingredient/print-qrcode/{{data.id}}/{{data.code}}/{{data.name}}"
-                    class="btn btn-xs btn-success mr-2"><i class="fa fa-qrcode" aria-hidden="true"></i></a>
-                </div>
-                <div class="btn-group">
-                  <button type="button" (click)='openIngredientEditModalComponent(data)' class="btn btn-xs btn-primary"><i
-                      class="fa fa-edit"></i></button>
-                </div>
-                <div class="btn-group">
-                  <span style="color: transparent">|</span>
-                </div>
-                <div class="btn-group">
-                  <button type="button" (click)='delete(data)' class="btn btn-xs btn-danger"><i class="fa fa-trash"></i></button>
-                </div>
+            <ng-template let-data #template>
+              <div class="btn-group" data-toggle="tooltip" data-placement="top" title="Print QRCode">
+                <a routerLink="/ec/setting/ingredient/print-qrcode/{{data.id}}/{{data.code}}/{{data.name}}"
+                  class="btn btn-xs btn-success mr-2"><i class="fa fa-qrcode" aria-hidden="true"></i></a>
+              </div>
+              <div class="btn-group" *ngIf="role.id === ADMIN || role.id === SUPERVISOR">
+                <button type="button" (click)='openIngredientEditModalComponent(data)' class="btn btn-xs btn-primary"><i
+                    class="fa fa-edit"></i></button>
+              </div>
+              <div class="btn-group" *ngIf="role.id === ADMIN || role.id === SUPERVISOR">
+                <span style="color: transparent">|</span>
+              </div>
+              <div class="btn-group" *ngIf="role.id === ADMIN || role.id === SUPERVISOR">
+                <button type="button" (click)='delete(data)' class="btn btn-xs btn-danger"><i
+                    class="fa fa-trash"></i></button>
+              </div>
             </ng-template>
           </e-column>
         </e-columns>

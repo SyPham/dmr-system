@@ -13,6 +13,7 @@ namespace DMR_API.Models
         public Plan Plan { get; set; }
         public GlueName GlueLibrary { get; set; }
         public int MixingInfoID { get; set; }
+
         public int GlueID { get; set; } // Primary key xac dinh mixingInfo
         public int GlueNameID { get; set; }
         public int BuildingID { get; set; } // Primary key xac dinh mixingInfo

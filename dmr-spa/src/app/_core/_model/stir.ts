@@ -23,8 +23,8 @@ export interface IStirForAdd {
     glueName: string;
     settingID: number;
     mixingInfoID: number;
-    startScanTime: Date;
-    startStiringTime: string;
+    startScanTime: any;
+    startStiringTime: any;
 }
 
 export interface IStirForUpdate {
@@ -33,6 +33,6 @@ export interface IStirForUpdate {
     settingID: number;
     mixingInfoID: number;
     glueType: IGlueType;
-    startScanTime: string;
-    finishStiringTime: string;
+    startScanTime: any;
+    finishStiringTime: any;
 }

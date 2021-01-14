@@ -36,6 +36,7 @@ import { DispatchComponent } from './dispatch/dispatch.component';
 import { BpfcDetailComponent } from './bpfc-detail/bpfc-detail.component';
 import { Bpfc1Component } from './bpfc-1/bpfc-1.component';
 import { GlueTypeComponent } from './glue-type/glue-type.component';
+import { MixingGlueComponent } from './mixing-glue/mixing-glue.component';
 
 const routes: Routes = [
   {
@@ -403,6 +404,22 @@ const routes: Routes = [
               {
                 path: 'mixing/:glueID/:estimatedStartTime/:estimatedFinishTime/:stdcon',
                 component: MixingComponent,
+                data: {
+                  title: 'Mixing',
+                  breadcrumb: 'Mixing'
+                }
+              },
+              {
+                path: 'mixing-glue',
+                component: MixingGlueComponent,
+                data: {
+                  title: 'Mixing',
+                  breadcrumb: 'Mixing'
+                }
+              },
+              {
+                path: 'mixing-glue/:glueID/:estimatedStartTime/:estimatedFinishTime/:stdcon',
+                component: MixingGlueComponent,
                 data: {
                   title: 'Mixing',
                   breadcrumb: 'Mixing'

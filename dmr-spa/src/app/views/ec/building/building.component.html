@@ -21,12 +21,24 @@
                     childMapping="childNodes"
                     allowExcelExport='true'
                     allowPdfExport='true'
+                    (queryCellInfo)='queryCellInfo($event)'
                     (rowSelected)="rowSelected($event)"
       >
         <e-columns>
           <e-column field="entity.level" width="80" [allowEditing]= 'false' isPrimaryKey="true" headerText="Level">
           </e-column>
-          <e-column field="entity.name" headerText="Building Name"> </e-column>
+          <e-column field="entity.name" headerText="Building Name" isPrimaryKey='true' > </e-column>
+          <e-column field="entity.hourlyOutput" headerText="Hourly Output"> </e-column>
+          <e-column field="entity.lunchTime" headerText="LunchTime">
+               <ng-template #editTemplate let-data>
+                  <ejs-dropdownlist #lineDropdownlist [dataSource]='lunchTimeData' [(ngModel)]="data.lunchTime" popupHeight='200px'
+                      popupWidth='250px' [allowFiltering]='true' [fields]='fields'(select)='onSelectLunchTime($event)'>
+                  </ejs-dropdownlist>
+                </ng-template>
+                <ng-template #template let-data>
+                  {{data.entity.lunchTime}}
+                </ng-template>
+          </e-column>
         </e-columns>
       </ejs-treegrid>
     </div>

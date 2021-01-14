@@ -13,6 +13,6 @@ namespace DMR_API._Services.Interface
         bool AddDispatching(Dispatch dispatch);
         bool UpdateStartDispatchingTime(int id);
         Task<bool> UpdateAmount(int id, double amount);
-        bool AddDispatchingRange(List<Dispatch> dispatch);
+        object AddDispatchingRange(List<Dispatch> dispatch);
     }
 }

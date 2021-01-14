@@ -19,22 +19,24 @@
   .real {
     background-color: #b8daff!important;
   }
-  input.error-scan {
+  #mixing input.error-scan {
     width: 100%;
     padding: 12px 20px;
     box-sizing: border-box;
     border: none;
     background-color: #dc3545;
-    color: white;
+    border: none!important;
+    color: white!important;
   }
-  input.success-scan {
+  #mixing input.success-scan {
     width: 100%;
     padding: 12px 20px;
     box-sizing: border-box;
     border: none;
     background-color: #3CBC8D;
-    color: white;
-    font-weight: bold
+    font-weight: bold;
+     border: none!important;
+     color: white!important;
   }
   /* input.noHover{
   pointer-events: none; 
@@ -45,15 +47,19 @@ input.lock {
 .lock {
   pointer-events: none;
 }
-input.warning-focus {
+#mixing input.warning-focus {
   animation: warning-frames .5s infinite;
-  color: black;
+  color: black!important;
   /* border: 1px solid #3CBC8D; */
-
 }
-input {
+#mixing input {
   /* pointer-events: none; */
   text-align: center;
+  font-size: 50px!important;
+  font-weight: bold!important;
+  height: calc(4.875rem + 2px)!important;
+  border: 1px solid #635e5e!important;
+  color:  #000000!important;
 }
 @keyframes warning-frames {
   from {background-color: #fade40;}

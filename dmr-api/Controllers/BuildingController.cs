@@ -1,6 +1,7 @@
 ﻿using DMR_API._Services.Interface;
 using DMR_API.DTO;
 using DMR_API.Helpers;
+using DMR_API.Models;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -78,6 +79,14 @@ namespace DMR_API.Controllers
             throw new Exception("Creating the building failed on save");
         }
         [HttpPost]
+        public async Task<IActionResult> AddOrUpdateLunchTime(LunchTimeDto create)
+        {
+            var status = await _buildingService.AddOrUpdateLunchTime(create);
+            if (status) return NoContent();
+            else
+                throw new Exception("Creating or updating the lunchTime failed on save");
+        }
+        [HttpPost]
         public async Task<IActionResult> CreateMainBuilding(BuildingDto create)
         {
 
@@ -100,6 +109,6 @@ namespace DMR_API.Controllers
                 return NoContent();
             throw new Exception("Error deleting the building");
         }
-       
+
     }
 }

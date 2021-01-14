@@ -25,3 +25,11 @@ export interface IMixingInfoDetails {
     ingredientID: number;
     mixingInfoID: number;
 }
+
+export interface IMixingDetailForResponse {
+    mixedConsumption: string;
+    deliveryConsumption: string;
+    mixedTime: number;
+    deliveryTime: number;
+}
+

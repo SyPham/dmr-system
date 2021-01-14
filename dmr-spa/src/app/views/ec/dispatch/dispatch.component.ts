@@ -66,13 +66,13 @@ export class DispatchComponent implements OnInit {
     this.building = BUIDLING;
     if (this.value.glueName.includes(' + ')) {
       this.unitTitle = 'Actual Consumption';
-      this.mixedConsumption = +(this.value.standardConsumption * 1000).toFixed(0);
+      this.mixedConsumption = +(this.value.mixedConsumption * 1000).toFixed(0);
     } else {
       this.unitTitle = 'Standard Consumption';
       this.mixedConsumption = +(this.value.standardConsumption * 1000).toFixed(0);
     }
     this.loadData();
-    this.startDispatchingTime = new Date().toLocaleString();
+    this.startDispatchingTime = new Date();
     this.isShow = this.value.mixingInfoID === 0 && !this.value.glueName.includes(' + ');
   }
   actionBegin(args) {
@@ -120,6 +120,7 @@ export class DispatchComponent implements OnInit {
           mixingInfoID: item.mixingInfoID,
           mixedConsumption: item.mixedConsumption,
           glue: item.glue,
+          stationID: item.stationID,
           real: item.real * 1000,
           warningStatus: false,
           scanStatus: false,
@@ -130,8 +131,15 @@ export class DispatchComponent implements OnInit {
         };
         return itemData;
       });
+      if (this.value.glueName.includes(' + ')) {
+        this.unitTitle = 'Actual Consumption';
+        this.mixedConsumption = +(this.value.mixedConsumption * 1000).toFixed(0);
+      } else {
+        this.unitTitle = 'Standard Consumption';
+        this.mixedConsumption = +(this.value.standardConsumption * 1000).toFixed(0);
+      }
       const deliverTotal = this.data.reduce((a, b) => a + (b.real || 0), 0);
-      const res = +((this.value.standardConsumption * 1000).toFixed(0)) - deliverTotal;
+      const res = this.mixedConsumption - deliverTotal;
       this.mixedConsumption = res ;
       let id = 0;
       const dataID = this.data.map(item => item.id);
@@ -146,6 +154,7 @@ export class DispatchComponent implements OnInit {
       lineID: data.lineID,
       amount: data.real / 1000,
       createdTime: new Date(),
+      stationID: data.stationID,
       standardAmount: this.value.standardConsumption,
       estimatedTime: this.value.estimatedFinishTime,
       startDispatchingTime: this.startDispatchingTime,
@@ -174,6 +183,7 @@ export class DispatchComponent implements OnInit {
           lineID: data.lineID,
           amount: data.real / 1000,
           createdTime: new Date(),
+          stationID: data.stationID,
           standardAmount: this.value.standardConsumption,
           estimatedTime: this.value.estimatedFinishTime,
           startDispatchingTime: this.startDispatchingTime,
@@ -181,11 +191,15 @@ export class DispatchComponent implements OnInit {
         };
         return item;
     });
-    this.dispatchService.addDispatch(obj).subscribe((res) => {
-      this.loadData();
-      this.alertify.success('Success');
-      this.todolistService.setValue(true);
-      this.activeModal.dismiss();
+    this.dispatchService.addDispatch(obj).subscribe((res: any) => {
+      if (res.status) {
+        this.loadData();
+        this.alertify.success('Success');
+        this.todolistService.setValue(true);
+        this.activeModal.dismiss();
+      } else {
+        this.alertify.warning(res.message, true);
+      }
     }, error => {
         this.alertify.warning(error);
     });

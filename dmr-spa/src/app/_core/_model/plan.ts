@@ -41,6 +41,7 @@ export interface IDispatch {
     mixingInfoID: number;
     glue: string;
     real: number;
+    stationID: number;
     warningStatus: boolean;
     scanStatus: boolean;
     isLock: boolean;
@@ -54,6 +55,7 @@ export interface IDispatchForCreate {
     amount: number;
     mixingInfoID: number;
     createdTime: Date;
+    stationID: number;
     estimatedTime: Date;
     standardAmount: number;
     startDispatchingTime: any;

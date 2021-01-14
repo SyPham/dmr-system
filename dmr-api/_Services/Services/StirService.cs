@@ -19,6 +19,7 @@ namespace DMR_API._Services.Services
         private readonly IMapper _mapper;
         private readonly IScaleMachineService _scaleMachineService;
         private readonly ISettingService _settingService;
+        private readonly IMixingInfoRepository _repoMixingInfo;
         private readonly IToDoListRepository _repoTodolist;
         private readonly IStirRepository _repoStir;
         private readonly IMongoRepository<Data.MongoModels.RawData> _repoRawData;
@@ -27,6 +28,7 @@ namespace DMR_API._Services.Services
         public StirService(IMapper mapper,
             IScaleMachineService scaleMachineService,
             ISettingService settingService,
+            IMixingInfoRepository repoMixingInfo,
             IToDoListRepository repoTodolist,
             IStirRepository repoStir,
             IMongoRepository<DMR_API.Data.MongoModels.RawData> repoRawData,
@@ -35,6 +37,7 @@ namespace DMR_API._Services.Services
             _mapper = mapper;
             _scaleMachineService = scaleMachineService;
             _settingService = settingService;
+            _repoMixingInfo = repoMixingInfo;
             _repoTodolist = repoTodolist;
             _repoStir = repoStir;
             _repoRawData = repoRawData;
@@ -43,13 +46,37 @@ namespace DMR_API._Services.Services
 
         public async Task<bool> Add(StirDTO model)
         {
+            var mixing = await _repoMixingInfo.FindAll(x => x.ID == model.MixingInfoID)
+                .Include(x => x.Glue)
+                    .ThenInclude(x => x.GlueIngredients)
+                    .ThenInclude(x => x.Ingredient).FirstOrDefaultAsync();
+
+            if (mixing is null)
+            {
+                return false;
+            }
+            var chemicalA = mixing.Glue.GlueIngredients.FirstOrDefault(x => x.Position == "A");
+            if (chemicalA is null)
+            {
+                return false;
+            }
+            if (chemicalA.Ingredient.GlueTypeID == null)
+            {
+                return false;
+            }
+            var ct = DateTime.Now.ToLocalTime();
             var item = _mapper.Map<Stir>(model);
-            item.StartScanTime = DateTime.Now;
+            model.FinishStiringTime = model.FinishStiringTime.ToLocalTime();
+            model.StartStiringTime = model.StartStiringTime.ToLocalTime();
+            model.EndTime = model.EndTime.ToLocalTime();
+            model.StartTime = model.StartTime.ToLocalTime();
+            model.StartScanTime = model.StartScanTime.ToLocalTime();
+            item.StartScanTime = ct;
             var stirModel = await _repoStir.FindAll(x => x.MixingInfoID == model.MixingInfoID).CountAsync();
 
             if (stirModel == 0)
             {
-                item.StartStiringTime = DateTime.Now;
+                item.StartStiringTime = ct;
             }
             _repoStir.Add(item);
             return await _repoStir.SaveAll();
@@ -127,7 +154,7 @@ namespace DMR_API._Services.Services
                         .OrderByDescending(x => x.CreatedDateTime).ToArray();
 
                   
-                    int temp = 0;
+                    double temp = 0;
                     int standardDuration = item.StandardDuration == 0 ? (int)model.GlueType.Minutes * 60 : item.StandardDuration;
                     //if (rawData.Count == 0) return false;
                     // Neu = 0 thì lấy dữ liệu giả
@@ -135,21 +162,12 @@ namespace DMR_API._Services.Services
                     {
                         temp = (int)Math.Round((model.EndTime - model.StartTime).TotalMinutes, 0);
                         item.StandardDuration = standardDuration;
-                        item.ActualDuration = temp;
-                        item.StartTime = model.StartTime;
-                        item.EndTime = model.EndTime;
+                        item.ActualDuration = temp.ToInt();
+                        item.StartTime = DateTime.MinValue;
+                        item.EndTime = DateTime.MinValue;
                         item.FinishStiringTime = model.EndTime;
-                        item.Status = true;
+                        item.Status = false;
                         _repoStir.Update(item);
-                        //var stirList = await _repoStir.FindAll(x => x.MixingInfoID == model.MixingInfoID)
-                        //    .OrderBy(x => x.CreatedTime).ToListAsync();
-
-                        var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
-                        todolist.ForEach(todo =>
-                        {
-                            todo.StartStirTime = item.StartTime;
-                            todo.FinishStirTime = item.FinishStiringTime;
-                        });
                         await _repoStir.SaveAll();
                     }
                     else
@@ -160,18 +178,17 @@ namespace DMR_API._Services.Services
                            .Where(x => x.MachineID == machineID && sequence == x.Sequence)
                            .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence })
                            .OrderByDescending(x => x.CreatedDateTime).ToList();
-                        foreach (var raw in rawData)
-                        {
-                            if (raw.RPM >= model.GlueType.RPM)
-                            {
-                                temp++;
-                            }
-                        }
+                        var newData = rawData.Where(x => x.RPM >= model.GlueType.RPM).OrderBy(x=> x.CreatedDateTime).ToList();
+                       
+                        var min = rawData.FirstOrDefault().CreatedDateTime;
+                        var max = rawData.LastOrDefault().CreatedDateTime;
+                        temp = (max - min).TotalSeconds;
+                       
                         // Neu khuay du thoi gian va du toc do thi pass
                         if (standardDuration <= temp)
                         {
                             item.StandardDuration = standardDuration;
-                            item.ActualDuration = temp;
+                            item.ActualDuration = (int)temp;
                             item.StartTime = rawData.LastOrDefault().CreatedDateTime;
                             item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
                             item.FinishStiringTime = currentTime;
@@ -191,7 +208,7 @@ namespace DMR_API._Services.Services
                         else // nguoc lai thi khuay them
                         {
                             item.StandardDuration = standardDuration;
-                            item.ActualDuration = temp;
+                            item.ActualDuration = temp.ToInt();
                             item.StartTime = rawData.LastOrDefault().CreatedDateTime;
                             item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
                             item.Status = false;
@@ -200,7 +217,7 @@ namespace DMR_API._Services.Services
                             var stir = new Stir()
                             {
                                 MixingInfoID = model.MixingInfoID,
-                                StandardDuration = standardDuration - temp,
+                                StandardDuration = standardDuration - temp.ToInt(),
                                 Status = false,
                                 CreatedTime = DateTime.Now,
                                 GlueName = model.GlueName,
@@ -228,17 +245,27 @@ namespace DMR_API._Services.Services
         {
             var item = await _repoStir.FindAll(x => x.MixingInfoID == mixingInfoID && x.StartScanTime == DateTime.MinValue).FirstOrDefaultAsync();
             if (item is null) return false;
-            item.StartScanTime = DateTime.Now;
+            item.StartScanTime = DateTime.Now.ToLocalTime();
             _repoStir.Update(item);
             return await _repoStir.SaveAll();
         }
 
         public async Task<Stir> UpdateStir(StirDTO model)
         {
+            model.FinishStiringTime = model.FinishStiringTime.ToLocalTime();
+            model.StartStiringTime = model.StartStiringTime.ToLocalTime();
+            model.EndTime = model.EndTime.ToLocalTime();
+            model.StartTime = model.StartTime.ToLocalTime();
+            model.StartScanTime = model.StartScanTime.ToLocalTime();
             using var transaction = new TransactionScopeAsync().Create();
             {
                 try
                 {
+                    if (model.GlueType is null)
+                    {
+                        transaction.Dispose();
+                        return null;
+                    }
                     var currentTime = DateTime.Now;
                     var item = await _repoStir.FindAll(x => x.ID == model.ID).Include(x => x.Setting).FirstOrDefaultAsync();
 
@@ -253,27 +280,31 @@ namespace DMR_API._Services.Services
                         .OrderByDescending(x => x.CreatedDateTime).ToArray();
 
 
-                    int temp = 0;
+                    double temp = 0;
+                    var RPMList = new List<double>();
+
                     int standardDuration = item.StandardDuration == 0 ? (int)model.GlueType.Minutes * 60 : item.StandardDuration;
                     //if (rawData.Count == 0) return false;
                     // Neu = 0 thì lấy dữ liệu giả
                     if (rawDataModel.Length == 0)
                     {
+                        temp = 0;
                         item.StandardDuration = standardDuration;
-                        item.ActualDuration = standardDuration;
-                        item.StartTime = item.StartScanTime;
-                        item.EndTime = item.StartScanTime.AddMinutes(model.GlueType.Minutes);
-                        item.FinishStiringTime = currentTime;
-                        item.Status = true;
+                        item.ActualDuration = temp.ToInt();
+                        item.StartTime = DateTime.MinValue;
+                        item.EndTime = DateTime.MinValue;
+                        item.FinishStiringTime = model.EndTime;
+                        item.Status = false;
                         _repoStir.Update(item);
-                     
+                        await _repoStir.SaveAll();
+
                         var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
                         todolist.ForEach(todo =>
                         {
                             todo.StartStirTime = item.StartScanTime;
                             todo.FinishStirTime = item.StartScanTime.AddMinutes(model.GlueType.Minutes);
                         });
-                        await _repoStir.SaveAll();
+                        await _repoTodolist.SaveAll();
                     }
                     else
                     {
@@ -283,18 +314,16 @@ namespace DMR_API._Services.Services
                            .Where(x => x.MachineID == machineID && sequence == x.Sequence)
                            .Select(x => new { x.RPM, x.CreatedDateTime, x.Sequence })
                            .OrderByDescending(x => x.CreatedDateTime).ToList();
-                        foreach (var raw in rawData)
-                        {
-                            if (raw.RPM >= model.GlueType.RPM)
-                            {
-                                temp++;
-                            }
-                        }
+                        var newData = rawData.Where(x => x.RPM >= model.GlueType.RPM).OrderBy(x => x.CreatedDateTime).ToList();
+
+                        var min = rawData.FirstOrDefault().CreatedDateTime;
+                        var max = rawData.LastOrDefault().CreatedDateTime;
+                        temp = (max - min).TotalSeconds;
                         // Neu khuay du thoi gian va du toc do thi pass
                         if (standardDuration <= temp)
                         {
                             item.StandardDuration = standardDuration;
-                            item.ActualDuration = temp;
+                            item.ActualDuration = (int)temp;
                             item.StartTime = rawData.LastOrDefault().CreatedDateTime;
                             item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
                             item.FinishStiringTime = currentTime;
@@ -303,18 +332,20 @@ namespace DMR_API._Services.Services
                             //var stirList = await _repoStir.FindAll(x => x.MixingInfoID == model.MixingInfoID)
                             //    .OrderBy(x => x.CreatedTime).ToListAsync();
 
+                            await _repoStir.SaveAll();
                             var todolist = await _repoTodolist.FindAll(x => x.MixingInfoID == model.MixingInfoID).ToListAsync();
                             todolist.ForEach(todo =>
                             {
                                 todo.StartStirTime = item.StartTime;
                                 todo.FinishStirTime = item.FinishStiringTime;
                             });
-                            await _repoStir.SaveAll();
+                            await _repoTodolist.SaveAll();
+
                         }
                         else // nguoc lai thi khuay them
                         {
                             item.StandardDuration = standardDuration;
-                            item.ActualDuration = temp;
+                            item.ActualDuration = temp.ToInt();
                             item.StartTime = rawData.LastOrDefault().CreatedDateTime;
                             item.EndTime = rawData.FirstOrDefault().CreatedDateTime;
                             item.Status = false;
@@ -323,7 +354,7 @@ namespace DMR_API._Services.Services
                             var stir = new Stir()
                             {
                                 MixingInfoID = model.MixingInfoID,
-                                StandardDuration = standardDuration - temp,
+                                StandardDuration = standardDuration - temp.ToInt(),
                                 Status = false,
                                 CreatedTime = DateTime.Now,
                                 GlueName = model.GlueName,

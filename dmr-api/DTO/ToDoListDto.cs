@@ -43,12 +43,13 @@ namespace DMR_API.DTO
     }
     public class ToDoListForReturnDto
     {
-        public ToDoListForReturnDto(List<ToDoListDto> data, int doneTotal, int todoTotal, int total)
+        public ToDoListForReturnDto(List<ToDoListDto> data, int doneTotal = 0, int todoTotal = 0, int delayTotal = 0, int total = 0)
         {
             Data = data;
             DoneTotal = doneTotal;
             Total = total;
             TodoTotal = todoTotal;
+            DelayTotal = delayTotal;
             var val = Math.Round(((double)doneTotal / total) * 100, 0);
             PercentageOfDone =  Double.IsNaN(val) ? 0 : val;
         }
@@ -56,6 +57,7 @@ namespace DMR_API.DTO
         public double Total { get; set; }
         public double DoneTotal { get; set; }
         public double TodoTotal { get; set; }
+        public double DelayTotal { get; set; }
         public double PercentageOfDone { get; set; }
     }
 }

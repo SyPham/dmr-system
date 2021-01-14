@@ -93,6 +93,9 @@ export class BPFCEstablishService {
   updateSeason(entity) {
     return this.http.put(this.baseUrl + 'BPFCEstablish/UpdateSeason', entity);
   }
+  updateDueDate(entity) {
+    return this.http.put(this.baseUrl + 'BPFCEstablish/UpdateDueDate', entity);
+  }
   AddHistoryBPFC(entity) {
     return this.http.post(this.baseUrl + 'BPFCEstablish/AddBPFCHistory', entity);
   }

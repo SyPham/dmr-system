@@ -18,9 +18,17 @@ namespace DMR_API.SignalrHub
         {
             await Clients.All.SendAsync("ReceiveMessage", user, message);
         }
+        public async Task Welcom(string scalingMachineID, string message, string unit)
+        {
+            await Clients.All.SendAsync("Welcom", scalingMachineID, message, unit);
+        }
         public async Task CheckOnline()
         {
             await Clients.All.SendAsync("Online", CurrentConnections.Count);
+        }
+        public async Task JoinHub(int machineID)
+        {
+            await Clients.All.SendAsync("ReceiveJoinHub", machineID);
         }
         public async Task Todolist(int buildingID)
         {

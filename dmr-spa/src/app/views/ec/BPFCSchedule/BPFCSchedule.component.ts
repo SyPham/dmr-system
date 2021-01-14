@@ -33,6 +33,7 @@ import { DataService } from 'src/app/_core/_service/data.service';
 import { Subscription, SubscriptionLike } from 'rxjs';
 import { Button } from '@syncfusion/ej2-angular-buttons';
 import { IRole } from 'src/app/_core/_model/role';
+import { DatePicker } from '@syncfusion/ej2-angular-calendars';
 const HttpUploadOptions = {
   headers: new HttpHeaders({ Accept: 'application/json' }),
 };
@@ -85,6 +86,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
   textSearchs: string = null;
   dataText: any;
   public fieldsBPFCs: object = { text: 'name', value: 'id' };
+  sortSettings = { columns: [{ field: 'articleNo', direction: 'Ascending' }] };
   public searchOptions: SearchSettingsModel;
   subscriptions: Subscription = new Subscription();
   checkCode = false;
@@ -106,6 +108,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
     color: '#fff',
   };
   role: IRole;
+  dueDate: Date;
   constructor(
     private modalNameService: ModalNameService,
     private alertify: AlertifyService,
@@ -196,7 +199,9 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
       this.articleNoID = args.itemData.id;
     }
   }
-
+  onChangeDueDate(args) {
+    this.dueDate = args.value as Date;
+  }
   createdSearch(args) {
     this.getAllUsers();
     const gridElement = this.gridObj.element;
@@ -309,7 +314,8 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
           if (res.status === true) {
             this.alertify.success('Đã sao chép thành công! <br> Copy succeeded!');
             this.modalService.dismissAll();
-            this.getDone();
+            this.getUndone();
+            this.gridObj.search(this.articleNoNew);
             this.value = null;
           } else {
             this.alertify.error('The BPFC exists!');
@@ -354,6 +360,7 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
       if (res.status === true) {
         this.alertify.success('Đã sao chép thành công! <br> Copy succeeded!');
         this.getUndone();
+        this.gridObj.search(this.articleNoNew);
         this.modalService.dismissAll();
       } else {
         this.alertify.error('The BPFC exists!');
@@ -411,14 +418,30 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
         id: args.data.id,
         season: args.data.season,
       };
-      this.bPFCEstablishService.updateSeason(entity).subscribe(() => {
-        this.alertify.success('Update Season Success');
-        this.getAllUsers();
-      });
+      const previousSeason = args.previousData.season;
+      if (previousSeason !== null || previousSeason !== '' && previousSeason !== args.data.season) {
+        this.bPFCEstablishService.updateSeason(entity).subscribe(() => {
+          this.alertify.success('Update season successfully');
+          this.getAllUsers();
+        });
+      }
+      const dueDateEntity = {
+        id: args.data.id,
+        dueDate: this.dueDate,
+      };
+      const previousDueDate = args.previousData.dueDate;
+      if (args.data.artProcess === 'STF' && this.dueDate.toDateString() !== previousDueDate && previousDueDate != null) {
+        this.bPFCEstablishService.updateDueDate(dueDateEntity).subscribe(() => {
+          this.getAllUsers();
+          this.alertify.success('Update due date successfully');
+        });
+      }
     }
   }
 
-  dataBound() {
+  dataBound(args) {
+    console.log('databound', args);
+    // (this.gridObj.columns[0] as any).isPrimaryKey = 'true';
     //  this.gridObj.autoFitColumns();
   }
 
@@ -515,6 +538,12 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
       }, err => { this.alertify.warning(err); });
     });
   }
+  rowDB(args) {
+    const data = args.data as any;
+    if (data.dueDateStatus) {
+      args.row.classList.add('bgcolor');
+    }
+  }
   editTextOfBtn() {
     this.undoneBtn = new Button(
       {
@@ -574,6 +603,8 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
           articleNo: item.articleNo,
           approvalStatus: item.approvalStatus,
           finishedStatus: item.finishedStatus,
+          dueDate: item.dueDate,
+          dueDateStatus: item.dueDateStatus,
           approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
             ?.username,
           createdBy: item.createdBy,
@@ -601,6 +632,8 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
           modelNo: item.modelNo,
           createdDate: new Date(item.createdDate),
           articleNo: item.articleNo,
+          dueDate: item.dueDate,
+          dueDateStatus: item.dueDateStatus,
           approvalStatus: item.approvalStatus,
           finishedStatus: item.finishedStatus,
           approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]
@@ -634,6 +667,8 @@ export class BPFCScheduleComponent implements OnInit, OnDestroy {
           modelNo: item.modelNo,
           createdDate: new Date(item.createdDate),
           articleNo: item.articleNo,
+          dueDate: item.dueDate,
+          dueDateStatus: item.dueDateStatus,
           approvalStatus: item.approvalStatus,
           finishedStatus: item.finishedStatus,
           approvedBy: this.users.filter((a) => a.id === item.approvalBy)[0]

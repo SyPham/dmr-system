@@ -123,6 +123,7 @@ namespace DMR_API.Controllers
                         var modelNo = workSheet.Cells[rowIterator, 2].Value.ToSafetyString();
                         var articleNo = workSheet.Cells[rowIterator, 3].Value.ToSafetyString();
                         var process = workSheet.Cells[rowIterator, 4].Value.ToSafetyString();
+                        DateTime? dueDate = workSheet.Cells[rowIterator, 5].Value as DateTime?;
                         if (!modelName.IsNullOrEmpty() && !modelNo.IsNullOrEmpty() && !articleNo.IsNullOrEmpty() && !process.IsNullOrEmpty())
                         {
                             datasList.Add(new BPFCEstablishDtoForImportExcel()
@@ -132,13 +133,12 @@ namespace DMR_API.Controllers
                                 ArticleNo = articleNo,
                                 Process = process,
                                 CreatedDate = DateTime.Now,
-                                CreatedBy = userid
+                                CreatedBy = userid,
+                                DueDate = dueDate
                             });
                         }
-                        
                     }
                 }
-
                 await _bPFCEstablishService.ImportExcel(datasList);
                 return Ok();
             }
@@ -217,6 +217,15 @@ namespace DMR_API.Controllers
         {
 
             if (await _bPFCEstablishService.UpdateSeason(entity))
+                return NoContent();
+
+            return BadRequest($"Updating BPFC {entity.ID} failed on save");
+        }
+        [HttpPut]
+        public async Task<IActionResult> UpdateDueDate(BPFCEstablishUpdateDueDate entity)
+        {
+
+            if (await _bPFCEstablishService.UpdateDueDate(entity))
                 return NoContent();
 
             return BadRequest($"Updating BPFC {entity.ID} failed on save");

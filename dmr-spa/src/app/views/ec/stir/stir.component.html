@@ -1,11 +1,13 @@
 <div class="card">
   <div class="card-header">
-    <h3>{{ 'EXECUTION' | translate }} - {{ 'STIR' | translate }}</h3>
+    <h3 class="card-title font-weight-bold">
+          {{ 'EXECUTION' | translate }} - {{ 'STIR' | translate }}
+    </h3>
   <div class="card-tools">
     <button type="button" 
     [routerLink]="['/ec/execution/todolist-2/' + glueName]"
-     class="btn btn-tool" data-card-widget="collapse">
-      <i class="fas fa-reply"></i>
+     class="btn btn-sm btn-primary">
+      <i class="fas fa-reply"></i> Back
     </button>
   </div>
   </div>
@@ -31,16 +33,33 @@
   </div>
   <div class="card-body p-0">
     <h3 class="text-center text-danger">{{ 'GLUE_NAME' | translate }}: {{glueName}}</h3>
-    <div class="d-inline-flex mb-3">
-      <div class="p-2 mx-1"><b class="font-weight-bold">{{ 'Standard RPM' | translate }}:</b> {{standardRPM}}</div>
-      <div class="p-2 mr-1"><b class="font-weight-bold">{{ 'Duration' | translate }}:</b> {{duration }} {{ 'minutes' | translate }}</div>
-      <div class="p-2 mr-1" *ngIf="startScanTime !== null"><b class="font-weight-bold">{{'Start Scan Time'| translate}}: </b> {{startScanTime | date: 'HH:mm:ss'}} </div>
-    </div>
     <ejs-grid [dataSource]='stirData' #grid gridLines='Both' [allowSorting]='true' [allowExcelExport]='true'
       allowFiltering='true' [filterSettings]='filterSettings' [pageSettings]='pageSettings' allowPaging="true"
       [toolbar]='toolbarOptions' allowResizing='true' [rowHeight]='60' (dataBound)='dataBound()' showColumnMenu='true'
       (toolbarClick)='toolbarClick($event)'>
       <e-columns>
+        <ng-template #toolbarTemplate let-data>
+          <ejs-toolbar>
+            <e-items >
+              <e-item>
+                <ng-template #template>
+                  <div class="row">
+                    <div class="col-md-12">
+                      <button class="mr-1 btn btn-sm btn-primary"><b class="font-weight-bold">{{ 'Standard RPM' | translate }}:</b>
+                        {{standardRPM}}</button>
+                      <button class="mr-1 btn btn-sm btn-primary"><b class="font-weight-bold">{{ 'Duration' | translate }}:</b>
+                        {{duration }} {{ 'minutes' | translate }}</button>
+                      <button class=" btn btn-sm btn-primary" *ngIf="startScanTime !== null">
+                        <b class="font-weight-bold">{{'Start Scan Time'| translate}}: </b>
+                        {{startScanTime | date: 'HH:mm:ss'}}
+                      </button>
+                    </div>
+                  </div>
+                </ng-template>
+              </e-item>
+            </e-items>
+          </ejs-toolbar>
+        </ng-template>
         <e-column field='Seq.' textAlign='Center' headerText='Seq.' width='60'>
           <ng-template #headerTemplate>
             {{ 'SEQ_LABEL' | translate }}

@@ -67,7 +67,7 @@ namespace DMR_API.Controllers
                 return NoContent();
             }
 
-            throw new Exception("Creating the model name failed on save");
+            throw new Exception("Creating the stiring failed on save");
         }
 
         [HttpPut]
@@ -84,7 +84,7 @@ namespace DMR_API.Controllers
         {
             if (await _stirService.Delete(id))
                 return NoContent();
-            throw new Exception("Error deleting the model name");
+            throw new Exception("Error deleting the stiring");
         }
 
         [HttpGet]

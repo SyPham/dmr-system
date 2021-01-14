@@ -17,6 +17,7 @@ import * as signalr from '../../../../assets/js/ec-client.js';
 import { debounceTime } from 'rxjs/operators';
 import { IScanner } from 'src/app/_core/_model/IToDoList.js';
 import { TodolistService } from 'src/app/_core/_service/todolist.service.js';
+import { IMixingDetailForResponse } from 'src/app/_core/_model/IMixingInfo.js';
 
 const SUMMARY_RECIEVE_SIGNALR = 'ok';
 const BIG_MACHINE_UNIT = 'k';
@@ -68,6 +69,9 @@ export class MixingComponent implements OnInit, OnDestroy {
   stdcon: number;
   subject = new Subject<IScanner>();
   subscription: Subscription[] = [];
+  detail: IMixingDetailForResponse;
+  scaleStatus = true;
+  checkedSmallScale: boolean;
   constructor(
     private route: ActivatedRoute,
     private alertify: AlertifyService,
@@ -83,9 +87,11 @@ export class MixingComponent implements OnInit, OnDestroy {
   }
   ngOnDestroy(): void {
     this.subscription.forEach(item => item.unsubscribe());
+    this.offSignalr();
   }
   ngOnInit() {
     this.checkQRCode();
+    this.checkedSmallScale = false;
     const BUIDLING: IBuilding = JSON.parse(localStorage.getItem('building'));
     const ROLE: IRole = JSON.parse(localStorage.getItem('level'));
     this.role = ROLE;
@@ -94,6 +100,15 @@ export class MixingComponent implements OnInit, OnDestroy {
     this.startTime = new Date();
     this.getScalingSetting();
     this.onRouteChange();
+  }
+  onChangeScale(args) {
+    const scaleName = args.target.value;
+    this.checkedSmallScale = true;
+    this.unit = 'g';
+    this.scalingKG = 'g';
+  }
+  reloadPage() {
+    window.location.reload();
   }
   private checkQRCode() {
     this.subscription.push(this.subject
@@ -134,6 +149,7 @@ export class MixingComponent implements OnInit, OnDestroy {
             }
             if (item.position === 'A') {
               this.changeExpected('A', this.stdcon);
+              this.checkedSmallScale = true;
               this.startTime = new Date();
             }
             // const checkIncoming = await this.checkIncoming(item.name, this.level.name, input[1]);
@@ -239,6 +255,7 @@ export class MixingComponent implements OnInit, OnDestroy {
           };
         });
         this.glueName = res.name;
+        this.getMixingDetail();
       });
   }
 
@@ -398,7 +415,7 @@ export class MixingComponent implements OnInit, OnDestroy {
     for (const i in this.ingredients) {
       if (this.ingredients[i].position === position) {
         this.ingredients[i].real = actual;
-        this.ingredients[i].unit = position === 'A' ? BIG_MACHINE_UNIT : unit;
+        // this.ingredients[i].unit = position === 'A' ? BIG_MACHINE_UNIT : unit;
         break; // Stop this loop, we found it!
       }
     }
@@ -411,7 +428,7 @@ export class MixingComponent implements OnInit, OnDestroy {
         this.ingredients[i].focusReal = false;
       }
     }
-    if (signalr.SCALING_CONNECTION_HUB.state === HubConnectionState.Connected) {
+    if (signalr.CONNECTION_HUB.state === HubConnectionState.Connected) {
       this.signal();
     } else {
       this.startScalingHub();
@@ -422,11 +439,10 @@ export class MixingComponent implements OnInit, OnDestroy {
     let max;
     let minG;
     let maxG;
-    const currentValue = parseFloat(args);
-
+    const currentValue = ingredient.position === 'A' && this.scalingKG === SMALL_MACHINE_UNIT ? parseFloat(args) / 1000 : parseFloat(args);
     if (ingredient.allow === 0) {
-      let unit = ingredient.position === 'A' ? this.stdcon : ingredient.expected.replace(/[0-9|.]+/g, '').trim();
-      unit = ingredient.position === 'A' ? BIG_MACHINE_UNIT : unit;
+      const unit = ingredient.position === 'A' ? this.stdcon : ingredient.expected.replace(/[0-9|.]+/g, '').trim();
+      // unit = ingredient.position === 'A' ? BIG_MACHINE_UNIT : unit;
       if (unit === BIG_MACHINE_UNIT) {
         min = parseFloat(ingredient.expected);
         max = parseFloat(ingredient.expected);
@@ -438,7 +454,8 @@ export class MixingComponent implements OnInit, OnDestroy {
       }
     } else {
       const exp2 = ingredient.expected.split('-');
-      const unit = exp2[0].replace(/[0-9|.]+/g, '').trim();
+      let unit = exp2[0].replace(/[0-9|.]+/g, '').trim();
+      unit = unit === 'kg' ? 'k' : 'g';
       if (unit === BIG_MACHINE_UNIT) {
         min = parseFloat(exp2[0]);
         max = parseFloat(exp2[1]);
@@ -454,7 +471,7 @@ export class MixingComponent implements OnInit, OnDestroy {
     if (ingredient.position === 'A') {
       const positionArray = ['B', 'C', 'D', 'E'];
       for (const position of positionArray) {
-        this.changeExpectedRange(args, position);
+        this.changeExpectedRange(currentValue, position);
       }
       this.changeScanStatusFocus('A', false);
       this.changeScanStatusFocus('B', true);
@@ -610,13 +627,13 @@ export class MixingComponent implements OnInit, OnDestroy {
         }
       }
     }
-    this.changeReal(ingredient.code, args);
+    this.changeReal(ingredient.code, +args);
   }
   private offSignalr() {
-    signalr.SCALING_CONNECTION_HUB.off('Welcom');
+    signalr.CONNECTION_HUB.off('Welcom');
   }
   private onSignalr() {
-    signalr.SCALING_CONNECTION_HUB.on('Welcom');
+    signalr.CONNECTION_HUB.on('Welcom');
   }
   private changeScanStatusByLength(length, item) {
     switch (length) {
@@ -702,12 +719,12 @@ export class MixingComponent implements OnInit, OnDestroy {
     }
   }
   private startScalingHub() {
-    signalr.SCALING_CONNECTION_HUB.start().then(() => {
-      signalr.SCALING_CONNECTION_HUB.on('Scaling Hub UserConnected', (conId) => {
+    signalr.CONNECTION_HUB.start().then(() => {
+      signalr.CONNECTION_HUB.on('Scaling Hub UserConnected', (conId) => {
         console.log('Scaling Hub UserConnected', conId);
         this.signal();
       });
-      signalr.SCALING_CONNECTION_HUB.on('Scaling Hub User Disconnected', (conId) => {
+      signalr.CONNECTION_HUB.on('Scaling Hub User Disconnected', (conId) => {
         console.log('Scaling Hub User Disconnected', conId);
       });
       console.log('Scaling Hub Signalr connected');
@@ -716,12 +733,12 @@ export class MixingComponent implements OnInit, OnDestroy {
     });
   }
   private signal() {
-    if (signalr.SCALING_CONNECTION_HUB.state === HubConnectionState.Connected) {
-      signalr.SCALING_CONNECTION_HUB.on(
+    if (signalr.CONNECTION_HUB.state === HubConnectionState.Connected) {
+      signalr.CONNECTION_HUB.on(
         'Welcom',
         (scalingMachineID, message, unit) => {
           if (this.scalingSetting.includes(+scalingMachineID)) {
-            if (unit === this.scalingKG) {
+            if (this.scalingKG === unit) {
               this.volume = parseFloat(message);
               this.unit = unit;
               console.log('Unit', unit, message, scalingMachineID);
@@ -733,11 +750,12 @@ export class MixingComponent implements OnInit, OnDestroy {
                 case 'B':
                   if (unit === BIG_MACHINE_UNIT) {
                     // update realA
-                    console.log('.realA', message, this.ingredients);
+                    console.log('realA', message, this.ingredients);
                     this.volumeB = this.volume;
                     this.changeActualByPosition('A', this.volumeB, unit);
                     this.checkValidPosition(this.ingredientsTamp, this.volumeB);
                   } else {
+                    this.volumeB = this.volume;
                     this.changeActualByPosition('A', this.volumeB, unit);
                     this.checkValidPosition(this.ingredientsTamp, this.volumeB);
                   }
@@ -807,7 +825,8 @@ export class MixingComponent implements OnInit, OnDestroy {
       }
     } else {
       const exp2 = ingredient.expected.split('-');
-      const unit = exp2[0].replace(/[0-9|.]+/g, '').trim();
+      let unit = exp2[0].replace(/[0-9|.]+/g, '').trim();
+      unit = unit === 'kg' ? 'k' : 'g';
       if (unit === BIG_MACHINE_UNIT) {
         min = parseFloat(exp2[0]);
         max = parseFloat(exp2[1]);
@@ -1060,6 +1079,11 @@ export class MixingComponent implements OnInit, OnDestroy {
       this.scalingSetting = data.map(item => item.machineID);
     });
   }
+  private getMixingDetail() {
+    this.todolistService.getMixingDetail(this.glueName).subscribe(detail => {
+      this.detail = detail;
+    });
+  }
   hasLock(ingredient, building, batch): Promise<any> {
     let buildingName = building;
     if (this.IsAdmin) {
@@ -1098,8 +1122,8 @@ export class MixingComponent implements OnInit, OnDestroy {
       mixBy: JSON.parse(localStorage.getItem('user')).User.ID,
       estimatedStartTime: this.estimatedStartTime,
       estimatedFinishTime: this.estimatedFinishTime,
-      startTime: this.startTime.toLocaleString(),
-      endTime: this.endTime.toLocaleString(),
+      startTime: this.startTime.toISOString(),
+      endTime: this.endTime.toISOString(),
       details
     };
     this.onSignalr();
@@ -1110,7 +1134,7 @@ export class MixingComponent implements OnInit, OnDestroy {
         // this.UpdateConsumption(item.code, item.batch, item.real);
         // const obj = {
         //   qrCode: ingredient.code,
-      //   batch: ingredient.batch,
+        // batch: ingredient.batch,
         //   consump: ingredient.real,
         //   buildingName,
         // };

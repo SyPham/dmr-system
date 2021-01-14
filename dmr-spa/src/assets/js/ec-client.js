@@ -25,26 +25,27 @@ function start() {
         setTimeout(() => start(), 5000);
     });
 }
-export const SCALING_CONNECTION_HUB = new HubConnectionBuilder()
-    .withUrl(environment.scalingHub)
-    .withAutomaticReconnect([1000, 3000, 5000, 10000, 30000])
-    //  .configureLogging(LogLevel.Information)
-    .build();
-// Start the connection.
-function startScalingHub() {
-    SCALING_CONNECTION_HUB.start().then(function () {
-        SCALING_CONNECTION_HUB.on('Scaling Hub UserConnected', (conId) => {
-            console.log("Scaling Hub UserConnected", conId);
+// export const SCALING_CONNECTION_HUB = new HubConnectionBuilder()
+//     .withUrl(environment.scalingHub)
+//     .withAutomaticReconnect([1000, 3000, 5000, 10000, 30000])
+//     //  .configureLogging(LogLevel.Information)
+//     .build();
+// // Start the connection.
+// function startScalingHub() {
+//     SCALING_CONNECTION_HUB.start().then(function () {
+//         SCALING_CONNECTION_HUB.on('Scaling Hub UserConnected', (conId) => {
+//             console.log("Scaling Hub UserConnected", conId);
 
-        });
-        SCALING_CONNECTION_HUB.on('Scaling Hub User Disconnected', (conId) => {
-            console.log("Scaling Hub User Disconnected", conId);
+//         });
+//         SCALING_CONNECTION_HUB.on('Scaling Hub User Disconnected', (conId) => {
+//             console.log("Scaling Hub User Disconnected", conId);
 
-        });
+//         });
 
-        console.log("Scaling Hub Signalr connected");
-    }).catch(function (err) {
-        setTimeout(() => startScalingHub(), 5000);
-    });
-}
-startScalingHub();
+//         console.log("Scaling Hub Signalr connected");
+//     }).catch(function (err) {
+//         setTimeout(() => startScalingHub(), 5000);
+//     });
+// }
+
+// startScalingHub();

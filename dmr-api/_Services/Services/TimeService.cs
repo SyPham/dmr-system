@@ -31,183 +31,137 @@ namespace DMR_API._Services.Services
     {
         public List<TodolistDto> GenerateTaskByTimeRange(TimeServiceParams model)
         {
-            //var lunchHour = 1;
-            //var ct = DateTime.Now;
-            //var startLunchTime = model.StartLunchTime;
-            //var finishLunchTime = model.EndLunchTime;
-            //var finishWorkingTime = model.End;
-            //var prepareTime = TimeSpan.FromMinutes(30);
-            //double replacementFrequency = model.ReplacementFrequency;
-
-            //var startWorkingTimeTemp = model.Start;
-            //var fwt = new DateTime();
-            //var kgPair = model.Consumption / 1000;
-            //var hourlyOutput = model.HourlyOutput;
-            //var end = model.End;
-            //var list = new List<ToDoListDto>();
-            //while (true)
-            //{
-            //    fwt = startWorkingTimeTemp.Add(prepareTime);
-            //    var todo = new ToDoListDto();
-            //    todo.GlueName = glue.Key.Name;
-            //    todo.GlueID = item.GlueID;
-            //    todo.PlanID = item.PlanID;
-            //    todo.LineID = item.Building.ID;
-            //    todo.LineName = item.Building.Name;
-            //    todo.PlanID = item.PlanID;
-            //    todo.BPFCID = item.BPFCID;
-            //    todo.Supplier = item.ChemicalA.Supplier.Name;
-            //    todo.PlanID = item.PlanID;
-            //    todo.GlueNameID = item.GlueName.ID;
-            //    todo.BuildingID = building.ID;
-
-            //    if (startWorkingTimeTemp > end) break;
-            //    //  12:30 >= SLT 12:30 and 13:30 <= FLT 13:30
-            //    // TGBD ma lon hon TGBD An trua thi lay tu TGKT an trua tro di
-            //    if (startWorkingTimeTemp >= startLunchTime && startWorkingTimeTemp <= finishLunchTime && fwt <= finishLunchTime || startWorkingTimeTemp > startLunchTime && startWorkingTimeTemp < finishLunchTime && fwt >= finishLunchTime)
-            //    {
-            //        startWorkingTimeTemp = finishLunchTime;
-            //        todo.Start = startWorkingTimeTemp;  // SLT 13:30
-            //        todo.End = startWorkingTimeTemp.Add(prepareTime); // 13:30 + preparetime
-            //        todo.Message += $"Giao với giờ ăn trưa: {replacementFrequency} ";
-            //        // 13:30 + 2 = 15:30 >= 14:00
-            //        var finishWorkingTimeTemp = startWorkingTimeTemp.AddHours(replacementFrequency);
-            //        if (finishWorkingTimeTemp >= finishWorkingTime)
-            //        {
-            //            replacementFrequency = (end - startWorkingTimeTemp).TotalHours;
-            //            todo.Message += $"Vượt quá endTime: {replacementFrequency}";
-            //        }
-            //        var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
-            //        todo.Consumption = standardConsumption;
-
-            //    }
-            //    else
-            //    {
-            //        //Neu TGBD < TGBD an trua && TGKT nam trong khoang TG An Trua va replacementFrequency > khoangTGAn trua thi tinh lai consumption
-            //        // 16:50 >= 16:30 -> 10minutes,
-            //        replacementFrequency = fwt >= finishWorkingTime ? (finishWorkingTime - startWorkingTimeTemp).TotalHours : replacementFrequency;
-
-            //        // TGKT > TGKT Hanh Chinh thì tính lại consumption
-            //        if (fwt >= finishWorkingTime)
-            //        {
-            //            todo.Message += $"Thoi gian lam viec con lai co {replacementFrequency} gio. Tinh lai consumption";
-            //        }
-            //        todo.Start = startWorkingTimeTemp;
-            //        var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
-            //        todo.Consumption = standardConsumption;
-            //        todo.End = fwt;
-
-            //        // Nếu Cộng thêm replacementFrequency mà TG giao nhau voi TG an trua thi phai tru ra TG an trua
-            //        var finishWorkingTimeTemp = startWorkingTimeTemp.AddHours(replacementFrequency);
-            //        // EX: StartTime của nhiệm vụ tiếp theo là 13:30 , thì khoảng từ 11:30 -> 13:30 sẽ bị giao với TG ăn trua
-            //        // 12:30 >= 11:30 and 9:30 >= 13:30
-            //        if (startLunchTime >= startWorkingTimeTemp && finishWorkingTimeTemp >= finishLunchTime)
-            //        {
-            //            var recalculateReplacementFrequency = replacementFrequency - lunchHour;
-            //            todo.Message += $"{startLunchTime.ToString("HH:mm")} >= {startWorkingTimeTemp.ToString("HH:mm")} && {finishWorkingTimeTemp.ToString("HH:mm")} >= {finishLunchTime.ToString("HH:mm")}";
-
-            //            // Nếu FWTT 14:20 > FWT 14:00-> dư ra 20 phút thì phải trừ ra 20 phút
-            //            if (finishWorkingTimeTemp >= finishWorkingTime)
-            //            {
-            //                var old = recalculateReplacementFrequency;
-            //                recalculateReplacementFrequency = recalculateReplacementFrequency - (finishWorkingTimeTemp - finishWorkingTime).TotalHours;
-            //                todo.Message += $"Tính toán lại replacementFrequency {old}: newreplacementFrequency: {recalculateReplacementFrequency} ";
-
-            //            }
-            //            var recalculateStandardConsumption = kgPair * (double)hourlyOutput * recalculateReplacementFrequency;
-            //            todo.Consumption = recalculateStandardConsumption;
-
-            //        }
-            //    }
-            //    replacementFrequency = 2;
-            //    startWorkingTimeTemp = startWorkingTimeTemp.AddHours(replacementFrequency);
-            //    list.Add(todo);
-            //}
-            //return list;
             throw new NotImplementedException();
         }
 
-        public List<Response> TimeRange(DateTime start, DateTime end)
+        public List<Response> TimeRange(DateTime startTemp, DateTime endTemp, DateTime dueDate)
         {
-            var lunchHour = 1;
-            var ct = DateTime.Now;
+            var ct = dueDate;
             var startLunchTime = new DateTime(ct.Year, ct.Month, ct.Day, 12, 30, 0);
             var finishLunchTime = new DateTime(ct.Year, ct.Month, ct.Day, 13, 30, 0);
+
+             var start = new DateTime(ct.Year, ct.Month, ct.Day, startTemp.Hour, startTemp.Minute, 0);
+            var end = new DateTime(ct.Year, ct.Month, ct.Day, endTemp.Hour, endTemp.Minute, 0);
             var finishWorkingTime = end;
             var prepareTime = TimeSpan.FromMinutes(30);
-            double replacementFrequency = 2;
+            double replacementFrequency = 4;
 
-            var startWorkingTimeTemp = start;
+            var estimatedStartTimeTemp = start;
             var fwt = new DateTime();
             var kgPair = 0.01;
             var hourlyOutput = 120;
             var list = new List<Response>();
-            while (true)
+            double RF = 4;
+            if (dueDate.Date != DateTime.Now.Date)
             {
-                fwt = startWorkingTimeTemp.Add(prepareTime);
-                var todo = new Response();
-                if (startWorkingTimeTemp > end) break;
-                //  12:30 >= SLT 12:30 and 13:30 <= FLT 13:30
-                // TGBD ma lon hon TGBD An trua thi lay tu TGKT an trua tro di
-                if (startWorkingTimeTemp >= startLunchTime && startWorkingTimeTemp <= finishLunchTime && fwt <= finishLunchTime || startWorkingTimeTemp > startLunchTime && startWorkingTimeTemp < finishLunchTime && fwt >= finishLunchTime)
+                var EST = dueDate.Date.Add(new TimeSpan(7, 30, 00)) - prepareTime;
+                estimatedStartTimeTemp = EST;
+                while (true)
                 {
-                    startWorkingTimeTemp = finishLunchTime; 
-                    todo.Start = startWorkingTimeTemp;  // SLT 13:30
-                    todo.End = startWorkingTimeTemp.Add(prepareTime); // 13:30 + preparetime
-                    todo.Message += $"Giao với giờ ăn trưa: {replacementFrequency} ";
-                    // 13:30 + 2 = 15:30 >= 14:00
-                    var finishWorkingTimeTemp = startWorkingTimeTemp.AddHours(replacementFrequency);
-                    if (finishWorkingTimeTemp >= finishWorkingTime)
+                    fwt = estimatedStartTimeTemp.Add(prepareTime);
+                    var todo = new Response();
+                    if (estimatedStartTimeTemp >= end) break;
+                    // Rot vao khoang TG an trua tinh lai consumption 
+                    if (estimatedStartTimeTemp >= startLunchTime && estimatedStartTimeTemp <= finishLunchTime)
                     {
-                        replacementFrequency = (end - startWorkingTimeTemp).TotalHours;
-                        todo.Message += $"Vượt quá endTime: {replacementFrequency}";
-                    }
-                    var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
-                    todo.Consumption = standardConsumption;
-
-                }
-                else
-                {
-                    //Neu TGBD < TGBD an trua && TGKT nam trong khoang TG An Trua va replacementFrequency > khoangTGAn trua thi tinh lai consumption
-                    // 16:50 >= 16:30 -> 10minutes,
-                    replacementFrequency = fwt >= finishWorkingTime ? (finishWorkingTime - startWorkingTimeTemp).TotalHours : replacementFrequency;
-                   
-                    // TGKT > TGKT Hanh Chinh thì tính lại consumption
-                    if (fwt >= finishWorkingTime)
-                    {
-                        todo.Message += $"Thoi gian lam viec con lai co {replacementFrequency} gio. Tinh lai consumption";
-                    }
-                    todo.Start = startWorkingTimeTemp;
-                    var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
-                    todo.Consumption = standardConsumption;
-                    todo.End = fwt;
-
-                    // Nếu Cộng thêm replacementFrequency mà TG giao nhau voi TG an trua thi phai tru ra TG an trua
-                    var finishWorkingTimeTemp = startWorkingTimeTemp.AddHours(replacementFrequency);
-                    // EX: StartTime của nhiệm vụ tiếp theo là 13:30 , thì khoảng từ 11:30 -> 13:30 sẽ bị giao với TG ăn trua
-                    // 12:30 >= 11:30 and 9:30 >= 13:30
-                    if (startLunchTime >= startWorkingTimeTemp && finishWorkingTimeTemp >= finishLunchTime)
-                    {
-                        var recalculateReplacementFrequency = replacementFrequency - lunchHour;
-                        todo.Message += $"{startLunchTime.ToString("HH:mm")} >= {startWorkingTimeTemp.ToString("HH:mm")} && {finishWorkingTimeTemp.ToString("HH:mm")} >= {finishLunchTime.ToString("HH:mm")}";
-
-                        // Nếu FWTT 14:20 > FWT 14:00-> dư ra 20 phút thì phải trừ ra 20 phút
-                        if (finishWorkingTimeTemp >= finishWorkingTime)
+                        estimatedStartTimeTemp = finishLunchTime;
+                        todo.Start = estimatedStartTimeTemp;  // SLT 13:30
+                        todo.End = estimatedStartTimeTemp.Add(prepareTime); // 13:30 + preparetime
+                        // 13:30 + 2 = 15:30 >= 14:00
+                        var estimatedStartNextTimeTemp = estimatedStartTimeTemp.AddHours(replacementFrequency);
+                        if (estimatedStartNextTimeTemp > finishWorkingTime)
                         {
-                            var old = recalculateReplacementFrequency;
-                            recalculateReplacementFrequency = recalculateReplacementFrequency - (finishWorkingTimeTemp - finishWorkingTime).TotalHours;
-                            todo.Message += $"Tính toán lại replacementFrequency {old}: newreplacementFrequency: {recalculateReplacementFrequency} ";
-
+                            replacementFrequency = (end - estimatedStartTimeTemp).TotalHours;
+                            todo.Message += $"Vượt quá endTime: {replacementFrequency}";
                         }
-                        var recalculateStandardConsumption = kgPair * (double)hourlyOutput * recalculateReplacementFrequency;
-                        todo.Consumption = recalculateStandardConsumption;
+
+                        var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
+                        todo.Consumption = standardConsumption;
+                    }
+                    else
+                    {
+                        var estimatedStartNextTimeTemp = estimatedStartTimeTemp.AddHours(replacementFrequency);
+
+                        if (estimatedStartNextTimeTemp > finishWorkingTime)
+                        {
+                            replacementFrequency = (finishWorkingTime - estimatedStartTimeTemp).TotalHours;
+                            todo.Message += $"TH TGBD tiep theo lon hon TGKT. Tinh lai RF {replacementFrequency} gio";
+                        }
+                        else if (estimatedStartTimeTemp < startLunchTime && estimatedStartNextTimeTemp < finishWorkingTime && estimatedStartNextTimeTemp <= finishLunchTime && estimatedStartNextTimeTemp > startLunchTime)
+                        {
+                            // neu TGBG tiep theo ma nam trong gio an trua thi gan bang TGKT an trua
+                            estimatedStartNextTimeTemp = estimatedStartNextTimeTemp <= finishLunchTime && estimatedStartNextTimeTemp >= startLunchTime ? finishLunchTime : estimatedStartNextTimeTemp;
+                            var recalculateReplacementFrequency = (estimatedStartNextTimeTemp - estimatedStartTimeTemp).TotalHours - (finishLunchTime - startLunchTime).TotalHours;
+                            replacementFrequency = recalculateReplacementFrequency;
+                            todo.Message += $"Giao voi TG an trua .Tinh lai RF = {replacementFrequency} gio.";
+                        }
+
+                        todo.Start = estimatedStartTimeTemp;
+                        var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
+                        todo.Consumption = standardConsumption;
+                        todo.End = fwt;
+                    }
+                    replacementFrequency = RF;
+                    estimatedStartTimeTemp = estimatedStartTimeTemp.AddHours(replacementFrequency);
+                    list.Add(todo);
+                }
+            }
+            else
+            {
+                while (true)
+                {
+                    fwt = estimatedStartTimeTemp.Add(prepareTime);
+                    var todo = new Response();
+                    if (estimatedStartTimeTemp >= end) break;
+                    // chỉ can rot vao khoang TG an trua thi gan TGBD = TGKT an trua
+                    // 11:00
+                    if (estimatedStartTimeTemp >= startLunchTime && estimatedStartTimeTemp <= finishLunchTime)
+                    {
+                        estimatedStartTimeTemp = finishLunchTime;
+                        todo.Start = estimatedStartTimeTemp;  // SLT 13:30
+                        todo.End = estimatedStartTimeTemp.Add(prepareTime); // 13:30 + preparetime
+                        // 13:30 + 2 = 15:30 >= 14:00
+                        var estimatedStartNextTimeTemp = estimatedStartTimeTemp.AddHours(replacementFrequency);
+                        if (estimatedStartNextTimeTemp > finishWorkingTime)
+                        {
+                            replacementFrequency = (end - estimatedStartTimeTemp).TotalHours;
+                            todo.Message += $"Vượt quá endTime: {replacementFrequency}";
+                        }
+
+                        var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
+                        todo.Consumption = standardConsumption;
 
                     }
+                    else
+                    {
+                        var estimatedStartNextTimeTemp = estimatedStartTimeTemp.AddHours(replacementFrequency);
+
+                        if (estimatedStartNextTimeTemp > finishWorkingTime )
+                        {
+                            replacementFrequency = (finishWorkingTime - estimatedStartTimeTemp).TotalHours;
+                            todo.Message += $"TH TGBD tiep theo lon hon TGKT. Tinh lai RF {replacementFrequency} gio";
+                        } //11:00 < 12:30 && 13:00 < 16:30 && 13:00: 13:30 &&  
+                        else if (estimatedStartTimeTemp < startLunchTime && estimatedStartNextTimeTemp < finishWorkingTime && estimatedStartNextTimeTemp <= finishLunchTime && estimatedStartNextTimeTemp > startLunchTime)
+                        {
+                            // neu TGBG tiep theo ma nam trong gio an trua thi gan bang TGKT an trua
+                            estimatedStartNextTimeTemp = estimatedStartNextTimeTemp <= finishLunchTime && estimatedStartNextTimeTemp >= startLunchTime ? finishLunchTime : estimatedStartNextTimeTemp;
+                            var recalculateReplacementFrequency = (estimatedStartNextTimeTemp - estimatedStartTimeTemp).TotalHours - (finishLunchTime - startLunchTime).TotalHours;
+                            replacementFrequency = recalculateReplacementFrequency;
+                            todo.Message += $"Giao voi TG an trua .Tinh lai RF = {replacementFrequency} gio.";
+                        }
+
+                        todo.Start = estimatedStartTimeTemp;
+                        var standardConsumption = kgPair * (double)hourlyOutput * replacementFrequency;
+                        todo.Consumption = standardConsumption;
+                        todo.End = fwt;
+                    }
+                    replacementFrequency = RF;
+                    estimatedStartTimeTemp = estimatedStartTimeTemp.AddHours(replacementFrequency);
+                    list.Add(todo);
                 }
-                replacementFrequency = 2;
-                startWorkingTimeTemp = startWorkingTimeTemp.AddHours(replacementFrequency);
-                list.Add(todo);
             }
+
+            
             return list;
         }
     }

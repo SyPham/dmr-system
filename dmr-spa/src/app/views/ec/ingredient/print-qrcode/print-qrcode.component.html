@@ -9,12 +9,13 @@
       </div>
       <div class="col-md-2">
         <div class="e-input-group">
-          <input class="e-input" type="text" (ngModelChange)="onChangeBatch($event)" [(ngModel)]="batch" placeholder="Enter batch..." />
+          <input class="e-input" type="text" (ngModelChange)="onChangeBatch($event)" [(ngModel)]="batch"
+            placeholder="Enter batch..." />
         </div>
       </div>
       <div class="col-md-3">
         <ejs-datepicker (change)='onChangeProductionDate($event)' format='yyyyMMdd' placeholder="Production Date"
-        [(ngModel)]="mfgTemp"  floatLabelType='Never'></ejs-datepicker>
+          [(ngModel)]="mfgTemp" floatLabelType='Never'></ejs-datepicker>
       </div>
       <div class="col-md-3">
         <div class="e-input-group">
@@ -32,16 +33,16 @@
 </div>
 <hr>
 <div class="row">
-<div class="col-md-4"></div>
-<div class="col-md-4 text-left">
-  <div class='center '>
-    <ejs-qrcodegenerator #barcode style="display: block;" id='qrcode' #barcode
-    width="177px" height="177px" [displayText]='displayTextMethod' mode="SVG" [value]="qrcode"></ejs-qrcodegenerator>
+  <div class="col-md-4"></div>
+  <div class="col-md-4 text-left">
+    <div class='center '>
+      <ejs-qrcodegenerator #barcode style="display: block;" id='qrcode' #barcode width="100px" height="130px"
+        [displayText]='displayTextMethod' mode="SVG" [value]="qrcode"></ejs-qrcodegenerator>
+    </div>
+    <div><label>Name:</label> {{name}}</div>
+    <div><label>QrCode:</label> {{qrcode}}</div>
+    <div><label>MFG:</label> {{mfg}}</div>
+    <div><label>EXP:</label> {{exp}}</div>
   </div>
-  <div><label>Name:</label> {{name}}</div>
-  <div><label>QrCode:</label> {{qrcode}}</div>
-  <div><label>MFG:</label> {{mfg}}</div>
-  <div><label>EXP:</label> {{exp}}</div>
-</div>
-<div class="col-md-4"></div>
+  <div class="col-md-4"></div>
 </div>

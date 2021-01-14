@@ -131,14 +131,18 @@ namespace DMR_API.Controllers
         [HttpPut]
         public async Task<IActionResult> Update(PlanDto update)
         {
+            update.DueDate = update.DueDate.ToLocalTime();
             var startTime = update.DueDate.Date.Add(new TimeSpan(update.StartTime.Hour, update.StartTime.Minute, 0)).ToRemoveSecond();
             var endTime = update.DueDate.Date.Add(new TimeSpan(update.EndTime.Hour, update.EndTime.Minute, 0)).ToRemoveSecond();
-
+            var plan = _planService.FindByID(update.ID);
             DateTime timeNow = DateTime.Now.ToLocalTime().ToRemoveSecond();
             update.StartWorkingTime = startTime;
             update.FinishWorkingTime = endTime;
-
-            if (startTime >= endTime)
+           
+            if (startTime <= timeNow && plan.StartWorkingTime.ToRemoveSecond() != startTime)
+                return BadRequest("The start time must be greater than or equal to the current time!<br> Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại! ");
+           
+            if (startTime >= endTime && plan.StartWorkingTime.ToRemoveSecond() != startTime)
                 return BadRequest("The start time must be less than or equal to the end time!<br> Thời gian bắt đầu phải nhỏ hơn hoặc bằng thời gian kết thúc! ");
 
             var model = await _planService.Update(update);

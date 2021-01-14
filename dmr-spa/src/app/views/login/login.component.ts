@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { AuthService } from '../../_core/_service/auth.service';
 import { AlertifyService } from '../../_core/_service/alertify.service';
 import { Router, ActivatedRoute, RouterStateSnapshot } from '@angular/router';
@@ -148,6 +148,7 @@ export class LoginComponent implements OnInit {
     });
   }
   role: number;
+
   ngOnInit(): void {
     if (localStorage.getItem('token')) {
       const uri = decodeURI(this.uri);

@@ -19,9 +19,12 @@ namespace DMR_Testing
         public void Test()
         {
             var ct = DateTime.Now;
-            var s = new DateTime(ct.Year, ct.Month, ct.Day, 7, 30, 0);
+            var s = new DateTime(ct.Year, ct.Month, ct.Day, 7, 00, 0); // 7, 9, 11, 13
             var t = new DateTime(ct.Year, ct.Month, ct.Day, 16, 30, 0);
-            var result = _timeService.TimeRange(s, t).ToList();
+            var dueDate = new DateTime(ct.Year, ct.Month, ct.Day);
+            var result = _timeService.TimeRange(s, t, dueDate).ToList();
+
+            Assert.IsTrue(result.Count == 5);
             Assert.Pass();
         }
     }

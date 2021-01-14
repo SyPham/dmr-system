@@ -74,16 +74,24 @@ namespace DMR_API._Services.Services
         //Thêm Ingredient mới vào bảng Ingredient
         public async Task<bool> Add(IngredientDto model)
         {
+            string token = _accessor.HttpContext.Request.Headers["Authorization"];
+            var userID = JWTExtensions.GetDecodeTokenByProperty(token, "nameid").ToInt();
+            if (userID == 0) return false;
             var ingredient = _mapper.Map<Ingredient>(model);
             ingredient.isShow = true;
+            ingredient.CreatedBy = userID;
             _repoIngredient.Add(ingredient);
             return await _repoIngredient.SaveAll();
         }
 
         public async Task<bool> Add1(IngredientDto1 model)
         {
+            string token = _accessor.HttpContext.Request.Headers["Authorization"];
+            var userID = JWTExtensions.GetDecodeTokenByProperty(token, "nameid").ToInt();
+            if (userID == 0) return false;
             var ingredient = _mapper.Map<Ingredient>(model);
             ingredient.isShow = true;
+            ingredient.CreatedBy = userID;
             _repoIngredient.Add(ingredient);
             return await _repoIngredient.SaveAll();
         }
@@ -162,8 +170,12 @@ namespace DMR_API._Services.Services
         // Cập nhật Ingredient
         public async Task<bool> Update(IngredientDto model)
         {
+            string token = _accessor.HttpContext.Request.Headers["Authorization"];
+            var userID = JWTExtensions.GetDecodeTokenByProperty(token, "nameid").ToInt();
+            if (userID == 0) return false;
             var ingredient = _mapper.Map<Ingredient>(model);
             ingredient.isShow = true;
+            ingredient.ModifiedBy = userID;
             ingredient.ModifiedDate = DateTime.Now;
             _repoIngredient.Update(ingredient);
             return await _repoIngredient.SaveAll();

@@ -76,7 +76,7 @@ namespace DMR_API._Services.Services
         public async Task<object> GetDoneBPFC()
         {
             var model = await _repoBPFCEstablish
-                .FindAll(x=> !x.IsDelete)
+                .FindAll(x => !x.IsDelete)
                 .Include(x => x.ModelName)
                 .Include(x => x.ModelNo)
                 .Include(x => x.ArticleNo)
@@ -85,7 +85,7 @@ namespace DMR_API._Services.Services
             var total = model.Count;
             var doneTotal = model.Where(x => x.FinishedStatus).Count();
             var undoneTotal = model.Where(x => !x.FinishedStatus).Count();
-            var percentageOFDone = Math.Round( ((double)doneTotal / total) * 100, 0);
+            var percentageOFDone = Math.Round(((double)doneTotal / total) * 100, 0);
             var res = $"% of Done {percentageOFDone}% ({doneTotal}/{total})";
             return new
             {
@@ -150,7 +150,9 @@ namespace DMR_API._Services.Services
         {
             string token = _accessor.HttpContext.Request.Headers["Authorization"];
             var userID = JWTExtensions.GetDecodeTokenByProperty(token, "nameid").ToInt();
-            var BPFCEstablish = await _repoBPFCEstablish.FindAll(x => x.ID.Equals(id)).FirstOrDefaultAsync() ;
+            int bpfcID = id.ToInt();
+            var BPFCEstablish = await _repoBPFCEstablish.FindAll().FirstOrDefaultAsync(x => x.ID == bpfcID);
+            if (BPFCEstablish is null) return false;
             BPFCEstablish.IsDelete = true;
             BPFCEstablish.DeleteTime = DateTime.Now.ToLocalTime();
             BPFCEstablish.DeleteBy = userID;
@@ -414,6 +416,7 @@ namespace DMR_API._Services.Services
                 //End  make Art Process
 
                 result.CreatedBy = bPFCEstablishDto.CreatedBy;
+                result.DueDate = bPFCEstablishDto.DueDate;
                 scope.Complete();
                 return result;
             }
@@ -457,6 +460,7 @@ namespace DMR_API._Services.Services
                         bp.ApprovalBy = bpfc.ApprovalBy;
                         bp.CreatedDate = DateTime.Now;
                         bp.UpdateTime = DateTime.Now;
+                        bp.DueDate = bpfc.DueDate;
                         bp.ApprovalStatus = bpfc.ApprovalStatus;
                         bp.FinishedStatus = bpfc.FinishedStatus;
                         bp.Season = bpfc.Season;
@@ -651,36 +655,36 @@ namespace DMR_API._Services.Services
 
         public async Task<List<BPFCStatusDto>> FilterByApprovedStatus()
         {
-            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == true && x.FinishedStatus == true).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == true && x.FinishedStatus == true && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
             return lists;
         }
 
         public async Task<List<BPFCStatusDto>> FilterByNotApprovedStatus()
         {
-            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == false).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == false && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
             return lists;
         }
 
         public async Task<List<BPFCStatusDto>> FilterByFinishedStatus()
         {
-            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == true).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == true && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
             return lists;
         }
         public async Task<List<BPFCStatusDto>> DefaultFilter()
         {
-            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == true && x.ApprovalStatus == false).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == true && x.ApprovalStatus == false && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
             return lists;
         }
         public async Task<List<BPFCStatusDto>> RejectedFilter()
         {
-            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == false && x.ApprovalStatus == false && x.ApprovalBy > 0).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var lists = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == false && x.ApprovalStatus == false && x.ApprovalBy > 0 && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
             return lists;
         }
         public async Task<List<BPFCStatusDto>> GetAllBPFCStatus()
         {
-            var defaults = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == true && x.ApprovalStatus == false).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
-            var rejected = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == false && x.ApprovalStatus == false && x.ApprovalBy > 0).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
-            var approval = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == true && x.FinishedStatus == true).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var defaults = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == true && x.ApprovalStatus == false && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var rejected = await _repoBPFCEstablish.FindAll().Where(x => x.FinishedStatus == false && x.ApprovalStatus == false && x.ApprovalBy > 0 && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
+            var approval = await _repoBPFCEstablish.FindAll().Where(x => x.ApprovalStatus == true && x.FinishedStatus == true && !x.IsDelete).ProjectTo<BPFCStatusDto>(_configMapper).OrderByDescending(x => x.ID).ToListAsync();
             return defaults.Union(rejected).Union(approval).ToList();
 
         }
@@ -813,6 +817,13 @@ namespace DMR_API._Services.Services
             List<string> glues = await _repoBPFCEstablish.FindAll(x => x.ID == bpfcID).Include(x => x.Glues).SelectMany(x => x.Glues.Where(a => a.isShow).Select(a => a.Name))
                 .ToListAsync();
             return glues;
+        }
+
+        public async Task<bool> UpdateDueDate(BPFCEstablishUpdateDueDate entity)
+        {
+            var item = await _repoBPFCEstablish.FindAll().FirstOrDefaultAsync(x => x.ID == entity.ID);
+            item.DueDate = entity.DueDate.ToLocalTime().Date;
+            return await _repoBPFCEstablish.SaveAll();
         }
     }
 }

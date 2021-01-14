@@ -177,7 +177,7 @@ namespace DMR_API
             services.AddScoped<IToDoListRepository, ToDoListRepository>();
             services.AddScoped<IGlueNameRepository, GlueNameRepository>();
             services.AddScoped<IStationRepository, StationRepository>();
-
+            services.AddScoped<ILunchTimeRepository, LunchTimeRepository>();
             //Services
             services.AddScoped<IMixingService, MixingService>();
             services.AddScoped<IGlueIngredientService, GlueIngredientService>();

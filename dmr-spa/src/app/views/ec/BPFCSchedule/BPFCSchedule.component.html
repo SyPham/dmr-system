@@ -11,9 +11,10 @@
     <div class="row">
       <div class="col-md-12">
         <ejs-grid #grid [dataSource]='data' allowSorting='true' allowResizing='true' allowPaging="true"
-          [pageSettings]='pageSettings' allowFiltering='true' [filterSettings]='filterSettings'
+          (rowDataBound)='rowDB($event)'
+          [pageSettings]='pageSettings' allowFiltering='true' [filterSettings]='filterSettings' [sortSettings]="sortSettings"
           [editSettings]='editSettings' [toolbar]='toolbar' [allowExcelExport]='true' allowResizing='true' (created)="createdSearch($event)"
-          gridLines='Both' showColumnMenu='true' (dataBound)='dataBound()' (toolbarClick)='toolbarClick($event)'
+          gridLines='Both' showColumnMenu='true' (dataBound)='dataBound($event)' (toolbarClick)='toolbarClick($event)'
           (actionBegin)='actionBegin($event)' [searchSettings]='searchOptions'>
           <e-columns>
             <e-column field='#' isPrimaryKey='true' textAlign='Center' headerText='#' width=40>
@@ -32,6 +33,19 @@
             <e-column field='articleNo' isPrimaryKey='true' textAlign='Center' width=150 headerText='Article NO'>
             </e-column>
             <e-column field='artProcess' isPrimaryKey='true' textAlign='Center' width=100 headerText='Process'>
+            </e-column>
+            <e-column field='dueDate' textAlign='Center' editType='datepickeredit' type='date' format='d MMM, yyyy' width=150 headerText='STF Date'>
+              <ng-template #template let-data>
+                {{data.artProcess === 'ASY' ? 'N/A': data.dueDate | date: 'd MMM, yyyy'}}
+              </ng-template>
+              <ng-template #editTemplate let-data>
+                <div *ngIf="data.artProcess === 'STF'; else stf"> 
+                  <ejs-datepicker [value]='data.dueDate' (change)='onChangeDueDate($event)' placeholder='Enter date'></ejs-datepicker>
+                </div>
+                <ng-template #stf>
+                  {{data.artProcess === 'ASY' ? 'N/A': data.dueDate | date: 'd MMM, yyyy'}}
+                </ng-template>
+              </ng-template>
             </e-column>
             <e-column field='createdDate' isPrimaryKey='true' type='date' format='d MMM, yyyy HH:mm'
               headerText='Update Time' textAlign='Center'>

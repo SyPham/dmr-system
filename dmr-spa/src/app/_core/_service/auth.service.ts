@@ -20,7 +20,8 @@ export class AuthService {
   jwtHelper = new JwtHelperService();
   currentUser: User;
   roleValue = new BehaviorSubject<IRole>({ id: 0, name: '' });
-  buildingValue = new BehaviorSubject<IBuilding>({ id: 0, name: '', level: 0, parentID: 0 , settings: null, plans: null});
+  buildingValue = new BehaviorSubject<IBuilding>(
+    { id: 0, name: '', level: 0, parentID: 0, hourlyOutput: 0 , lunchTime: '', settings: null, plans: null});
   decodedToken: any;
   levelSource = new BehaviorSubject<any>({});
   currentLevel = this.levelSource.asObservable();

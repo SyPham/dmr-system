@@ -13,7 +13,7 @@ namespace DMR_API.Helpers.AutoMapper
         {
             var ct = DateTime.Now;
 
-            
+
             CreateMap<DispatchTodolistDto, Dispatch>();
             CreateMap<UserForDetailDto, User>();
             CreateMap<GlueDto, Glue>();
@@ -34,10 +34,12 @@ namespace DMR_API.Helpers.AutoMapper
             .ForMember(d => d.Unit, o => o.MapFrom(x => x.Unit.ToDouble().ToSafetyString()));
 
             CreateMap<LineDto, Line>();
+            CreateMap<LunchTimeDto, LunchTime>()
+                .ForMember(x => x.Building, o => o.Ignore());
             CreateMap<GlueIngredientForMapDto, GlueIngredient>();
             CreateMap<ModelNameDto, ModelName>();
             CreateMap<PlanDto, Plan>();
-            CreateMap<StationDto, Station>().ForMember(d=> d.CreateTime, o=> o.MapFrom(x=> DateTime.Now.ToLocalTime()));
+            CreateMap<StationDto, Station>().ForMember(d => d.CreateTime, o => o.MapFrom(x => DateTime.Now.ToLocalTime()));
 
             CreateMap<MapModelDto, MapModel>();
             CreateMap<ModelNoDto, ModelNo>();
@@ -47,7 +49,9 @@ namespace DMR_API.Helpers.AutoMapper
             CreateMap<PartName2Dto, PartName2>();
             CreateMap<MaterialNameDto, MaterialName>();
             CreateMap<ArticleNoDto, ArticleNo>();
-            CreateMap<BuildingDto, Building>();
+            CreateMap<BuildingDto, Building>()
+            .ForMember(d => d.ParentID, o => o.MapFrom(x => x.ParentID == 0 || x.ParentID == null ? null : x.ParentID));
+
             CreateMap<BuildingUserDto, BuildingUser>();
             CreateMap<CommentDto, Comment>();
             CreateMap<BPFCEstablishDto, BPFCEstablish>();

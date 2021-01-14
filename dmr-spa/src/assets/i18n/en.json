@@ -215,5 +215,9 @@
     "Amount": "Amount",
     "Select a date": "Select a date",
     "Select a model": "Select a BPFC",
-    "Start Scan Time": "Start Scan Time"
+    "Start Scan Time": "Start Scan Time",
+    "Delay": "Delay",
+    "Small Scale": "Small Scale",
+    "Big Scale": "Big Scale",
+    "Refresh": "Refresh"
 }

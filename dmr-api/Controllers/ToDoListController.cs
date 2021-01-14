@@ -57,6 +57,12 @@ namespace DMR_API.Controllers
             return Ok(batchs);
         }
         [HttpGet("{building}")]
+        public async Task<IActionResult> Delay(int building)
+        {
+            var batchs = await _toDoList.Delay(building);
+            return Ok(batchs);
+        }
+        [HttpGet("{building}")]
         public async Task<IActionResult> Done(int building)
         {
             var batchs = await _toDoList.Done(building);
@@ -94,12 +100,25 @@ namespace DMR_API.Controllers
             return Ok(status);
 
         }
+        [HttpGet("{buildingID}")]
+        public async Task<IActionResult> ExportExcel(int buildingID)
+        {
+            var bin = await _toDoList.ExportExcelToDoListByBuilding(buildingID);
+            return File(bin, "application/octet-stream", "doneListReport.xlsx");
+        }
+        [HttpPost]
+        public IActionResult GetMixingDetail(MixingDetailParams obj)
+        {
+            var bin = _toDoList.GetMixingDetail(obj);
+            return Ok(bin);
+        }
         [HttpPost]
         public IActionResult CancelRange(List<ToDoListForCancelDto> todolistIDList)
         {
             var batchs = _toDoList.CancelRange(todolistIDList);
             return Ok(batchs);
         }
+
 
     }
 }

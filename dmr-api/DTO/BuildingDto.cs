@@ -9,7 +9,9 @@ namespace DMR_API.DTO
     {
         public int ID { get; set; }
         public string Name { get; set; }
+        public string LunchTime { get; set; }
         public int Level { get; set; }
+        public int HourlyOutput { get; set; }
         public int? ParentID { get; set; } 
     }
 }

@@ -30,7 +30,6 @@ namespace DMR_API.DTO
         public bool IsGenerate { get; set; }
         public TimeDto StartTime { get; set; }
         public TimeDto EndTime { get; set; }
-
         public DateTime DueDate { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime StartWorkingTime { get; set; }

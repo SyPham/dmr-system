@@ -15,5 +15,6 @@ namespace DMR_API._Services.Interface
         Task<object> GetBuildingsForSetting();
         Task<object> CreateMainBuilding(BuildingDto buildingDto);
         Task<object> CreateSubBuilding(BuildingDto buildingDto);
+        Task<bool> AddOrUpdateLunchTime(LunchTimeDto lunchTime);
     }
 }

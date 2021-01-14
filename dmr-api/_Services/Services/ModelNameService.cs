@@ -409,8 +409,8 @@ namespace DMR_API._Services.Services
             bpfcData.ArticleNoID = clone.ArticleNOID;
             bpfcData.ArtProcessID = artProcessID;
 
-            bpfcData.ApprovalStatus = true;
-            bpfcData.FinishedStatus = true;
+            bpfcData.ApprovalStatus = false;
+            bpfcData.FinishedStatus = false;
             bpfcData.ApprovalBy = clone.ApprovalBy;
             bpfcData.CreatedBy = clone.CloneBy;
             bpfcData.UpdateTime = DateTime.Now;

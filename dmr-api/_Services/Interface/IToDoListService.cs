@@ -12,11 +12,13 @@ namespace DMR_API._Services.Interface
         Task<ToDoListForReturnDto> Done(int buildingID);
         Task<object> GenerateToDoList(List<int> plans);
         Task<ToDoListForReturnDto> ToDo(int buildingID);
+        Task<ToDoListForReturnDto> Delay(int buildingID);
         Task<bool> AddRange(List<ToDoList> toDoList);
         Task<MixingInfo> Mix(MixingInfoForCreateDto mixForToDoListDto);
         void UpdateDispatchTimeRange(ToDoListForUpdateDto model);
         void UpdateMixingTimeRange(ToDoListForUpdateDto model);
         void UpdateStiringTimeRange(ToDoListForUpdateDto model);
+        Task<Byte[]> ExportExcelToDoListByBuilding(int buildingID);
         MixingInfo PrintGlue(int mixingInfoID);
         MixingInfo FindPrintGlue(int mixingInfoID);
         Task<object> Dispatch(DispatchParams todolistDto);
@@ -24,5 +26,6 @@ namespace DMR_API._Services.Interface
         Task<bool> CancelRange(List<ToDoListForCancelDto> todolistIDList);
         bool UpdateStartStirTimeByMixingInfoID(int mixingInfoID);
         bool UpdateFinishStirTimeByMixingInfoID(int mixingInfoID);
+        MixingDetailForResponse GetMixingDetail(MixingDetailParams obj);
     }
 }

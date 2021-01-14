@@ -87,6 +87,7 @@ import { TreeGridAllModule } from '@syncfusion/ej2-angular-treegrid/';
 import { StationComponent } from './plan/station/station.component';
 import { CountdownModule } from 'ngx-countdown';
 import { TimePickerModule } from '@progress/kendo-angular-dateinputs';
+import { MixingGlueComponent } from './mixing-glue/mixing-glue.component';
 declare var require: any;
 let defaultLang: string;
 const lang = localStorage.getItem('lang');
@@ -201,6 +202,7 @@ if (lang === 'vi') {
     Bpfc1Component,
     GlueTypeModalComponent,
     GlueTypeComponent,
+    MixingGlueComponent,
     StationComponent
   ]
 })
